@@ -41,7 +41,11 @@ gba_setup:
 	ldr r0,= (1 | (14 << 1) | 0x06010000)
 	mcr p15, 0, r0, c6, c3, 0
 
-	ldr r0,= (1 | (15 << 1) | 0x063F0000)
+	//ldr r0,= (1 | (15 << 1) | 0x063F0000)
+	//mcr p15, 0, r0, c6, c4, 0
+
+	//bios protection
+	ldr r0,= (1 | (13 << 1) | 0x00000000)
 	mcr p15, 0, r0, c6, c4, 0
 
 	ldr r0,= (1 | (21 << 1) | 0x02000000)
@@ -50,23 +54,32 @@ gba_setup:
 	ldr r0,= (1 | (14 << 1) | 0x03000000)
 	mcr p15, 0, r0, c6, c6, 0
 
+	ldr r0,= (1 | (17 << 1) | 0x02000000)
+	mcr p15, 0, r0, c6, c7, 0
+
+	//TODO: cartridge area protection and d-cache
+
 	mov r0, #0
 	//mcr p15, 0, r0, c6, c5, 0
 	//mcr p15, 0, r0, c6, c6, 0
-	mcr p15, 0, r0, c6, c7, 0
+	//mcr p15, 0, r0, c6, c7, 0
 
+	//i-cache of iwram should probably not be enabled (self-modifying code)
 	mov r0, #3
-	orr r0, r0, #(0x33 << (4 * 5))
+	orr r0, r0, #(0x6 << (4 * 4))
+	orr r0, r0, #(0x36 << (4 * 5))
+	orr r0, r0, #(0x3 << (4 * 7))
 	mcr p15, 0, r0, c5, c0, 2
 	mcr p15, 0, r0, c5, c0, 3
 
 	//no cacheabilty
-	mov r0, #0
+	mov r0, #(1 << 5)
 	mcr p15, 0, r0, c2, c0, 0
-	orr r0, r0, #(3 << 5)
+	//orr r0, r0, #(1 << 5)
 	mcr p15, 0, r0, c2, c0, 1
 
 	//no write buffer
+	mov r0, #0
 	mcr p15, 0, r0, c3, c0, 0
 
 
@@ -268,13 +281,13 @@ gba_start_bkpt:
 	str r1, [r0]
 
 	//for debugging
-	ldr r0,= irq_handler
-	sub r0, #0x18	//relative to source address
-	sub r0, #8	//pc + 8 compensation
-	mov r1, #0xEA000000
-	orr r1, r0, lsr #2
-	mov r0, #0x18
-	str r1, [r0]
+	//ldr r0,= irq_handler
+	//sub r0, #0x18	//relative to source address
+	//sub r0, #8	//pc + 8 compensation
+	//mov r1, #0xEA000000
+	//orr r1, r0, lsr #2
+	//mov r0, #0x18
+	//str r1, [r0]
 
 	//set the abort mode stack
 	mrs r0, cpsr
@@ -290,13 +303,16 @@ gba_start_bkpt:
 	strh r1, [r0]
 	mrc p15, 0, r0, c1, c0, 0
 	orr r0, #(1<<15)
-	orr r0, #1	//enable pu
+	orr r0, #(1 | (1 << 2))	//enable pu and data cache
 	orr r0, #(1 << 12) //and cache
 	mcr p15, 0, r0, c1, c0, 0
 
 	//invalidate instruction cache
 	mov r0, #0
 	mcr p15, 0, r0, c7, c5, 0
+
+	//and data cache
+	mcr p15, 0, r0, c7, c6, 0
 
 	mov r0, #0
 	bx r0
@@ -322,7 +338,7 @@ nibble_to_char:
 
 undef_inst_handler:
 	mrc p15, 0, r0, c1, c0, 0
-	bic r0, #1	//disable pu
+	bic r0, #(1 | (1 << 2))	//disable pu and data cache
 	bic r0, #(1 << 12) //and cache
 	mcr p15, 0, r0, c1, c0, 0
 

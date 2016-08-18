@@ -103,7 +103,7 @@ data_abort_handler_cont:
 	sub r0, r5, #8
 
 	mrc p15, 0, r4, c1, c0, 0
-	bic r2, r4, #1	//disable pu
+	bic r2, r4, #(1 | (1 << 2))	//disable pu and data cache
 	bic r2, #(1 << 12) //and cache
 	mcr p15, 0, r2, c1, c0, 0
 
@@ -112,6 +112,8 @@ data_abort_handler_cont:
 	and r2, r2, #1
 	
 	bl DataAbortHandler
+
+data_abort_handler_cont_finish:
 
 	mcr p15, 0, r4, c1, c0, 0
 
@@ -145,7 +147,7 @@ data_abort_handler_thumb:
 	sub r0, r5, #8
 
 	mrc p15, 0, r4, c1, c0, 0
-	bic r2, r4, #1	//disable pu
+	bic r2, r4, #(1 | (1 << 2))	//disable pu and data cache
 	bic r2, #(1 << 12) //and cache
 	mcr p15, 0, r2, c1, c0, 0
 	
@@ -164,7 +166,96 @@ data_abort_handler_thumb:
 
 	subs pc, lr, #8
 
+//calc address for arm ldrh/ldrsh/ldrsb/strh
+ldrh_strh_address_calc:
+	and r8, r0, #(0xF << 16)
+	ldr r9, [r1, r8, lsr #14]
+	tst r0, #(1 << 22)
+	and r10, r0, #0xF
+	ldreq r10, [r1, r10, lsl #2]
+	andne r11, r0, #0xF00
+	orrne r10, r11, lsr #8
 
+	tst r0, #(1 << 23)
+	sbceq r10, r10, #0
+	tst r0, #(1 << 24)
+	addne r9, r10
+	and r2, r9, #0x0F000000
+	add pc, r2, lsr #23
+
+	nop
+	nop
+	b ldrh_strh_address_calc_ignore	//bios: ignore
+	b ldrh_strh_address_calc_ignore	//itcm: ignore
+	b ldrh_strh_address_calc_ignore	//main: ignore
+	b ldrh_strh_address_calc_ignore	//wram: can't happen
+	b ldrh_strh_address_calc_cont	//io, manual execution
+	b ldrh_strh_address_calc_ignore	//pal: can't happen
+	b ldrh_strh_address_calc_cont	//sprites vram, manual execution
+	b ldrh_strh_address_calc_ignore	//oam: can't happen
+	b ldrh_strh_address_calc_fix_cartridge	//card: fix
+	b ldrh_strh_address_calc_fix_cartridge	//card: fix	
+	b ldrh_strh_address_calc_fix_cartridge	//card: fix
+	b ldrh_strh_address_calc_fix_cartridge	//card: fix
+	b ldrh_strh_address_calc_fix_cartridge	//card: fix
+	b ldrh_strh_address_calc_cont	//eeprom, manual execution
+	b ldrh_strh_address_calc_fix_sram	//sram: fix
+	b ldrh_strh_address_calc_ignore	//nothing: shouldn't happen
+
+ldrh_strh_address_calc_fix_cartridge:
+
+	mov r0, #1
+	b data_abort_handler_cont_finish
+
+ldrh_strh_address_calc_fix_sram:
+	
+	mov r0, #1
+	b data_abort_handler_cont_finish
+
+ldrh_strh_address_calc_ignore:
+	mov r0, #0
+	b data_abort_handler_cont_finish
+
+ldrh_strh_address_calc_cont:
+	tst r0, #(1 << 24)
+	tstne r0, #(1 << 21)
+	strne r9, [r1, r8, lsr #14]
+
+	tst r0, #(1 << 20)
+	push {r0,r1}
+	bne ldrh_strh_address_calc_cont_load
+	and r2, r0, #(0xF << 12)
+	ldr r1, [r1, r2, lsr #14]
+	mov r0, r10
+	mov r2, #2
+	bl WriteIOAddress
+	pop {r1}
+	b ldrh_strh_address_calc_cont2
+ldrh_strh_address_calc_cont_load:
+	and r4, r0, #(3 << 5)
+	cmp r4, #(2 << 5)
+	mov r0, r10
+	mov r1, #2
+	moveq r1, #1
+	bl ReadIOAddress
+	cmp r4, #(1 << 5)
+	beq ldrh_strh_address_calc_cont2_ld
+	cmp r4, #(2 << 5)
+	mov r0, r0, lsl #16
+	moveq r0, r0, lsl #8
+	mov r0, r0, asr #16
+	moveq r0, r0, asr #8
+ldrh_strh_address_calc_cont2_ld:
+	pop {r1}
+	and r2, r0, #(0xF << 12)
+	str r0, [r1, r2, lsr #14]
+ldrh_strh_address_calc_cont2:
+	pop {r0}
+	tst r0, #(1 << 24)
+	addeq r9, r10
+	streq r9, [r1, r8, lsr #14]
+	mov r0, #0
+	b data_abort_handler_cont_finish
 
 //calc address for ldr/str
 ldr_str_address_calc:
@@ -194,3 +285,40 @@ ldr_str_address_calc_cont:
 	tst r0, #(1 << 24)
 	addne r9, r10
 
+ldm_stm_address_calc:
+	and r8, r0, #(0xF << 16)
+	ldr r9, [r1, r8, lsr #14]
+
+
+//TODO: replace this by an 256 byte lookup table in dtcm, as that will speed up a lot
+count_bits_set_16:
+	mov	r2, #0xff
+	eor	r2, r2, r2, lsl #4
+	eor	r3, r2, r2, lsl #2
+	eor	r1, r3, r3, lsl #1
+		
+	and	r1, r1, r0, lsr #1
+	sub	r0, r0, r1
+		
+	and	r1, r3, r0, lsr #2
+	and	r0, r3, r0
+	add	r0, r0, r1
+		
+	add	r0, r0, r0, lsr #4
+	and	r0, r0, r2
+		
+	add	r0, r0, r0, lsr #8
+	and	r0, r0, #0x1F
+	bx lr
+
+count_bits_set_8:
+	and	r1, r0, #0xAA
+	sub	r0, r0, r1, lsr #1
+		
+	and	r1, r0, #0xCC
+	and	r0, r0, #0x33
+	add	r0, r0, r1, lsr #2
+		
+	add	r0, r0, r0, lsr #4
+	and	r0, r0, #0xF
+	bx lr

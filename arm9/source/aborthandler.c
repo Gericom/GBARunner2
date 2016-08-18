@@ -20,7 +20,7 @@ typedef struct
 	uint8_t eeprom_data[16 * 1024];
 } eeprom_vram;
 
-#define EEPROM_VRAM_BLOCK	((eeprom_vram*)(0x02400000 - 1536 - (32 * 1024)))//0x06898000)
+#define EEPROM_VRAM_BLOCK	((eeprom_vram*)(0x02800000 - 1536 - (32 * 1024)))//0x06898000)
 
 
 
@@ -587,7 +587,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 			if((instruction >> 20) & 1)//Load
 			{
 				int op = (instruction >> 5) & 3;
-				if (op == 1) //byte
+				if (op == 1)
 					registerTable[Rd_nr] = ReadIOAddress(MemoryOffset, 2);
 				else if(op == 2)
 					registerTable[Rd_nr] = (uint32_t)(((int)(ReadIOAddress(MemoryOffset, 1) << 24)) >> 24);
@@ -678,6 +678,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 				registerTable[instruction & 0xF] -= 0x0E000000 - ((uint32_t)EEPROM_VRAM_BLOCK);
 			return 1;
 		}
+		return 0;
 		while(1);
 	}
 	/*else if((instruction >> 25) == 1)
@@ -796,6 +797,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 			}
 			return 1;
 		}
+		return 0;
 		while(1);
 	}
 	else if((instruction >> 25) == 4)
@@ -882,7 +884,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 			registerTable[Rn] -= 0x0E000000 - ((uint32_t)EEPROM_VRAM_BLOCK);
 			return 1;
 		}
-
+		return 0;
 		while(1);
 	}
 	else
@@ -977,6 +979,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 				registerTable[Ro] -= 0x0E000000 - ((uint32_t)EEPROM_VRAM_BLOCK);
 			return 1;
 		}
+		return 0;
 		while(1);
 	}
 	else if ((instruction >> 12) == 5 && ((instruction >> 9) & 1) == 1)
@@ -1056,6 +1059,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 				registerTable[Ro] -= 0x0E000000 - ((uint32_t)EEPROM_VRAM_BLOCK);
 			return 1;
 		}
+		return 0;
 		while(1);
 	}
 	else if ((instruction >> 13) == 3)
@@ -1121,6 +1125,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 			registerTable[Rb] -= 0x0E000000 - ((uint32_t)EEPROM_VRAM_BLOCK);
 			return 1;
 		}
+		return 0;
 		while(1);
 	}
 	else if ((instruction >> 12) == 8)
@@ -1181,6 +1186,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 			registerTable[Rb] -= 0x0E000000 - ((uint32_t)EEPROM_VRAM_BLOCK);
 			return 1;
 		}
+		return 0;
 		while(1);
 	}
 	else if ((instruction >> 12) == 12)
@@ -1262,6 +1268,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 			registerTable[Rb] -= 0x0E000000 - ((uint32_t)EEPROM_VRAM_BLOCK);
 			return 1;
 		}
+		return 0;
 		while(1);
 	}
 	else
