@@ -155,14 +155,9 @@ ITCM_CODE __attribute__ ((hot)) uint32_t ReadIOAddress(uint32_t address, uint32_
 		return *((uint16_t*)0x4000210) | (*((uint16_t*)0x4000214) << 16);
 	}
 
-	if(address == 0x4000200 && size == 2)
+	if(address == 0x4000200)
 	{
-		return *((uint16_t*)0x4000210);
-	}
-
-	if(address == 0x4000200 && size == 1)
-	{
-		return *((uint8_t*)0x4000210);
+		address = 0x4000210;
 	}
 
 	if(address == 0x4000201 && size == 1)
@@ -170,14 +165,9 @@ ITCM_CODE __attribute__ ((hot)) uint32_t ReadIOAddress(uint32_t address, uint32_
 		return *((uint8_t*)0x4000211);
 	}
 
-	if(address == 0x4000202 && size == 2)
+	if(address == 0x4000202)
 	{
-		return *((uint16_t*)0x4000214);
-	}
-
-	if(address == 0x4000202 && size == 1)
-	{
-		return *((uint8_t*)0x4000214);
+		address = 0x4000214;
 	}
 
 	if(address == 0x4000203 && size == 1)
@@ -223,7 +213,16 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 		return;
 
 	if(address >= 0x06010000)
+	{
 		address += 0x3F0000;
+		if(size == 1)
+		{
+			address &= ~1;
+			value = value | (value << 8);
+			size = 2;
+		}
+		goto finish_write;
+	}
 
 	if((address == 0x04000100 || address == 0x04000104 || address == 0x04000108 || address == 0x0400010C) && size == 2)
 	{
@@ -282,6 +281,7 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 			value -= 0x5FC0000;
 		else if(value >= 0x06010000 && value <= 0x06017FFF)
 			value += 0x3F0000;
+		goto finish_write;
 	}
 
 	if((address == 0x40000B2 || address == 0x40000BE || address == 0x40000CA || address == 0x40000D6) && size == 2)
@@ -290,6 +290,7 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 			value -= 0x5FC;
 		else if(value == 0x0601)
 			value += 0x3F;
+		goto finish_write;
 	}
 
 	//dma dst
@@ -304,18 +305,21 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 
 			//PrintHexDebug(0xEEEEEEEE, (uint16_t*)(0x06202000 + 32 * 30));
 		}
+		goto finish_write;
 	}
 
 	if((address == 0x40000B6 || address == 0x40000C2 || address == 0x40000CE || address == 0x40000DA) && size == 2)
 	{
 		if(value == 0x0601)
 			value += 0x3F;
+		goto finish_write;
 	}
 
 	if((address == 0x040000B8 || address == 0x40000C4 || address == 0x040000D0 || address == 0x040000DC) && size == 2)
 	{
 		if(value == 0 && address != 0x040000DC)
 			value = 0x4000;
+		goto finish_write;
 	}
 
 	if((address == 0x040000BA || address == 0x40000C6 || address == 0x040000D2 || address == 0x040000DE) && size == 2)
@@ -371,6 +375,7 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 				//PrintHexDebug(test, (uint16_t*)(0x06202000 + 32 * 31));
 			}
 		}
+		goto finish_write;
 	}
 
 	if((address == 0x040000B8 || address == 0x40000C4 || address == 0x040000D0 || address == 0x040000DC) && size == 4)
@@ -430,6 +435,7 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 				//PrintHexDebug(test, (uint16_t*)(0x06202000 + 32 * 31));
 			}
 		}
+		goto finish_write;
 	}
 
 	//display control
@@ -479,11 +485,13 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 
 			value = newval;
 		}
+		goto finish_write;
 	}
 
 	if(address == 0x4000001)
 	{
 		DISPCNT_copy = (DISPCNT_copy & 0xFF) | (value << 8);
+		goto finish_write;
 	}
 
 	if(address == 0x4000200 && size == 4)
@@ -493,16 +501,9 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 		return;
 	}
 
-	if(address == 0x4000200 && size == 2)
+	if(address == 0x4000200)
 	{
-		*((uint16_t*)0x4000210) = value;
-		return;
-	}
-
-	if(address == 0x4000200 && size == 1)
-	{
-		*((uint8_t*)0x4000210) = value;
-		return;
+		address = 0x4000210;
 	}
 
 	if(address == 0x4000201 && size == 1)
@@ -511,16 +512,9 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 		return;
 	}
 
-	if(address == 0x4000202 && size == 2)
+	if(address == 0x4000202)
 	{
-		*((uint16_t*)0x4000214) = value;
-		return;
-	}
-
-	if(address == 0x4000202 && size == 1)
-	{
-		*((uint8_t*)0x4000214) = value;
-		return;
+		address = 0x4000214;
 	}
 
 	if(address == 0x4000203 && size == 1)
@@ -529,6 +523,7 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 		return;
 	}
 
+finish_write:
 	if(size == 1)
 		*((uint8_t*)address) = value;
 	else if(size == 2)
@@ -539,7 +534,7 @@ ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t v
 
 //#define DEBUG_ADDRESSES
 
-ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, uint32_t* registerTable, uint32_t carry)//, uint32_t thumb)
+/*ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, uint32_t* registerTable, uint32_t carry)//, uint32_t thumb)
 {
 	uint32_t instruction = *((uint32_t*)instructionAddress);
 	instruction &= 0x0FFFFFFF;//remove condition code
@@ -629,18 +624,18 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 			{
 				if((registerTable[Rn] >> 24) >= 8 && (registerTable[Rn] >> 24) <= 0xD)
 				{
-					registerTable[Rn] &= ~0x070000000;
+					registerTable[Rn] &= ~0x07000000;
 					registerTable[Rn] -= 0x5FC0000;
 				}
 				else
 				{
-					registerTable[instruction & 0xF] &= ~0x070000000;
+					registerTable[instruction & 0xF] &= ~0x07000000;
 					registerTable[instruction & 0xF] -= 0x5FC0000;
 				}
 			}
 			else
 			{
-				registerTable[Rn] &= ~0x070000000;
+				registerTable[Rn] &= ~0x07000000;
 				registerTable[Rn] -= 0x5FC0000;
 			}
 			//we should return 1 to signal that the original opcode should be reexecuted with fixed registers
@@ -686,7 +681,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 		PrintDebug(unk_string, (uint16_t*)0x06202000);
 		PrintHexDebug(instruction, (uint16_t*)(0x06202000 + 32));
 		while(1);
-	}*/
+	}/
 	else if((instruction >> 25) == 2 || (instruction >> 25) == 3)
 	{
 		uint32_t Rd_nr = (instruction >> 12) & 0xF;
@@ -754,7 +749,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 		{
 			//cartridge
 			//fix address by subtracting 0x08000000 - 0x02040000 = 0x05FC0000
-			registerTable[Rn] &= ~0x070000000;
+			registerTable[Rn] &= ~0x07000000;
 			registerTable[Rn] -= 0x5FC0000;
 			if(((instruction >> 25) & 1) && (registerTable[instruction & 0xF] >> 24) >= 8)
 			{
@@ -856,7 +851,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 		{
 			//cartridge
 			//fix address by subtracting 0x08000000 - 0x02040000 = 0x05FC0000
-			registerTable[Rn] &= ~0x070000000;
+			registerTable[Rn] &= ~0x07000000;
 			registerTable[Rn] -= 0x5FC0000;
 			//we should return 1 to signal that the original opcode should be reexecuted with fixed registers
 			return 1;
@@ -895,9 +890,16 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandler(void* instructionAddress, u
 		PrintHexDebug(instruction, (uint16_t*)(0x06202000 + 64));
 		while(1);
 	}
-}
+}*/
 
-ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddress, uint32_t* registerTable)
+//0101 xx0x xxxx xxxx -> thumb 7		first 3 bits = 2
+//0101 xx1x xxxx xxxx -> thumb 8		first 3 bits = 2
+//011x xxxx xxxx xxxx -> thumb 9		first 3 bits = 3
+//1000 xxxx xxxx xxxx -> thumb 10		first 3 bits = 4
+//1100 xxxx xxxx xxxx -> thumb 15		first 3 bits = 6
+
+
+/*ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddress, uint32_t* registerTable)
 {
 	uint16_t instruction = *((uint16_t*)((uint32_t)instructionAddress & ~1));//just to be safe, it seems like bit 0 is not set
 
@@ -936,12 +938,12 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 			//fix address by subtracting 0x08000000 - 0x02040000 = 0x05FC0000
 			if((registerTable[Rb] >> 24) >= 8 && (registerTable[Rb] >> 24) <= 0xD)
 			{
-				registerTable[Rb] &= ~0x070000000;
+				registerTable[Rb] &= ~0x07000000;
 				registerTable[Rb] -= 0x5FC0000;
 			}
 			else
 			{
-				registerTable[Ro] &= ~0x070000000;
+				registerTable[Ro] &= ~0x07000000;
 				registerTable[Ro] -= 0x5FC0000;
 			}
 			//we should return 1 to signal that the original opcode should be reexecuted with fixed registers
@@ -1016,12 +1018,12 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 			//fix address by subtracting 0x08000000 - 0x02040000 = 0x05FC0000
 			if((registerTable[Rb] >> 24) >= 8 && (registerTable[Rb] >> 24) <= 0xD)
 			{
-				registerTable[Rb] &= ~0x070000000;
+				registerTable[Rb] &= ~0x07000000;
 				registerTable[Rb] -= 0x5FC0000;
 			}
 			else
 			{
-				registerTable[Ro] &= ~0x070000000;
+				registerTable[Ro] &= ~0x07000000;
 				registerTable[Ro] -= 0x5FC0000;
 			}
 			//we should return 1 to signal that the original opcode should be reexecuted with fixed registers
@@ -1094,7 +1096,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 		{
 			//cartridge
 			//fix address by subtracting 0x08000000 - 0x02040000 = 0x05FC0000
-			registerTable[Rb] &= ~0x070000000;
+			registerTable[Rb] &= ~0x07000000;
 			registerTable[Rb] -= 0x5FC0000;
 			//we should return 1 to signal that the original opcode should be reexecuted with fixed registers
 			return 1;
@@ -1158,7 +1160,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 		{
 			//cartridge
 			//fix address by subtracting 0x08000000 - 0x02040000 = 0x05FC0000
-			registerTable[Rb] &= ~0x070000000;
+			registerTable[Rb] &= ~0x07000000;
 			registerTable[Rb] -= 0x5FC0000;
 			//we should return 1 to signal that the original opcode should be reexecuted with fixed registers
 			return 1;
@@ -1240,7 +1242,7 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 		{
 			//cartridge
 			//fix address by subtracting 0x08000000 - 0x02040000 = 0x05FC0000
-			registerTable[Rb] &= ~0x070000000;
+			registerTable[Rb] &= ~0x07000000;
 			registerTable[Rb] -= 0x5FC0000;
 			//we should return 1 to signal that the original opcode should be reexecuted with fixed registers
 			return 1;
@@ -1280,4 +1282,4 @@ ITCM_CODE __attribute__ ((hot)) int DataAbortHandlerThumb(void* instructionAddre
 		while(1);
 	}
 	while(1);
-}
+}*/

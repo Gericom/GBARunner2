@@ -152,6 +152,8 @@ gba_setup_fill_sub_loop:
 	ldr r0,= 0x1000000A
 	mcr p15, 0, r0, c9, c1, 0
 
+	bl address_write_table_32bit_dtcm_setup
+
 	//copy simple gba rom to 02040000
 	ldr r0,= rom_bin //simpleRom
 	ldr r1,= rom_bin_size //simpleRomSize
@@ -297,6 +299,8 @@ gba_start_bkpt:
 	ldr sp,= 0x10003FFC
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
+
+	bl count_bits_initialize
 
 	ldr r0,= 0x05000000
 	ldr r1,= 0x3E0
