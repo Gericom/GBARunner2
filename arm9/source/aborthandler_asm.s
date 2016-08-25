@@ -262,6 +262,7 @@ count_bits_set_8_lookup:
 //	and	r0, r0, #0xF
 //	bx lr
 
+.global print_address
 print_address:
 	push {r0-r4}
 	ldr r1,= nibble_to_char
@@ -297,7 +298,7 @@ print_address:
 	pop {r0-r4}
 	bx lr
 
-
+.global print_address2
 print_address2:
 	push {r0-r4}
 	ldr r1,= nibble_to_char

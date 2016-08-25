@@ -121,7 +121,7 @@ static ITCM_CODE uint32_t Shift(uint32_t ShiftType, uint32_t Value, uint32_t NrB
 	return 0xFFFFFFFF;
 }
 
-ITCM_CODE __attribute__ ((hot)) uint32_t ReadIOAddress(uint32_t address, uint32_t size)
+/*ITCM_CODE __attribute__ ((hot)) uint32_t ReadIOAddress(uint32_t address, uint32_t size)
 {
 	if(address >= 0x04000060 && address <= 0x040000A8)
 	{
@@ -184,9 +184,9 @@ ITCM_CODE __attribute__ ((hot)) uint32_t ReadIOAddress(uint32_t address, uint32_
 		return *((uint16_t*)address);
 	else
 		return *((uint32_t*)address);
-}
+}*/
 
-ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t value, uint32_t size)
+/*ITCM_CODE __attribute__ ((hot)) void WriteIOAddress(uint32_t address, uint32_t value, uint32_t size)
 {
 	//sound
 	if(address >= 0x04000060 && address <= 0x040000A8)
@@ -530,7 +530,7 @@ finish_write:
 		*((uint16_t*)address) = value;
 	else
 		*((uint32_t*)address) = value;
-}
+}*/
 
 //#define DEBUG_ADDRESSES
 

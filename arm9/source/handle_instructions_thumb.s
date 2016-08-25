@@ -61,7 +61,7 @@ thumb7_address_calc:
 	mov r1, #4
 	movne r1, #1
 	mov r0, r9
-	bl ReadIOAddress
+	bl read_address_from_handler
 	pop {r2, r3}//r2=r0,r3=r1
 	and r1, r2, #7
 	str r0, [r3, r1, lsl #2]
@@ -89,7 +89,7 @@ thumb8_address_calc_read:
 	cmp r4, #(1 << 10)
 	moveq r1, #1
 	mov r0, r9
-	bl ReadIOAddress
+	bl read_address_from_handler
 	cmp r4, #(2 << 10)
 	beq thumb8_address_calc_read_cont
 	cmp r4, #(1 << 10)
@@ -164,7 +164,7 @@ thumb9_address_calc_cont:
 	mov r1, #4
 	movne r1, #1
 	mov r0, r9
-	bl ReadIOAddress
+	bl read_address_from_handler
 	pop {r2, r3}//r2=r0,r3=r1
 	and r1, r2, #7
 	str r0, [r3, r1, lsl #2]
@@ -217,7 +217,7 @@ thumb10_address_calc_read:
 	push {r0, r1}
 	mov r1, #2
 	mov r0, r9
-	bl ReadIOAddress
+	bl read_address_from_handler
 	pop {r2, r3}//r2=r0,r3=r1
 	and r1, r2, #7
 	str r0, [r3, r1, lsl #2]
@@ -287,7 +287,7 @@ thumb15_address_calc_cont_load_loop:
 	beq thumb15_address_calc_cont_load_loop_cont
 	mov r0, r9
 	mov r1, #4
-	bl ReadIOAddress
+	bl read_address_from_handler
 	str r0, [r4]
 	add r9, r9, #4
 thumb15_address_calc_cont_load_loop_cont:

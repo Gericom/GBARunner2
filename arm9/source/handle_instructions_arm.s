@@ -86,7 +86,7 @@ ldrh_strh_address_calc_cont_load:
 	mov r0, r9
 	mov r1, #2
 	moveq r1, #1
-	bl ReadIOAddress
+	bl read_address_from_handler
 	cmp r4, #(1 << 5)
 	beq ldrh_strh_address_calc_cont2_ld
 	cmp r4, #(2 << 5)
@@ -205,7 +205,7 @@ ldr_str_address_calc_cont2:
 	mov r0, r9
 	mov r1, #4
 	movne r1, #1
-	bl ReadIOAddress
+	bl read_address_from_handler
 	ldr r1, [sp, #4]
 	str r0, [r1, r11, lsr #10]
 	pop {r0,r1}
@@ -319,7 +319,7 @@ ldm_stm_address_calc_cont2_load_loop:
 	beq ldm_stm_address_calc_cont2_load_loop_cont
 	mov r0, r9
 	mov r1, #4
-	bl ReadIOAddress
+	bl read_address_from_handler
 	str r0, [r4]
 	add r9, r9, #4
 ldm_stm_address_calc_cont2_load_loop_cont:

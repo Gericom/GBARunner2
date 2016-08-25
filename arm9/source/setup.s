@@ -153,6 +153,18 @@ gba_setup_fill_sub_loop:
 	mcr p15, 0, r0, c9, c1, 0
 
 	bl address_write_table_32bit_dtcm_setup
+	bl address_write_table_16bit_dtcm_setup
+	bl address_write_table_8bit_dtcm_setup
+	bl address_read_table_32bit_dtcm_setup
+	bl address_read_table_16bit_dtcm_setup
+	bl address_read_table_8bit_dtcm_setup
+	
+	//in order for this to work, we need to find a way to boot up in retail mode 
+	//(so that your flashcard emulates a real ds card and we can use card commands, which is 
+	//much faster as direct sd access, because we don't need to deal with the fat filesystem)
+	//we tempoarly need a stack for this
+	//ldr sp,= 0x10004000
+	//bl card_interface_init
 
 	//copy simple gba rom to 02040000
 	ldr r0,= rom_bin //simpleRom
@@ -296,7 +308,7 @@ gba_start_bkpt:
 	and r0, r0, #0xE0
 	orr r1, r0, #0x17
 	msr cpsr_c, r1
-	ldr sp,= 0x10003FFC
+	ldr sp,= 0x10004000
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
 
