@@ -77,6 +77,8 @@
 
 reg_table = 0x10000000
 
+//when r15 is used, problems will arise, as it's currently not supported
+
 .global data_abort_handler
 data_abort_handler:
 	push {lr}
@@ -100,6 +102,7 @@ data_abort_handler_arm:
 data_abort_handler_cont:
 	pop {r5}	//lr
 	ldr r1,= reg_table
+	str r5, [r1, #(4 * 15)]
 
 	mrc p15, 0, r6, c1, c0, 0
 	bic r2, r6, #(1 | (1 << 2))	//disable pu and data cache
@@ -108,12 +111,7 @@ data_abort_handler_cont:
 
 	ldr r0, [r5, #-8]
 	and r0, r0, #0x0FFFFFFF
-
-	and r8, r0, #(0xF << 16)
-	ldr r9, [r1, r8, lsr #14]
-
-	mov r2, r0, lsr #25
-	add pc, r2, lsl #2
+	add pc, r0, lsr #23
 
 	nop
 	b ldrh_strh_address_calc
@@ -144,16 +142,25 @@ data_abort_handler_cont_finish:
 data_abort_handler_cont2:
 	ldr lr,= reg_table
 	ldmia lr, {r0-r12}	//non-banked registers
+	//ldr lr, [lr, #(4 * 15)]
+	//cmp lr, #0
+	//bne data_abort_handler_r15_dst
 	pop {lr}
 
 	subs pc, lr, #8
+
+//data_abort_handler_r15_dst:
+//	pop {lr}
+//	mov r0, lr
+//	bl print_address
+//	b .
 
 data_abort_handler_thumb:
 	ldr lr,= reg_table
 	stmia lr, {r0-r7}	//non-banked registers
 	pop {r5}	//lr
+
 	ldr r1,= reg_table
-	//sub r0, r5, #8
 
 	mrc p15, 0, r6, c1, c0, 0
 	bic r2, r6, #(1 | (1 << 2))	//disable pu and data cache
@@ -161,11 +168,10 @@ data_abort_handler_thumb:
 	mcr p15, 0, r2, c1, c0, 0
 	
 	ldrh r0, [r5, #-8]
-	mov r2, r0, lsr #13
 	mov r7, sp
 	msr cpsr_c, #0x91
 	mov sp, r7
-	add pc, r2, lsl #2
+	add pc, r0, lsr #11 //r2, lsl #2
 
 	nop
 
@@ -183,9 +189,6 @@ data_abort_handler_thumb_finish:
 	msr cpsr_c, #0x97
 	mcr p15, 0, r6, c1, c0, 0
 
-	//cmp r0, #0
-	//addeq lr, r5, #2
-	//movne lr, r5
 	mov lr, r5
 
 	ldr r5,= reg_table

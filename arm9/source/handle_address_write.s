@@ -24,7 +24,7 @@ write_address_from_handler:
 write_address_from_handler_sprites:
 	add r0, #0x3F0000
 	cmp r2, #1
-	biceq r0, #1
+	//biceq r0, #1
 	orreq r1, r1, r1, lsl #8
 	moveq r2, #2
 	cmp r2, #4

@@ -342,9 +342,67 @@ gba_setup_itcm:
 	bx lr
 
 instruction_abort_handler:
+	cmp lr, #0x08000000
+	blt instruction_abort_handler_error
+	cmp lr, #0x0E000000
+	bge instruction_abort_handler_error
+instruction_abort_handler_cont:
+	bic lr, #0x06000000
 	sub lr, #0x5000000
 	sub lr, #0x0FC0000
 	subs pc, lr, #4
+
+instruction_abort_handler_error:
+	add sp, lr, #0x5000000
+	add sp, #0x0FC0000
+	cmp sp, #0x08000000
+	blt instruction_abort_handler_error_2
+	cmp sp, #0x0E000000
+	movlt lr, sp
+	blt instruction_abort_handler_cont
+instruction_abort_handler_error_2:
+	mrc p15, 0, r0, c1, c0, 0
+	bic r0, #(1 | (1 << 2))	//disable pu and data cache
+	bic r0, #(1 << 12) //and cache
+	mcr p15, 0, r0, c1, c0, 0
+
+	ldr r0,= 0x06202000
+	ldr r1,= 0x46455250
+	str r1, [r0]
+
+	sub r0, lr, #4
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 8)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	b .
 
 .global nibble_to_char
 nibble_to_char:
@@ -394,6 +452,104 @@ undef_inst_handler:
 	orr r2, r2, r3, lsl #8
 	strh r2, [r4], #2
 
+	ldr r0, [lr]
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 9)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	mrs r0, spsr
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 10)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	msr cpsr_c, #0x9F
+	mov r0, lr
+	msr cpsr_c, #0x9B
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 11)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
 undef_inst_handler_loop:
 	b undef_inst_handler_loop
 
@@ -401,68 +557,68 @@ undef_inst_handler_loop:
 irq_handler:
 	STMFD   SP!, {R0-R3,R12,LR}
 
-//	ldr r1,= nibble_to_char
-//	ldr r12,= (0x06202000 + 32 * 11)
+	ldr r1,= nibble_to_char
+	ldr r12,= (0x06202000 + 32 * 11)
 	//print address to bottom screen
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
-//	sub r0, lr, #4
-//	ldr r1,= nibble_to_char
-//	ldr r12,= (0x06202000 + 32 * 10)
+	sub r0, lr, #4
+	ldr r1,= nibble_to_char
+	ldr r12,= (0x06202000 + 32 * 10)
 	//print address to bottom screen
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
-//	ldrb r2, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	ldrb r3, [r1, r0, lsr #28]
-//	mov r0, r0, lsl #4
-//	orr r2, r2, r3, lsl #8
-//	strh r2, [r12], #2
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
 
 	MOV     R0, #0x4000000
 	ADR     LR, loc_138

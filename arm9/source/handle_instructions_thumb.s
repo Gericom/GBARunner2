@@ -8,8 +8,7 @@ thumb7_8_address_calc:
 	and r11, r0, #(7 << 6)
 	ldr r10, [r1, r11, lsr #4]
 	add r9, lr, r10
-	and r2, r9, #0x0F000000
-	add pc, r2, lsr #22
+	add pc, r9, lsr #22
 
 	nop
 	b address_calc_ignore_thumb	//bios: ignore
@@ -34,7 +33,7 @@ thumb7_8_address_calc_fix_cartridge:
 	cmp r7, #0x8
 	movlt r8, r11, lsr #3
 	movlt lr, r10
-	bic lr, lr, #0x07000000
+	bic lr, lr, #0x06000000
 	sub lr, lr, #0x05000000
 	sub lr, lr, #0x00FC0000
 	str lr, [r1, r8, lsr #1]
@@ -56,15 +55,14 @@ thumb7_8_address_calc_cont:
 thumb7_address_calc:
 	tst r0, #(1 << 11)
 	beq thumb7_address_calc_write
-	push {r0, r1}
+	and r4, r0, #7
+	mov r7, r1
 	tst r0, #(1 << 10)
 	mov r1, #4
 	movne r1, #1
 	mov r0, r9
 	bl read_address_from_handler
-	pop {r2, r3}//r2=r0,r3=r1
-	and r1, r2, #7
-	str r0, [r3, r1, lsl #2]
+	str r0, [r7, r4, lsl #2]
 	add r5, #2
 	b data_abort_handler_thumb_finish
 
@@ -84,7 +82,8 @@ thumb8_address_calc:
 	ands r4, r0, #(3 << 10)
 	beq thumb8_address_calc_write
 thumb8_address_calc_read:
-	push {r0, r1}
+	and r8, r0, #7
+	mov r7, r1
 	mov r1, #2
 	cmp r4, #(1 << 10)
 	moveq r1, #1
@@ -98,9 +97,7 @@ thumb8_address_calc_read:
 	mov r0, r0, asr #16
 	moveq r0, r0, asr #8
 thumb8_address_calc_read_cont:
-	pop {r2, r3}//r2=r0,r3=r1
-	and r1, r2, #7
-	str r0, [r3, r1, lsl #2]
+	str r0, [r7, r8, lsl #2]
 	add r5, #2
 	b data_abort_handler_thumb_finish
 
@@ -122,8 +119,7 @@ thumb9_address_calc:
 	tst r0, #(1 << 12)
 	addeq r9, lr, r10, lsr #4
 	addne r9, lr, r10, lsr #6
-	and r2, r9, #0x0F000000
-	add pc, r2, lsr #22
+	add pc, r9, lsr #22
 
 	nop
 	b address_calc_ignore_thumb	//bios: ignore
@@ -144,7 +140,7 @@ thumb9_address_calc:
 	b address_calc_ignore_thumb	//nothing: shouldn't happen
 
 thumb9_10_address_calc_fix_cartridge:
-	bic lr, lr, #0x07000000
+	bic lr, lr, #0x06000000
 	sub lr, lr, #0x05000000
 	sub lr, lr, #0x00FC0000
 	str lr, [r1, r8, lsr #1]
@@ -159,15 +155,14 @@ thumb9_10_address_calc_fix_sram:
 thumb9_address_calc_cont:
 	tst r0, #(1 << 11)
 	beq thumb9_address_calc_write
-	push {r0, r1}
+	and r4, r0, #7
+	mov r7, r1
 	tst r0, #(1 << 12)
 	mov r1, #4
 	movne r1, #1
 	mov r0, r9
 	bl read_address_from_handler
-	pop {r2, r3}//r2=r0,r3=r1
-	and r1, r2, #7
-	str r0, [r3, r1, lsl #2]
+	str r0, [r7, r4, lsl #2]
 	add r5, #2
 	b data_abort_handler_thumb_finish
 
@@ -189,8 +184,7 @@ thumb10_address_calc:
 	ldr lr, [r1, r8, lsr #1]
 	and r10, r0, #(31 << 6)
 	add r9, lr, r10, lsr #5
-	and r2, r9, #0x0F000000
-	add pc, r2, lsr #22
+	add pc, r9, lsr #22
 
 	nop
 	b address_calc_ignore_thumb	//bios: ignore
@@ -214,13 +208,12 @@ thumb10_address_calc_cont:
 	tst r0, #(1 << 11)
 	beq thumb10_address_calc_write
 thumb10_address_calc_read:
-	push {r0, r1}
+	and r4, r0, #7
+	mov r7, r1
 	mov r1, #2
 	mov r0, r9
 	bl read_address_from_handler
-	pop {r2, r3}//r2=r0,r3=r1
-	and r1, r2, #7
-	str r0, [r3, r1, lsl #2]
+	str r0, [r7, r4, lsl #2]
 	add r5, #2
 	b data_abort_handler_thumb_finish
 
@@ -238,8 +231,7 @@ thumb10_address_calc_write:
 thumb15_address_calc:
 	and r8, r0, #(7 << 8)
 	ldr r9, [r1, r8, lsr #6]
-	and r2, r9, #0x0F000000
-	add pc, r2, lsr #22
+	add pc, r9, lsr #22
 
 	nop
 	b address_calc_ignore_thumb	//bios: ignore
@@ -260,7 +252,7 @@ thumb15_address_calc:
 	b address_calc_ignore_thumb	//nothing: shouldn't happen
 
 thumb15_address_calc_fix_cartridge:
-	bic r9, r9, #0x07000000
+	bic r9, r9, #0x06000000
 	sub r9, r9, #0x05000000
 	sub r9, r9, #0x00FC0000
 	str r9, [r1, r8, lsr #6]
