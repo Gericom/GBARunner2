@@ -146,6 +146,7 @@ gba_setup_fill_sub_loop:
 	ldr r0,= 0x4000204
 	ldrh r1, [r0]
 	orr r1, #0x80
+	bic r1, #0x8000	//set memory priority to arm9
 	strh r1, [r0]
 
 	//put the dtcm at 10000000 for the abort mode stack
@@ -189,22 +190,47 @@ gba_setup_copyloop_rom2:
 	ldr r0,= 0x4000247
 	mov r1, #0
 	strb r1, [r0]
-	//Move bg vram into place
-	ldr r0,= 0x04000244
-	mov r1, #0x81
-	strb r1, [r0]
 
-	ldr r0,= 0x04000245
-	mov r1, #0x91
-	strb r1, [r0]
-
-	ldr r0,= 0x04000246
-	mov r1, #0x99
-	strb r1, [r0]
+	//move vram into place
+	//The gba had 3 ram banks:
+	//A - 64kb - always mapped to bg (0x06000000)	-> same on nds as block E
+	//B - 16kb - either mapped to bg or obj (bg in modes 3,4,5) (0x06010000) -> same only for bg as block F
+	//C - 16kb - always mapped to obj (0x06014000)	-> different on nds as block G
 
 	ldr r0,= 0x04000240
-	mov r1, #0x82
-	strb r1, [r0]
+	mov r1, #0
+	strb r1, [r0, #0] //disable bank a
+	strb r1, [r0, #1] //disable bank b
+	//used for debugging on the sub screen, so don't disable it
+	//strb r1, [r0, #2] //disable bank c
+	strb r1, [r0, #3] //disable bank d
+
+	mov r1, #0x81
+	strb r1, [r0, #4]	//bank E to bg at 0x06000000
+
+	mov r1, #0x82	
+	strb r1, [r0, #5]	//bank F to obj at 0x06400000	(would be 0x89 for mapping to bg at 0x06010000)
+
+	mov r1, #0x8A
+	strb r1, [r0, #6]	//bank G to obj at 0x06404000
+
+
+	//Move bg vram into place
+	//ldr r0,= 0x04000244
+	//mov r1, #0x81
+	//strb r1, [r0]
+
+	//ldr r0,= 0x04000245
+	//mov r1, #0x91
+	//strb r1, [r0]
+
+	//ldr r0,= 0x04000246
+	//mov r1, #0x99
+	//strb r1, [r0]
+
+	//ldr r0,= 0x04000240
+	//mov r1, #0x82
+	//strb r1, [r0]
 
 	//map vram h to lcdc for use with eeprom shit
 	ldr r0,= 0x04000248
@@ -212,12 +238,17 @@ gba_setup_copyloop_rom2:
 	strb r1, [r0]
 
 	mov r0, #0 //#0xFFFFFFFF
-	ldr r1,= (0x02400000 - 1536 - (32 * 1024))//0x06898000
+	ldr r1,= (0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
 	mov r2, #(32 * 1024)
 gba_setup_fill_H_loop:
 	str r0, [r1], #4
 	subs r2, #4
 	bne gba_setup_fill_H_loop
+
+	//enable the arm7-arm9 fifo
+	ldr r0,= 0x04000184
+	mov r1, #0x8000
+	str r1, [r0]
 
 	ldr r0,= 0x74
 	mov r1, #0

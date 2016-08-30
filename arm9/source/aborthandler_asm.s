@@ -11,8 +11,6 @@
 //	and lr, lr, #(7 << 25)
 //	add pc, lr, lsr #23
 
-	//since pc points to pc+8, use 2 nops padding
-//	nop
 //	nop
 //	b data_abort_handler_new_arm_half_load_store
 //	b data_abort_handler_new_arm_unk
@@ -77,41 +75,43 @@
 
 reg_table = 0x10000000
 
-//when r15 is used, problems will arise, as it's currently not supported
+//when r15 is used as destination, problems will arise, as it's currently not supported
 
 .global data_abort_handler
 data_abort_handler:
-	push {lr}
-	mrs lr, spsr
-	tst lr, #0x20 //thumb bit
+	mrs sp, spsr
+	tst sp, #0x20 //thumb bit
 	bne data_abort_handler_thumb
 data_abort_handler_arm:
-	ldr lr,= reg_table
-	stmia lr!, {r0-r12}	//non-banked registers
-	mov r12, lr
-	mrs lr, spsr
-	ands lr, lr, #0xF
-	cmpne lr, #0xF
+	ldr sp,= reg_table
+	stmia sp!, {r0-r12}	//non-banked registers
+	mov r12, sp
+	mrs sp, spsr
+	ands sp, sp, #0xF
+	cmpne sp, #0xF
 	stmeqia r12, {sp,lr}^	//read user bank registers
 	beq data_abort_handler_cont
-	orr lr, lr, #0x90
-	msr cpsr_c, lr
+	orr sp, sp, #0x90
+	msr cpsr_c, sp
 	stmia r12, {sp,lr}
 	msr cpsr_c, #0x97
 
 data_abort_handler_cont:
-	pop {r5}	//lr
-	ldr r1,= reg_table
-	str r5, [r1, #(4 * 15)]
+	//pop {r5}	//lr
+	mov r5, lr
+	msr cpsr_c, #0x91
+	ldr r11,= reg_table
+	add r6, r5, #4	//pc+12
+	str r6, [r11, #(4 * 15)]
 
 	mrc p15, 0, r6, c1, c0, 0
 	bic r2, r6, #(1 | (1 << 2))	//disable pu and data cache
 	bic r2, #(1 << 12) //and cache
 	mcr p15, 0, r2, c1, c0, 0
 
-	ldr r0, [r5, #-8]
-	and r0, r0, #0x0FFFFFFF
-	add pc, r0, lsr #23
+	ldr r10, [r5, #-8]
+	and r10, r10, #0x0FFFFFFF
+	add pc, r10, lsr #23
 
 	nop
 	b ldrh_strh_address_calc
@@ -125,27 +125,29 @@ data_abort_handler_cont:
 
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:
+	msr cpsr_c, #0x97
 	mcr p15, 0, r6, c1, c0, 0
 
-	push {r5}	//lr
+	mov lr, r5
+	//push {r5}	//lr
+	mrs sp, spsr
 	ldr r12,= (reg_table + (4 * 13))
-	mrs lr, spsr
-	ands lr, lr, #0xF
-	cmpne lr, #0xF
+	ands sp, sp, #0xF
+	cmpne sp, #0xF
 	ldmeqia r12, {sp,lr}^	//write user bank registers
 	beq data_abort_handler_cont2
-	orr lr, lr, #0x90
-	msr cpsr_c, lr
+	orr sp, sp, #0x90
+	msr cpsr_c, sp
 	ldmia r12, {sp,lr}
 	msr cpsr_c, #0x97
 	
 data_abort_handler_cont2:
-	ldr lr,= reg_table
-	ldmia lr, {r0-r12}	//non-banked registers
+	ldr sp,= reg_table
+	ldmia sp, {r0-r12}	//non-banked registers
 	//ldr lr, [lr, #(4 * 15)]
 	//cmp lr, #0
 	//bne data_abort_handler_r15_dst
-	pop {lr}
+	//pop {lr}
 
 	subs pc, lr, #8
 
@@ -156,22 +158,21 @@ data_abort_handler_cont2:
 //	b .
 
 data_abort_handler_thumb:
-	ldr lr,= reg_table
-	stmia lr, {r0-r7}	//non-banked registers
-	pop {r5}	//lr
+	ldr sp,= reg_table
+	stmia sp!, {r0-r7}	//non-banked registers
+	str lr, [sp]
 
-	ldr r1,= reg_table
-
-	mrc p15, 0, r6, c1, c0, 0
-	bic r2, r6, #(1 | (1 << 2))	//disable pu and data cache
-	bic r2, #(1 << 12) //and cache
-	mcr p15, 0, r2, c1, c0, 0
+	mrc p15, 0, sp, c1, c0, 0
+	bic sp, #(1 | (1 << 2))	//disable pu and data cache
+	bic sp, #(1 << 12) //and cache
+	mcr p15, 0, sp, c1, c0, 0
 	
-	ldrh r0, [r5, #-8]
-	mov r7, sp
 	msr cpsr_c, #0x91
-	mov sp, r7
-	add pc, r0, lsr #11 //r2, lsl #2
+	ldr r11,= reg_table
+	ldr r10, [r11, #(8 << 2)]
+	ldrh r10, [r10, #-8]
+	
+	add pc, r10, lsr #11 //r2, lsl #2
 
 	nop
 
@@ -186,13 +187,12 @@ data_abort_handler_thumb:
 
 .global data_abort_handler_thumb_finish
 data_abort_handler_thumb_finish:
-	msr cpsr_c, #0x97
-	mcr p15, 0, r6, c1, c0, 0
+	orr sp, #(1 | (1 << 2))	//enable pu and data cache
+	orr sp, #(1 << 12) //and cache
+	mcr p15, 0, sp, c1, c0, 0
 
-	mov lr, r5
-
-	ldr r5,= reg_table
-	ldmia r5, {r0-r7}	//non-banked registers
+	ldr sp,= reg_table
+	ldmia sp, {r0-r7}	//non-banked registers
 
 	subs pc, lr, #8
 
