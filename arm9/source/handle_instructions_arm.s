@@ -37,6 +37,9 @@ ldrh_strh_address_calc:
 	b address_calc_ignore_arm	//nothing: shouldn't happen
 
 ldrh_strh_address_calc_fix_cartridge:
+	ldr r4,= 0x083B0000
+	cmp r9, r4
+	bge ldrh_strh_address_calc_cont
 	mov r8, r8, lsr #16
 	cmp lr, #0x08000000
 	bge ldrh_strh_address_calc_fix_cartridge_cont
@@ -162,6 +165,9 @@ ldr_str_address_calc_cont:
 	b address_calc_ignore_arm	//nothing: shouldn't happen
 
 ldr_str_address_calc_fix_cartridge:
+	ldr r4,= 0x083B0000
+	cmp r9, r4
+	bge ldr_str_address_calc_cont2
 	mov r8, r8, lsr #16
 	cmp lr, #0x08000000
 	bge ldr_str_address_calc_fix_cartridge_cont
@@ -274,6 +280,9 @@ ldm_stm_address_calc:
 	b address_calc_ignore_arm	//nothing: shouldn't happen
 	
 ldm_stm_address_calc_fix_cartridge:
+	ldr r4,= 0x083B0000
+	cmp r9, r4
+	bge ldm_stm_address_calc_cont2
 	bic lr, lr, #0x06000000
 	sub lr, lr, #0x05000000
 	sub lr, lr, #0x00FC0000

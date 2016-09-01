@@ -46,9 +46,103 @@ ldrh r13, [r13, r12]
 	orr pc, r13, #0x01000000	//itcm
 
 read_address_from_handler_sprites:
+	cmp r10, #0x08000000
+	bge read_address_from_handler_rom
+	add r10, #0x3F0000
+	cmp r11, #1
+	ldreqb r10, [r10]
+	cmp r11, #2
+	ldreqh r10, [r10]
+	cmp r11, #4
+	ldreq r10, [r10]
+	bx lr
+
+read_address_from_handler_rom:
 	cmp r10, #0x0D000000
 	bge read_address_from_handler_eeprom
-	add r10, #0x3F0000
+
+	ldr r12,= nibble_to_char
+	mov r13, r10
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12]
+	
+	ldr r12,= nibble_to_char
+	mov r13, r10, lsl #4
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12, #2]
+
+	ldr r12,= nibble_to_char
+	mov r13, r10, lsl #8
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12, #4]
+
+	ldr r12,= nibble_to_char
+	mov r13, r10, lsl #12
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12, #6]
+
+	ldr r12,= nibble_to_char
+	mov r13, r10, lsl #16
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12, #8]
+
+	ldr r12,= nibble_to_char
+	mov r13, r10, lsl #20
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12, #10]
+
+	ldr r12,= nibble_to_char
+	mov r13, r10, lsl #24
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12, #12]
+
+	ldr r12,= nibble_to_char
+	mov r13, r10, lsl #28
+	ldrb r13, [r12, r13, lsr #28]
+	ldr r12,= (0x06202000 + 32 * 11)
+	strh r13, [r12, #14]
+
+	bic r10, r10, #0x0E000000
+	//ensure block d is mapped to the arm7
+	ldr r12,= 0x4000243
+	mov r13, #0x8A
+	strb r13, [r12]
+	//send read command
+	ldr r12,= 0x04000188
+	ldr r13,= 0xAA5500C8
+	str r13, [r12]
+	str r10, [r12]	//address
+	str r11, [r12]	//size
+
+	//wait for the arm7 sync command
+	ldr r13,= 0x55AAC8AC
+	ldr r12,= 0x04000184
+read_address_from_handler_rom_fifo_loop:
+	ldr r10, [r12]
+	tst r10, #(1 << 8)
+	bne read_address_from_handler_rom_fifo_loop
+	ldr r10,= 0x04100000
+	ldr r10, [r10]	//read word from fifo
+	cmp r10, r13
+	bne read_address_from_handler_rom_fifo_loop
+
+	ldr r12,= 0x06202000
+	ldr r13,= 0x54534554
+	str r13, [r12]
+
+	//block d to arm9 lcdc
+	ldr r12,= 0x4000243
+	mov r13, #0x80
+	strb r13, [r12]
+
+	ldr r10,= 0x06868000
 	cmp r11, #1
 	ldreqb r10, [r10]
 	cmp r11, #2

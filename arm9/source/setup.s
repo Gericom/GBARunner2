@@ -1,11 +1,29 @@
 .global gba_setup
 gba_setup:
 	push {r4-r11,r14}
+
 	//Make sure interupts are disabled!
 	ldr r0,= 0x4000210
 	mov r1, #0
 	str r1, [r0]
 	bl gba_setup_itcm
+
+	//map the gba cartridge to the arm7 and nds card too
+	ldr r0,= 0x4000204
+	ldrh r1, [r0]
+	orr r1, #0x80
+	orr r1, #0x800
+	bic r1, #0x8000	//set memory priority to arm9
+	strh r1, [r0]
+
+	//map vram block c to 0x06000000 on the arm7
+	ldr r0,= 0x4000242
+	mov r1, #0x82
+	strb r1, [r0]
+	//map vram block d to 0x06020000 on the arm7
+	ldr r0,= 0x4000243
+	mov r1, #0x8A
+	strb r1, [r0]
 
 	//setup protection regions
 	//region 0	bg region		0x00000000-0xFFFFFFFF	2 << 31		r/w/x
@@ -82,7 +100,6 @@ gba_setup:
 	mov r0, #0
 	mcr p15, 0, r0, c3, c0, 0
 
-
 	//Copy GBA Bios in place
 	ldr r0,= bios_bin
 	mov r1, #0x4000
@@ -94,9 +111,9 @@ gba_setup_copyloop:
 	bne gba_setup_copyloop
 
 	//Setup debugging on the bottom screen
-	//Set vram block C for sub bg
-	ldr r0,= 0x04000242
-	mov r1, #0x84
+	//Set vram block H for sub bg
+	ldr r0,= 0x04000248
+	mov r1, #0x81
 	strb r1, [r0]
 	//decompress debugFont to 0x06200000
 	ldr r0,= debugFont
@@ -142,13 +159,6 @@ gba_setup_fill_sub_loop:
 	ldr r1,= 0x0000
 	strh r1, [r0]
 
-	//map the gba cartridge to the arm7
-	ldr r0,= 0x4000204
-	ldrh r1, [r0]
-	orr r1, #0x80
-	bic r1, #0x8000	//set memory priority to arm9
-	strh r1, [r0]
-
 	//put the dtcm at 10000000 for the abort mode stack
 	ldr r0,= 0x1000000A
 	mcr p15, 0, r0, c9, c1, 0
@@ -160,6 +170,42 @@ gba_setup_fill_sub_loop:
 	bl address_read_table_16bit_dtcm_setup
 	bl address_read_table_8bit_dtcm_setup
 	
+	//wait for the arm7 to copy the dldi data
+	//enable the arm7-arm9 fifo
+	ldr r0,= 0x04000184
+	mov r1, #0x8000
+	str r1, [r0]
+
+	//send setup command to arm7
+	ldr r2,= _dldi_start
+	ldr r0,= 0x04000188
+	ldr r1,= 0xAA5555AA
+	str r1, [r0]
+	str r2, [r0]
+
+	//wait for the arm7 sync command
+	ldr r3,= 0x55AAAA55
+	ldr r2,= 0x06202000
+	ldr r4,= 0x04000184
+fifo_loop_1:
+	ldr r1, [r4]
+	tst r1, #(1 << 8)
+	bne fifo_loop_1
+	ldr r0,= 0x04100000
+	ldr r1, [r0]	//read word from fifo
+	cmp r1, r3
+	strne r1, [r2]
+	bne fifo_loop_1
+
+	ldr r0,= _dldi_start + 16
+	ldr r1,= 0x06202000
+	mov r2, #48
+dldi_name_copy:
+	ldr r3, [r0], #4
+	str r3, [r1], #4
+	subs r2, #4
+	bne dldi_name_copy
+
 	//in order for this to work, we need to find a way to boot up in retail mode 
 	//(so that your flashcard emulates a real ds card and we can use card commands, which is 
 	//much faster as direct sd access, because we don't need to deal with the fat filesystem)
@@ -168,18 +214,18 @@ gba_setup_fill_sub_loop:
 	//bl card_interface_init
 
 	//copy simple gba rom to 02040000
-	ldr r0,= rom_bin //simpleRom
-	ldr r1,= rom_bin_size //simpleRomSize
-	ldr r1, [r1]
-	mov r2, #0x02040000
+//	ldr r0,= rom_bin //simpleRom
+//	ldr r1,= rom_bin_size //simpleRomSize
+//	ldr r1, [r1]
+//	mov r2, #0x02040000
 	//Copy in reverse to prevent overwriting itself
-	add r0, r1
-	add r2, r1
-gba_setup_copyloop_rom2:
-	ldmdb r0!, {r3-r10}
-	stmdb r2!, {r3-r10}
-	subs r1, #0x20
-	bgt gba_setup_copyloop_rom2
+//	add r0, r1
+//	add r2, r1
+//gba_setup_copyloop_rom2:
+//	ldmdb r0!, {r3-r10}
+//	stmdb r2!, {r3-r10}
+//	subs r1, #0x20
+//	bgt gba_setup_copyloop_rom2
 
 	//Make bios jump to 02040000
 	ldr r0,= 0xE3A0E781
@@ -201,9 +247,11 @@ gba_setup_copyloop_rom2:
 	mov r1, #0
 	strb r1, [r0, #0] //disable bank a
 	strb r1, [r0, #1] //disable bank b
-	//used for debugging on the sub screen, so don't disable it
+	////used for debugging on the sub screen, so don't disable it
+	//mapped to the arm7, so don't disable it
 	//strb r1, [r0, #2] //disable bank c
-	strb r1, [r0, #3] //disable bank d
+	//mapped to the arm7, so don't disable it
+	//strb r1, [r0, #3] //disable bank d
 
 	mov r1, #0x81
 	strb r1, [r0, #4]	//bank E to bg at 0x06000000
@@ -233,9 +281,9 @@ gba_setup_copyloop_rom2:
 	//strb r1, [r0]
 
 	//map vram h to lcdc for use with eeprom shit
-	ldr r0,= 0x04000248
-	mov r1, #0x80
-	strb r1, [r0]
+	//ldr r0,= 0x04000248
+	//mov r1, #0x80
+	//strb r1, [r0]
 
 	mov r0, #0 //#0xFFFFFFFF
 	ldr r1,= (0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
@@ -244,11 +292,6 @@ gba_setup_fill_H_loop:
 	str r0, [r1], #4
 	subs r2, #4
 	bne gba_setup_fill_H_loop
-
-	//enable the arm7-arm9 fifo
-	ldr r0,= 0x04000184
-	mov r1, #0x8000
-	str r1, [r0]
 
 	ldr r0,= 0x74
 	mov r1, #0

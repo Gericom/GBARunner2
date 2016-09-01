@@ -42,6 +42,9 @@ thumb7_8_address_calc:
 	b address_calc_ignore_thumb	//nothing: shouldn't happen
 
 thumb7_8_address_calc_fix_cartridge:
+	ldr r4,= 0x083B0000
+	cmp r9, r4
+	bge thumb7_8_address_calc_cont
 	cmp lr, #0x08000000
 	movlt r8, r12, lsr #3
 	movlt lr, r13
@@ -148,16 +151,19 @@ thumb9_address_calc:
 	b address_calc_ignore_thumb	//pal: can't happen
 	b thumb9_address_calc_cont	//sprites vram, manual execution
 	b address_calc_ignore_thumb	//oam: can't happen
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
-	b thumb9_10_address_calc_fix_cartridge	//card: fix	
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
+	b thumb9_address_calc_fix_cartridge	//card: fix
+	b thumb9_address_calc_fix_cartridge	//card: fix	
+	b thumb9_address_calc_fix_cartridge	//card: fix
+	b thumb9_address_calc_fix_cartridge	//card: fix
+	b thumb9_address_calc_fix_cartridge	//card: fix
 	b thumb9_address_calc_cont	//eeprom, manual execution
-	b thumb9_10_address_calc_fix_sram	//sram: fix
+	b thumb9_address_calc_fix_sram	//sram: fix
 	b address_calc_ignore_thumb	//nothing: shouldn't happen
 
-thumb9_10_address_calc_fix_cartridge:
+thumb9_address_calc_fix_cartridge:
+	ldr r4,= 0x083B0000
+	cmp r9, r4
+	bge thumb9_address_calc_cont
 	bic lr, lr, #0x06000000
 	sub lr, lr, #0x05000000
 	sub lr, lr, #0x00FC0000
@@ -165,7 +171,7 @@ thumb9_10_address_calc_fix_cartridge:
 	msr cpsr_c, #0x97
 	b data_abort_handler_thumb_finish
 
-thumb9_10_address_calc_fix_sram:
+thumb9_address_calc_fix_sram:
 	sub lr, lr, #0x0B800000
 	sub lr, lr, #0x00008C00
 	sub lr, lr, #0x00000060
@@ -218,14 +224,33 @@ thumb10_address_calc:
 	b address_calc_ignore_thumb	//pal: can't happen
 	b thumb10_address_calc_cont	//sprites vram, manual execution
 	b address_calc_ignore_thumb	//oam: can't happen
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
-	b thumb9_10_address_calc_fix_cartridge	//card: fix	
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
-	b thumb9_10_address_calc_fix_cartridge	//card: fix
+	b thumb10_address_calc_fix_cartridge	//card: fix
+	b thumb10_address_calc_fix_cartridge	//card: fix	
+	b thumb10_address_calc_fix_cartridge	//card: fix
+	b thumb10_address_calc_fix_cartridge	//card: fix
+	b thumb10_address_calc_fix_cartridge	//card: fix
 	b thumb10_address_calc_cont	//eeprom, manual execution
-	b thumb9_10_address_calc_fix_sram	//sram: fix
+	b thumb10_address_calc_fix_sram	//sram: fix
 	b address_calc_ignore_thumb	//nothing: shouldn't happen
+
+thumb10_address_calc_fix_cartridge:
+	ldr r4,= 0x083B0000
+	cmp r9, r4
+	bge thumb10_address_calc_cont
+	bic lr, lr, #0x06000000
+	sub lr, lr, #0x05000000
+	sub lr, lr, #0x00FC0000
+	str lr, [r11, r8, lsr #1]
+	msr cpsr_c, #0x97
+	b data_abort_handler_thumb_finish
+
+thumb10_address_calc_fix_sram:
+	sub lr, lr, #0x0B800000
+	sub lr, lr, #0x00008C00
+	sub lr, lr, #0x00000060
+	str lr, [r11, r8, lsr #1]
+	msr cpsr_c, #0x97
+	b data_abort_handler_thumb_finish
 
 thumb10_address_calc_cont:
 	tst r10, #(1 << 11)
@@ -277,6 +302,9 @@ thumb15_address_calc:
 	b address_calc_ignore_thumb	//nothing: shouldn't happen
 
 thumb15_address_calc_fix_cartridge:
+	ldr r4,= 0x083B0000
+	cmp r9, r4
+	bge thumb15_address_calc_cont
 	bic r9, r9, #0x06000000
 	sub r9, r9, #0x05000000
 	sub r9, r9, #0x00FC0000
