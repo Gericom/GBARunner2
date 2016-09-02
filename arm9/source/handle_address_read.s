@@ -42,7 +42,7 @@ read_address_from_handler_2:
 read_address_from_handler_4:
 	mov r12, r12, lsr #1
 	ldr r13,= address_read_table_32bit_dtcm
-ldrh r13, [r13, r12]
+	ldrh r13, [r13, r12]
 	orr pc, r13, #0x01000000	//itcm
 
 read_address_from_handler_sprites:
@@ -60,6 +60,13 @@ read_address_from_handler_sprites:
 read_address_from_handler_rom:
 	cmp r10, #0x0D000000
 	bge read_address_from_handler_eeprom
+	//bic r12, r10, #0x06000000
+	//ldr r13,= 0x083B0000
+	//cmp r12, r13
+	//sublt r10, r12, #0x05000000
+	//sublt r10, r10, #0x00FC0000
+	//blt read_address_from_handler_rom_cont
+	
 
 	ldr r12,= nibble_to_char
 	mov r13, r10
@@ -143,6 +150,7 @@ read_address_from_handler_rom_fifo_loop:
 	strb r13, [r12]
 
 	ldr r10,= 0x06868000
+//read_address_from_handler_rom_cont:
 	cmp r11, #1
 	ldreqb r10, [r10]
 	cmp r11, #2

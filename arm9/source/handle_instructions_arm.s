@@ -131,11 +131,12 @@ ldr_str_address_calc:
 	and r1, r10, #0xFE0
 	orr r1, r1, #0xA000
 	orr r1, r1, #0x000A
-	strh r1, [pc]
+	strh r1, ldr_str_address_calc_shift_instruction
 	//keep in mind that there should be enough instructions here for the pipeline not to read the instruction too early
 	//fix c-flag
 	mrs r12, spsr
 	msr cpsr_f, r12
+ldr_str_address_calc_shift_instruction:
 	.word 0xE1A00000
 
 ldr_str_address_calc_cont:
