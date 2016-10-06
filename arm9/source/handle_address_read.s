@@ -68,53 +68,53 @@ read_address_from_handler_rom:
 	//blt read_address_from_handler_rom_cont
 	
 
-	ldr r12,= nibble_to_char
-	mov r13, r10
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12]
 	
-	ldr r12,= nibble_to_char
-	mov r13, r10, lsl #4
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12, #2]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10, lsl #4
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12, #2]
 
-	ldr r12,= nibble_to_char
-	mov r13, r10, lsl #8
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12, #4]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10, lsl #8
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12, #4]
 
-	ldr r12,= nibble_to_char
-	mov r13, r10, lsl #12
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12, #6]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10, lsl #12
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12, #6]
 
-	ldr r12,= nibble_to_char
-	mov r13, r10, lsl #16
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12, #8]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10, lsl #16
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12, #8]
 
-	ldr r12,= nibble_to_char
-	mov r13, r10, lsl #20
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12, #10]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10, lsl #20
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12, #10]
 
-	ldr r12,= nibble_to_char
-	mov r13, r10, lsl #24
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12, #12]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10, lsl #24
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12, #12]
 
-	ldr r12,= nibble_to_char
-	mov r13, r10, lsl #28
-	ldrb r13, [r12, r13, lsr #28]
-	ldr r12,= (0x06202000 + 32 * 11)
-	strh r13, [r12, #14]
+	//ldr r12,= nibble_to_char
+	//mov r13, r10, lsl #28
+	//ldrb r13, [r12, r13, lsr #28]
+	//ldr r12,= (0x06202000 + 32 * 11)
+	//strh r13, [r12, #14]
 
 	bic r10, r10, #0x0E000000
 	//ensure block d is mapped to the arm7
@@ -162,6 +162,15 @@ read_address_from_handler_rom_fifo_loop:
 read_address_from_handler_eeprom:
 	mov r10, #1
 	bx lr
+
+//read_address_from_handler_highio:
+//	ldr r12,= 0x02040000
+//	sub r12, r10, r12
+//	cmp r12, #0x3B0000
+//	addge r10, r12, #0x08000000
+//	bge read_address_from_handler_rom
+//	mov r10, #0
+//	bx lr
 
 .global address_read_table_32bit_dtcm_setup
 address_read_table_32bit_dtcm_setup:
@@ -235,6 +244,13 @@ read_address_dispcontrol_bottom8:
 read_address_dispcontrol_top8:
 	ldr r10,= (DISPCNT_copy + 1)
 	ldrb r10, [r10]
+	bx lr
+
+.global read_address_vcount
+read_address_vcount:
+	ldrh r10, [r10]
+	cmp r10, #227
+	movgt r10, #227
 	bx lr
 
 .global read_address_timer_counter

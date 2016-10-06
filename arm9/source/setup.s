@@ -37,41 +37,35 @@ gba_setup:
 	//region 5 real card region for i-cache	0x02000000-0x023FFFFF	r/w/x
 	//-region 6 exclusion region for i-cache	0x02000000-0x0203FFFF	r/w/x
 
-	
+	//region 0	bg region		0x00000000-0xFFFFFFFF	2 << 31		r/w/x
 	ldr r0,= (1 | (31 << 1) | 0)
 	mcr p15, 0, r0, c6, c0, 0
 
+	//region 1	io region		0x04000000-0x04FFFFFF	2 << 23		-/-/-
 	ldr r0,= (1 | (23 << 1) | 0x04000000)
 	mcr p15, 0, r0, c6, c1, 0
 
+	//region 2 card				0x08000000-0x0FFFFFFF	2 << 26		-/-/-
 	ldr r0,= (1 | (26 << 1) | 0x08000000)
 	mcr p15, 0, r0, c6, c2, 0
 
-	//ldr r0,= (1 | (25 << 1) | 0x08000000)
-	//mcr p15, 0, r0, c6, c2, 0
-
-	//ldr r0,= (1 | (24 << 1) | 0x0C000000)
-	//mcr p15, 0, r0, c6, c3, 0
-	
-	//ldr r0,= (1 | (15 << 1) | 0x0E000000)
-	//mcr p15, 0, r0, c6, c4, 0
-
+	//region 3	oam vram region	0x06010000-0x06017FFF	2 << 14		-/-/-
 	ldr r0,= (1 | (14 << 1) | 0x06010000)
 	mcr p15, 0, r0, c6, c3, 0
 
-	//ldr r0,= (1 | (15 << 1) | 0x063F0000)
-	//mcr p15, 0, r0, c6, c4, 0
-
 	//bios protection
-	ldr r0,= (1 | (13 << 1) | 0x00000000)
+	//ldr r0,= (1 | (13 << 1) | 0x00000000)
+	ldr r0,= (1 | (23 << 1) | 0x00000000)
 	mcr p15, 0, r0, c6, c4, 0
 
+	//main memory
 	ldr r0,= (1 | (21 << 1) | 0x02000000)
 	mcr p15, 0, r0, c6, c5, 0
 
 	ldr r0,= (1 | (14 << 1) | 0x03000000)
 	mcr p15, 0, r0, c6, c6, 0
 
+	//ewram
 	ldr r0,= (1 | (17 << 1) | 0x02000000)
 	mcr p15, 0, r0, c6, c7, 0
 
@@ -300,6 +294,20 @@ gba_setup_fill_H_loop:
 	ldr r1,= 0x4770
 	strh r1, [r0]//fix sound bias hang
 
+	//Patch the CpuSet and CpuFastSet bios functions for faster sd access (aka larger blocks instead of 4 bytes each time)
+	//CpuFastSet
+	//ROM:00000BD4                 BEQ     loc_C24
+	//replace with jump to address check code
+
+	ldr r0,= bios_cpufastset_sd_patch
+	ldr r1,= 0xBD4
+	sub r0, r1	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	ldr r0,= 0xBD4
+	str r1, [r0]
+
 	//We need to get into privileged mode, misuse the undefined mode for it
 	ldr r0,= gba_start_bkpt
 	sub r0, #0xC	//relative to source address
@@ -395,6 +403,7 @@ gba_start_bkpt:
 	orr r0, #(1<<15)
 	orr r0, #(1 | (1 << 2))	//enable pu and data cache
 	orr r0, #(1 << 12) //and cache
+	orr r0, #(1 << 14) //round robin cache replacement improves worst case performance
 	mcr p15, 0, r0, c1, c0, 0
 
 	//invalidate instruction cache
@@ -422,8 +431,8 @@ instruction_abort_handler:
 	bge instruction_abort_handler_error
 instruction_abort_handler_cont:
 	bic lr, #0x06000000
-	sub lr, #0x5000000
-	sub lr, #0x0FC0000
+	sub lr, #0x05000000
+	sub lr, #0x00FC0000
 	subs pc, lr, #4
 
 instruction_abort_handler_error:

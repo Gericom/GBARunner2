@@ -16,25 +16,25 @@ ldrh_strh_address_calc:
 	tst r10, #(1 << 24)
 	addne r9, lr, r0
 	moveq r9, lr
-	add pc, r9, lsr #22
+	ldr pc, [pc, r9, lsr #22]
 
 	nop
-	b address_calc_ignore_arm	//bios: ignore
-	b address_calc_ignore_arm	//itcm: ignore
-	b address_calc_ignore_arm	//main: ignore
-	b address_calc_ignore_arm	//wram: can't happen
-	b ldrh_strh_address_calc_cont	//io, manual execution
-	b address_calc_ignore_arm	//pal: can't happen
-	b ldrh_strh_address_calc_cont	//sprites vram, manual execution
-	b address_calc_ignore_arm	//oam: can't happen
-	b ldrh_strh_address_calc_fix_cartridge	//card: fix
-	b ldrh_strh_address_calc_fix_cartridge	//card: fix	
-	b ldrh_strh_address_calc_fix_cartridge	//card: fix
-	b ldrh_strh_address_calc_fix_cartridge	//card: fix
-	b ldrh_strh_address_calc_fix_cartridge	//card: fix
-	b ldrh_strh_address_calc_cont	//eeprom, manual execution
-	b ldrh_strh_address_calc_fix_sram	//sram: fix
-	b address_calc_ignore_arm	//nothing: shouldn't happen
+	.word address_calc_ignore_arm	//bios: ignore
+	.word address_calc_ignore_arm	//itcm: ignore
+	.word address_calc_ignore_arm	//main: ignore
+	.word address_calc_ignore_arm	//wram: can't happen
+	.word ldrh_strh_address_calc_cont	//io, manual execution
+	.word address_calc_ignore_arm	//pal: can't happen
+	.word ldrh_strh_address_calc_cont	//sprites vram, manual execution
+	.word address_calc_ignore_arm	//oam: can't happen
+	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
+	.word ldrh_strh_address_calc_fix_cartridge	//card: fix	
+	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
+	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
+	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
+	.word ldrh_strh_address_calc_cont	//eeprom, manual execution
+	.word ldrh_strh_address_calc_fix_sram	//sram: fix
+	.word address_calc_ignore_arm	//nothing: shouldn't happen
 
 ldrh_strh_address_calc_fix_cartridge:
 	ldr r4,= 0x083B0000
@@ -129,13 +129,12 @@ ldr_str_address_calc:
 	ldr r0, [r11, r0, lsl #2]
 	//construct shift (mov r0, r0, xxx #y)
 	and r1, r10, #0xFE0
-	orr r1, r1, #0xA000
-	orr r1, r1, #0x000A
 	strh r1, ldr_str_address_calc_shift_instruction
 	//keep in mind that there should be enough instructions here for the pipeline not to read the instruction too early
 	//fix c-flag
 	mrs r12, spsr
 	msr cpsr_f, r12
+	//b ldr_str_address_calc_shift_instruction
 ldr_str_address_calc_shift_instruction:
 	.word 0xE1A00000
 
@@ -145,25 +144,25 @@ ldr_str_address_calc_cont:
 	tst r10, #(1 << 24)
 	addne r9, lr, r0
 	moveq r9, lr
-	add pc, r9, lsr #22
+	ldr pc, [pc, r9, lsr #22]
 
 	nop
-	b address_calc_ignore_arm	//bios: ignore
-	b address_calc_ignore_arm	//itcm: ignore
-	b address_calc_ignore_arm	//main: ignore
-	b address_calc_ignore_arm	//wram: can't happen
-	b ldr_str_address_calc_cont2	//io, manual execution
-	b address_calc_ignore_arm	//pal: can't happen
-	b ldr_str_address_calc_cont2	//sprites vram, manual execution
-	b address_calc_ignore_arm	//oam: can't happen
-	b ldr_str_address_calc_fix_cartridge	//card: fix
-	b ldr_str_address_calc_fix_cartridge	//card: fix	
-	b ldr_str_address_calc_fix_cartridge	//card: fix
-	b ldr_str_address_calc_fix_cartridge	//card: fix
-	b ldr_str_address_calc_fix_cartridge	//card: fix
-	b ldr_str_address_calc_cont2	//eeprom, manual execution
-	b ldr_str_address_calc_fix_sram	//sram: fix
-	b address_calc_ignore_arm	//nothing: shouldn't happen
+	.word address_calc_ignore_arm	//bios: ignore
+	.word address_calc_ignore_arm	//itcm: ignore
+	.word address_calc_ignore_arm	//main: ignore
+	.word address_calc_ignore_arm	//wram: can't happen
+	.word ldr_str_address_calc_cont2	//io, manual execution
+	.word address_calc_ignore_arm	//pal: can't happen
+	.word ldr_str_address_calc_cont2	//sprites vram, manual execution
+	.word address_calc_ignore_arm	//oam: can't happen
+	.word ldr_str_address_calc_fix_cartridge	//card: fix
+	.word ldr_str_address_calc_fix_cartridge	//card: fix	
+	.word ldr_str_address_calc_fix_cartridge	//card: fix
+	.word ldr_str_address_calc_fix_cartridge	//card: fix
+	.word ldr_str_address_calc_fix_cartridge	//card: fix
+	.word ldr_str_address_calc_cont2	//eeprom, manual execution
+	.word ldr_str_address_calc_fix_sram	//sram: fix
+	.word address_calc_ignore_arm	//nothing: shouldn't happen
 
 ldr_str_address_calc_fix_cartridge:
 	ldr r4,= 0x083B0000
@@ -260,25 +259,25 @@ ldm_stm_address_calc:
 	subvc r9, r9, r12, lsl #2
 	addge r9, r9, #4
 
-	add pc, r9, lsr #22
+	ldr pc, [pc, r9, lsr #22]
 
 	nop
-	b address_calc_ignore_arm	//bios: ignore
-	b address_calc_ignore_arm	//itcm: ignore
-	b address_calc_ignore_arm	//main: ignore
-	b address_calc_ignore_arm	//wram: can't happen
-	b ldm_stm_address_calc_cont2	//io, manual execution
-	b address_calc_ignore_arm	//pal: can't happen
-	b ldm_stm_address_calc_cont2	//sprites vram, manual execution
-	b address_calc_ignore_arm	//oam: can't happen
-	b ldm_stm_address_calc_fix_cartridge	//card: fix
-	b ldm_stm_address_calc_fix_cartridge	//card: fix	
-	b ldm_stm_address_calc_fix_cartridge	//card: fix
-	b ldm_stm_address_calc_fix_cartridge	//card: fix
-	b ldm_stm_address_calc_fix_cartridge	//card: fix
-	b ldm_stm_address_calc_cont2	//eeprom, manual execution
-	b ldm_stm_address_calc_fix_sram	//sram: fix
-	b address_calc_ignore_arm	//nothing: shouldn't happen
+	.word address_calc_ignore_arm	//bios: ignore
+	.word address_calc_ignore_arm	//itcm: ignore
+	.word address_calc_ignore_arm	//main: ignore
+	.word address_calc_ignore_arm	//wram: can't happen
+	.word ldm_stm_address_calc_cont2	//io, manual execution
+	.word address_calc_ignore_arm	//pal: can't happen
+	.word ldm_stm_address_calc_cont2	//sprites vram, manual execution
+	.word address_calc_ignore_arm	//oam: can't happen
+	.word ldm_stm_address_calc_fix_cartridge	//card: fix
+	.word ldm_stm_address_calc_fix_cartridge	//card: fix	
+	.word ldm_stm_address_calc_fix_cartridge	//card: fix
+	.word ldm_stm_address_calc_fix_cartridge	//card: fix
+	.word ldm_stm_address_calc_fix_cartridge	//card: fix
+	.word ldm_stm_address_calc_cont2	//eeprom, manual execution
+	.word ldm_stm_address_calc_fix_sram	//sram: fix
+	.word address_calc_ignore_arm	//nothing: shouldn't happen
 	
 ldm_stm_address_calc_fix_cartridge:
 	ldr r4,= 0x083B0000

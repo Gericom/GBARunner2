@@ -71,8 +71,12 @@ address_read_table_16bit:
 .word read_address_dispcontrol
 //0x04000002
 .word read_address_ignore
-//0x04000004-0x0400005E
-.rept 46
+//0x04000004
+.word read_address_nomod_16
+//0x04000006
+.word read_address_vcount
+//0x04000008-0x0400005E
+.rept 44
 .word read_address_nomod_16
 .endr
 //0x04000060-0x040000AE
@@ -182,8 +186,16 @@ address_read_table_8bit:
 .word read_address_ignore
 //0x04000003
 .word read_address_ignore
-//0x04000004-0x0400005F
-.rept 92
+//0x04000004
+.word read_address_nomod_8
+//0x04000005
+.word read_address_nomod_8
+//0x04000006
+.word read_address_vcount
+//0x04000007
+.word read_address_ignore
+//0x04000008-0x0400005F
+.rept 88
 .word read_address_nomod_8
 .endr
 //0x04000060-0x040000AF
