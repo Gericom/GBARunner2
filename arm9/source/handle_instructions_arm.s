@@ -79,7 +79,6 @@ ldrh_strh_address_calc_cont:
 	and r12, r10, #(0xF << 12)
 	mov r12, r12, lsr #10
 	ldrh r11, [r11, r12]
-	mov r10, r9
 	mov r12, #2
 	bl write_address_from_handler
 	tst r1, #(1 << 24)
@@ -91,7 +90,6 @@ ldrh_strh_address_calc_cont:
 ldrh_strh_address_calc_cont_load:
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
-	mov r10, r9
 	mov r11, #2
 	moveq r11, #1
 	bl read_address_from_handler
@@ -134,7 +132,7 @@ ldr_str_address_calc:
 	//fix c-flag
 	mrs r12, spsr
 	msr cpsr_f, r12
-	//b ldr_str_address_calc_shift_instruction
+	b ldr_str_address_calc_shift_instruction
 ldr_str_address_calc_shift_instruction:
 	.word 0xE1A00000
 
@@ -207,7 +205,6 @@ ldr_str_address_calc_cont2:
 	tst r10, #(1 << 20)
 	beq ldr_str_address_calc_cont2_write
 	tst r10, #(1 << 22)
-	mov r10, r9
 	mov r11, #4
 	movne r11, #1
 	bl read_address_from_handler
@@ -221,7 +218,6 @@ ldr_str_address_calc_cont2:
 
 ldr_str_address_calc_cont2_write:
 	tst r10, #(1 << 22)
-	mov r10, r9
 	ldr r11, [r11, r1, lsr #10]
 	mov r12, #4
 	movne r12, #1
@@ -311,7 +307,6 @@ ldm_stm_address_calc_cont2:
 ldm_stm_address_calc_cont2_load_loop:
 	tst r1, #1
 	beq ldm_stm_address_calc_cont2_load_loop_cont
-	mov r10, r9
 	mov r11, #4
 	bl read_address_from_handler
 	str r10, [r4]
@@ -326,7 +321,6 @@ ldm_stm_address_calc_cont2_load_loop_cont:
 ldm_stm_address_calc_cont2_write_loop:
 	tst r1, #1
 	beq ldm_stm_address_calc_cont2_write_loop_cont
-	mov r10, r9
 	ldr r11, [r4]
 	mov r12, #4
 	bl write_address_from_handler

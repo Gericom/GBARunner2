@@ -7,9 +7,9 @@ address_read_table_8bit_dtcm = 0x10000B80
 .global read_address_from_handler
 read_address_from_handler:
 //r10=address, r11=nr bytes
-	cmp r10, #0x06000000
+	cmp r9, #0x06000000
 	bge read_address_from_handler_sprites
-	bic r12, r10, #0x04000000
+	bic r12, r9, #0x04000000
 	cmp r12, #0x20C
 	bge read_address_ignore
 
@@ -46,9 +46,9 @@ read_address_from_handler_4:
 	orr pc, r13, #0x01000000	//itcm
 
 read_address_from_handler_sprites:
-	cmp r10, #0x08000000
+	cmp r9, #0x08000000
 	bge read_address_from_handler_rom
-	add r10, #0x3F0000
+	add r10, r9, #0x3F0000
 	cmp r11, #1
 	ldreqb r10, [r10]
 	cmp r11, #2
@@ -58,7 +58,7 @@ read_address_from_handler_sprites:
 	bx lr
 
 read_address_from_handler_rom:
-	cmp r10, #0x0D000000
+	cmp r9, #0x0D000000
 	bge read_address_from_handler_eeprom
 	//bic r12, r10, #0x06000000
 	//ldr r13,= 0x083B0000
@@ -116,7 +116,7 @@ read_address_from_handler_rom:
 	//ldr r12,= (0x06202000 + 32 * 11)
 	//strh r13, [r12, #14]
 
-	bic r10, r10, #0x0E000000
+	bic r10, r9, #0x0E000000
 	//ensure block d is mapped to the arm7
 	ldr r12,= 0x4000243
 	mov r13, #0x8A
@@ -139,10 +139,6 @@ read_address_from_handler_rom_fifo_loop:
 	ldr r10, [r10]	//read word from fifo
 	cmp r10, r13
 	bne read_address_from_handler_rom_fifo_loop
-
-	ldr r12,= 0x06202000
-	ldr r13,= 0x54534554
-	str r13, [r12]
 
 	//block d to arm9 lcdc
 	ldr r12,= 0x4000243
@@ -210,17 +206,17 @@ address_read_table_8bit_dtcm_setup_loop:
 
 .global read_address_nomod_8
 read_address_nomod_8:
-	ldrb r10, [r10]
+	ldrb r10, [r9]
 	bx lr
 
 .global read_address_nomod_16
 read_address_nomod_16:
-	ldrh r10, [r10]
+	ldrh r10, [r9]
 	bx lr
 
 .global read_address_nomod_32
 read_address_nomod_32:
-	ldr r10, [r10]
+	ldr r10, [r9]
 	bx lr
 
 .global read_address_ignore
@@ -248,21 +244,21 @@ read_address_dispcontrol_top8:
 
 .global read_address_vcount
 read_address_vcount:
-	ldrh r10, [r10]
+	ldrh r10, [r9]
 	cmp r10, #227
 	movgt r10, #227
 	bx lr
 
 .global read_address_timer_counter
 read_address_timer_counter:
-	ldrh r10, [r10]
+	ldrh r10, [r9]
 	mov r10, r10, lsl #17
 	mov r10, r10, lsr #16
 	bx lr
 
 .global read_address_timer
 read_address_timer:
-	ldr r10, [r10]
+	ldr r10, [r9]
 	mov r12, r10, lsr #16
 	mov r12, r12, lsl #16
 	mov r13, r10, lsl #17

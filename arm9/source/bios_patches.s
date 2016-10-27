@@ -1,5 +1,9 @@
 .section .itcm
 
+.global bios_waitintr_fix
+bios_waitintr_fix:
+	mcr p15,0,r0,c7,c0,4
+
 .global bios_cpufastset_sd_patch
 bios_cpufastset_sd_patch:
 	beq 0xC24

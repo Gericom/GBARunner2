@@ -88,20 +88,8 @@ data_abort_handler:
 	tst sp, #0x20 //thumb bit
 	bne data_abort_handler_thumb
 data_abort_handler_arm:
-//	ldr sp,= reg_table
-//	stmia sp!, {r0-r12}	//non-banked registers
-//	mov r12, sp
-//	mrs sp, spsr
-//	ands sp, sp, #0xF
-	//cmpne sp, #0xF
-//	stmeqia r12, {sp,lr}^	//read user bank registers
-//	beq data_abort_handler_cont
-//	orr sp, sp, #0x90
-//	msr cpsr_c, sp
-//	stmia r12, {sp,lr}
-//	msr cpsr_c, #0x97
-
 	ands sp, sp, #0xF
+	cmpne sp, #0xF
 	ldr sp,= reg_table
 	stmeqia sp, {r0-r14}^
 	stmneia sp!, {r0-r12}
@@ -156,13 +144,10 @@ data_abort_handler_cont:
 
 	mrc p15, 0, r6, c1, c0, 0
 	bic r2, r6, #1
-	//bic r2, r6, #(1 | (1 << 2))	//disable pu and data cache
-	//bic r2, #(1 << 12) //and cache
 	mcr p15, 0, r2, c1, c0, 0
 
 	ldr r10, [r5, #-8]
 	and r10, r10, #0x0FFFFFFF
-	//add pc, r10, lsr #23
 	ldr pc, [pc, r10, lsr #23]
 
 	nop
@@ -186,6 +171,7 @@ data_abort_handler_cont_finish:
 	//ldr r12,= (reg_table + (4 * 13))
 	ldr r12,= reg_table
 	ands sp, sp, #0xF
+	cmpne sp, #0xF
 	//cmpne sp, #0xF
 	//ldmeqia r12, {sp,lr}^	//write user bank registers
 	beq data_abort_handler_cont3
@@ -226,8 +212,8 @@ data_abort_handler_cont3:
 
 data_abort_handler_thumb:
 	ldr sp,= reg_table
-	stmia sp!, {r0-r7}	//non-banked registers
-	str lr, [sp]
+	//stmia sp!, {r0-r7}	//non-banked registers
+	str lr, [sp, #(8 << 2)]
 
 #ifdef DEBUG_ABORT_ADDRESS
 	sub r0, lr, #8
@@ -266,8 +252,6 @@ data_abort_handler_thumb:
 
 	mrc p15, 0, sp, c1, c0, 0
 	bic sp, #1
-	//bic sp, #(1 | (1 << 2))	//disable pu and data cache
-	//bic sp, #(1 << 12) //and cache
 	mcr p15, 0, sp, c1, c0, 0
 	
 	msr cpsr_c, #0x91
@@ -276,8 +260,6 @@ data_abort_handler_thumb:
 	ldrh r10, [r10, #-8]
 
 	ldr pc, [pc, r10, lsr #11]
-	
-	//add pc, r10, lsr #11 //r2, lsl #2
 
 	nop
 
@@ -290,18 +272,11 @@ data_abort_handler_thumb:
 	.word thumb15_address_calc
 	.word address_calc_unknown
 
-//.global data_abort_handler_thumb_finish
-//data_abort_handler_thumb_finish:
-//	orr sp, #1
-//	mcr p15, 0, sp, c1, c0, 0
-
-//	ldr sp,= reg_table
-//	ldmia sp, {r0-r7}	//non-banked registers
-
-//	subs pc, lr, #8
-
 address_calc_unknown:
-	b address_calc_unknown
+	ldr r0,= 0x06202000
+	ldr r1,= 0x4B4E5541
+	str r1, [r0]
+	b .
 
 
 .global count_bits_initialize
@@ -336,38 +311,6 @@ count_bits_set_8_lookup:
 	ldr r1,= 0x10000040
 	ldrb r0, [r1, r0]
 	bx lr
-
-//count_bits_set_16:
-//	mov	r2, #0xff
-//	eor	r2, r2, r2, lsl #4
-//	eor	r3, r2, r2, lsl #2
-//	eor	r1, r3, r3, lsl #1
-		
-//	and	r1, r1, r0, lsr #1
-//	sub	r0, r0, r1
-		
-//	and	r1, r3, r0, lsr #2
-//	and	r0, r3, r0
-//	add	r0, r0, r1
-		
-//	add	r0, r0, r0, lsr #4
-//	and	r0, r0, r2
-		
-//	add	r0, r0, r0, lsr #8
-//	and	r0, r0, #0x1F
-//	bx lr
-
-//count_bits_set_8:
-//	and	r1, r0, #0xAA
-//	sub	r0, r0, r1, lsr #1
-		
-//	and	r1, r0, #0xCC
-//	and	r0, r0, #0x33
-//	add	r0, r0, r1, lsr #2
-		
-//	add	r0, r0, r0, lsr #4
-//	and	r0, r0, #0xF
-//	bx lr
 
 .global print_address
 print_address:

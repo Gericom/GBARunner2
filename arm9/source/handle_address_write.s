@@ -4,12 +4,14 @@ address_write_table_32bit_dtcm = 0x10000140
 address_write_table_16bit_dtcm = 0x10000248
 address_write_table_8bit_dtcm = 0x10000454
 
+//consider using r9 as address value, because it's that value (almost) everywhere
+//It is okay when from arm at least, thumb7, thumb9, thumb10, thumb15
 .global write_address_from_handler
 write_address_from_handler:
 //r10=address, r11=value, r12=nr bytes
-	cmp r10, #0x06000000
+	cmp r9, #0x06000000
 	bge write_address_from_handler_sprites
-	bic r13, r10, #0x04000000
+	bic r13, r9, #0x04000000
 	cmp r13, #0x20C
 	bxge lr
 
@@ -46,7 +48,7 @@ write_address_from_handler_4:
 	orr pc, r13, #0x01000000	//itcm
 
 write_address_from_handler_sprites:
-	add r10, #0x3F0000
+	add r10, r9, #0x3F0000
 	cmp r12, #1
 	orreq r11, r11, r11, lsl #8
 	moveq r12, #2
@@ -93,17 +95,17 @@ address_write_table_8bit_dtcm_setup_loop:
 
 .global write_address_nomod_8
 write_address_nomod_8:
-	strb r11, [r10]
+	strb r11, [r9]
 	bx lr
 
 .global write_address_nomod_16
 write_address_nomod_16:
-	strh r11, [r10]
+	strh r11, [r9]
 	bx lr
 
 .global write_address_nomod_32
 write_address_nomod_32:
-	str r11, [r10]
+	str r11, [r9]
 	bx lr
 
 .global write_address_ignore
@@ -134,7 +136,7 @@ write_address_dispcontrol_cont:
 	bicge r12, #0xF00	//clear all bg bits
 	orrge r12, #0x800	//display only bg3 (which goes unused on the gba)
 
-	str r12, [r10]
+	str r12, [r9]
 
 	//move gba vram block b to either bg or obj
 	ldr r11,= 0x04000245
@@ -252,7 +254,7 @@ write_address_dma_src:
 	bic r11, r11, #0x07000000
 	sub r11, r11, #0x05000000
 	sub r11, r11, #0x00FC0000
-	str r11, [r10]
+	str r11, [r9]
 	bx lr
 write_address_dma_src_cont:
 	ldr r13,= 0x06010000
@@ -262,7 +264,7 @@ write_address_dma_src_cont:
 	cmp r11, r13
 	addlt r11, #0x3F0000
 write_address_dma_src_cont2:
-	str r11, [r10]
+	str r11, [r9]
 	bx lr
 
 .global write_address_dma_src_top16
@@ -274,14 +276,14 @@ write_address_dma_src_top16:
 	bic r11, r11, #0x0700
 	sub r11, r11, #0x0500
 	sub r11, r11, #0x00FC
-	strh r11, [r10]
+	strh r11, [r9]
 	bx lr
 write_address_dma_src_cont_top16:
 	ldr r13,= 0x0601
 	cmp r11, r13
 	addeq r11, #0x3F
 write_address_dma_src_cont_top16_2:
-	strh r11, [r10]
+	strh r11, [r9]
 	bx lr
 
 .global write_address_dma_dst
@@ -298,7 +300,7 @@ write_address_dma_dst:
 	cmp r11, r13
 	addlt r11, #0x3F0000
 write_address_dma_dst_cont:
-	str r11, [r10]
+	str r11, [r9]
 	bx lr
 
 .global write_address_dma_dst_top16
@@ -306,26 +308,26 @@ write_address_dma_dst_top16:
 	ldr r13,= 0x0601
 	cmp r11, r13
 	addeq r11, #0x3F
-	strh r11, [r10]
+	strh r11, [r9]
 	bx lr
 
 .global write_address_dma_size
 write_address_dma_size:
 	ldr r13,= 0x040000DC
-	cmp r10, r13
-	streqh r11, [r10]
+	cmp r9, r13
+	streqh r11, [r9]
 	bxeq lr
 	cmp r11, #0
 	moveq r11, #0x4000
-	strh r11, [r10]
+	strh r11, [r9]
 	bx lr
 
 .global write_address_dma_control
 write_address_dma_control:
 	bic r11, r11, #0x1F
 	ldr r13,= 0x040000DE
-	cmp r10, r13
-	ldreqh r13, [r10, #-2]
+	cmp r9, r13
+	ldreqh r13, [r9, #-2]
 	cmpeq r13, #0
 	orreq r11, #1
 	mov r13, r11, lsr #12
@@ -338,13 +340,13 @@ write_address_dma_control:
 	tst r11, #0x8000
 	beq write_address_dma_control_cont2
 	ldr r12,= 0x023F0000
-	ldr r13, [r10, #-0xA]
+	ldr r13, [r9, #-0xA]
 	cmp r13, r12
 	blt write_address_dma_control_cont2
 	cmp r13, #0x03000000
 	blt write_address_dma_control_rom_src
 write_address_dma_control_cont2:
-	strh r11, [r10]
+	strh r11, [r9]
 	bx lr
 
 write_address_dma_control_rom_src:
@@ -357,11 +359,11 @@ write_address_dma_control_rom_src:
 	ldr r13,= 0xAA5500C8
 	str r13, [r12]
 
-	ldr r13, [r10, #-0xA]
+	ldr r13, [r9, #-0xA]
 	sub r13, #0x02040000
 	str r13, [r12]	//address
 
-	ldrh r13, [r10, #-0x2]
+	ldrh r13, [r9, #-0x2]
 	and r12, r11, #0x1F
 	orr r13, r12, lsl #16
 	tst r11, #(1 << 10)
@@ -389,13 +391,13 @@ write_address_dma_control_rom_src_fifo_loop:
 	strb r13, [r12]
 
 	ldr r13,= 0x06868000
-	str r13, [r10, #-0xA]
+	str r13, [r9, #-0xA]
 
-	strh r11, [r10]
+	strh r11, [r9]
 	nop
 	nop
 write_address_dma_control_rom_src_wait_loop:
-	ldrh r11, [r10]
+	ldrh r11, [r9]
 	tst r11, #0x8000
 	bne write_address_dma_control_rom_src_wait_loop
 
@@ -403,11 +405,11 @@ write_address_dma_control_rom_src_wait_loop:
 
 write_address_dma_control_cont:
 	ldr r13,= 0x40000C6
-	cmp r10, r13
+	cmp r9, r13
 	//ldr r13,= 0x40000D2
 	//cmpne r10, r13
 	bicne r11, r11, #0x8000
-	strneh r11, [r10]
+	strneh r11, [r9]
 	bxne lr
 	//cmp r10, r13
 	//beq write_address_dma_control_cont_snd2
@@ -419,8 +421,8 @@ write_address_dma_control_cont:
 	//orr r11, r11, #(3 << 5)
 	bic r11, r11, #0x1F
 	mov r12, #396
-	strh r12, [r10, #-2]
-	strh r11, [r10]
+	strh r12, [r9, #-2]
+	strh r11, [r9]
 
 	ldr r10,= 0x04000188
 	ldr r11,= 0xAA5500C5
@@ -441,8 +443,8 @@ write_address_dma_control_cont_snd2:
 	//orr r11, r11, #(3 << 5)
 	bic r11, r11, #0x1F
 	mov r12, #396
-	strh r12, [r10, #-2]
-	strh r11, [r10]
+	strh r12, [r9, #-2]
+	strh r11, [r9]
 
 	ldr r10,= 0x04000188
 	ldr r11,= 0xAA5500C7
@@ -460,7 +462,7 @@ write_address_dma_size_control:
 	movs r12, r12, lsr #16
 	bne write_address_dma_size_control_cont
 	ldr r13,= 0x040000DC
-	cmp r10, r13
+	cmp r9, r13
 	movne r12, #0x4000
 	moveq r12, #0x10000
 write_address_dma_size_control_cont:
@@ -476,13 +478,13 @@ write_address_dma_size_control_cont:
 	tst r11, #0x80000000
 	beq write_address_dma_size_control_cont3
 	ldr r12,= 0x023F0000
-	ldr r13, [r10, #-0x8]
+	ldr r13, [r9, #-0x8]
 	cmp r13, r12
 	blt write_address_dma_size_control_cont3
 	cmp r13, #0x03000000
 	blt write_address_dma_size_control_rom_src
 write_address_dma_size_control_cont3:
-	str r11, [r10]
+	str r11, [r9]
 	bx lr
 
 
@@ -496,7 +498,7 @@ write_address_dma_size_control_rom_src:
 	ldr r13,= 0xAA5500C8
 	str r13, [r12]
 
-	ldr r13, [r10, #-0x8]
+	ldr r13, [r9, #-0x8]
 	sub r13, #0x02040000
 	str r13, [r12]	//address
 
@@ -530,13 +532,13 @@ write_address_dma_size_control_rom_src_fifo_loop:
 	strb r13, [r12]
 
 	ldr r13,= 0x06868000
-	str r13, [r10, #-0x8]
+	str r13, [r9, #-0x8]
 
-	str r11, [r10]
+	str r11, [r9]
 	nop
 	nop
 write_address_dma_size_control_rom_src_wait_loop:
-	ldr r11, [r10]
+	ldr r11, [r9]
 	tst r11, #0x80000000
 	bne write_address_dma_size_control_rom_src_wait_loop
 
@@ -544,11 +546,11 @@ write_address_dma_size_control_rom_src_wait_loop:
 
 write_address_dma_size_control_cont2:
 	ldr r13,= 0x040000C4
-	cmp r10, r13
+	cmp r9, r13
 	//ldr r13,= 0x040000D0
 	//cmpne r10, r13
 	bicne r11, #0x80000000
-	strne r11, [r10]
+	strne r11, [r9]
 	bxne lr
 	//cmp r10, r13
 	//beq write_address_dma_size_control_cont2_snd2
@@ -561,7 +563,7 @@ write_address_dma_size_control_cont2:
 	ldr r13,= 0x1FFFFF
 	bic r11, r13
 	orr r11, r11, #396
-	str r11, [r10]
+	str r11, [r9]
 	
 	ldr r10,= 0x04000188
 	ldr r11,= 0xAA5500C5
@@ -583,7 +585,7 @@ write_address_dma_size_control_cont2_snd2:
 	ldr r13,= 0x1FFFFF
 	bic r11, r13
 	orr r11, r11, #396
-	str r11, [r10]
+	str r11, [r9]
 	
 	ldr r10,= 0x04000188
 	ldr r11,= 0xAA5500C7
@@ -599,7 +601,7 @@ write_address_dma_size_control_cont2_snd2:
 write_address_timer_counter:
 	mov r11, r11, lsl #17
 	mov r11, r11, lsr #16
-	strh r11, [r10]
+	strh r11, [r9]
 	bx lr
 
 .global write_address_timer
@@ -608,7 +610,7 @@ write_address_timer:
 	mov r13, r11, lsl #17
 	mov r13, r13, lsr #16
 	orr r12, r13, r12, lsl #16
-	str r12, [r10]
+	str r12, [r9]
 	bx lr
 
 .global write_address_ie
@@ -632,19 +634,23 @@ write_address_ie_top8:
 .global write_address_if
 write_address_if:
 	ldr r13,= 0x4000214
-	strh r11, [r13]
+	orr r11, #0x3F0000
+	str r11, [r13]
 	bx lr
 
 .global write_address_if_bottom8
 write_address_if_bottom8:
 	ldr r13,= 0x4000214
-	strb r11, [r13]
+	orr r11, #0x3F0000
+	str r11, [r13]
 	bx lr
 
 .global write_address_if_top8
 write_address_if_top8:
-	ldr r13,= 0x4000215
-	strb r11, [r13]
+	ldr r13,= 0x4000214
+	orr r11, #0x3F00
+	mov r11, r11, lsl #8
+	str r11, [r13]
 	bx lr
 
 .global write_address_ie_if
@@ -652,7 +658,8 @@ write_address_ie_if:
 	ldr r13,= 0x4000210
 	strh r11, [r13]
 	mov r11, r11, lsr #16
-	strh r11, [r13, #4]
+	orr r11, #0x3F0000
+	str r11, [r13, #4]
 	bx lr
 
 .global write_address_wait_control

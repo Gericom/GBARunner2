@@ -167,6 +167,8 @@ typedef struct
 	uint32_t cluster_mask;
 
 	uint32_t gba_rom_size;
+
+	uint32_t access_counter;
 } sd_info_t;
 
 typedef struct

@@ -1,3 +1,5 @@
+//#define DEBUG_ENABLED
+
 .global gba_setup
 gba_setup:
 	push {r4-r11,r14}
@@ -5,7 +7,10 @@ gba_setup:
 	//Make sure interupts are disabled!
 	ldr r0,= 0x4000210
 	mov r1, #0
+	str r1, [r0, #-8]
 	str r1, [r0]
+	mov r1, #0xFFFFFFFF
+	str r1, [r0, #4]
 	bl gba_setup_itcm
 
 	//map the gba cartridge to the arm7 and nds card too
@@ -24,6 +29,11 @@ gba_setup:
 	ldr r0,= 0x4000243
 	mov r1, #0x8A
 	strb r1, [r0]
+
+	//dim the screen a bit for gba colors:
+	//ldr r0,= 0x0400006C
+	//ldr r1,= 0x8008
+	//str r1, [r0]
 
 	//setup protection regions
 	//region 0	bg region		0x00000000-0xFFFFFFFF	2 << 31		r/w/x
@@ -76,7 +86,6 @@ gba_setup:
 	//mcr p15, 0, r0, c6, c6, 0
 	//mcr p15, 0, r0, c6, c7, 0
 
-	//i-cache of iwram should probably not be enabled (self-modifying code)
 	mov r0, #3
 	orr r0, r0, #(0x6 << (4 * 4))
 	orr r0, r0, #(0x36 << (4 * 5))
@@ -84,11 +93,12 @@ gba_setup:
 	mcr p15, 0, r0, c5, c0, 2
 	mcr p15, 0, r0, c5, c0, 3
 
-	//no cacheabilty
+	//only instruction and data cache for (fake) cartridge
 	mov r0, #(1 << 5)
-	mcr p15, 0, r0, c2, c0, 0
-	//orr r0, r0, #(1 << 5)
-	mcr p15, 0, r0, c2, c0, 1
+	mcr p15, 0, r0, c2, c0, 0	//data cache
+	//orr r1, #(1 << 6)
+	//orr r1, #(1 << 7)
+	mcr p15, 0, r0, c2, c0, 1	//instruction cache
 
 	//no write buffer
 	mov r0, #0
@@ -200,6 +210,15 @@ dldi_name_copy:
 	subs r2, #4
 	bne dldi_name_copy
 
+	//patch the stack to be in dtcm for speed
+	//doesn't seem to work right for some reason
+	//ldr r0,= 0x020400F4
+	//ldr r1, [r0]
+	//ldr r2,= 0x03007E00
+	//cmp r1, r2
+	//ldreq r1,= 0x10004000
+	//streq r1, [r0]
+
 	//in order for this to work, we need to find a way to boot up in retail mode 
 	//(so that your flashcard emulates a real ds card and we can use card commands, which is 
 	//much faster as direct sd access, because we don't need to deal with the fat filesystem)
@@ -308,6 +327,12 @@ gba_setup_fill_H_loop:
 	ldr r0,= 0xBD4
 	str r1, [r0]
 
+	//replace the write to haltcnt in waitintr with a cp15 instruction that does the same on arm9
+	ldr r0,= bios_waitintr_fix
+	ldr r0, [r0]
+	mov r1, #0x344
+	str r0, [r1]
+
 	//We need to get into privileged mode, misuse the undefined mode for it
 	ldr r0,= gba_start_bkpt
 	sub r0, #0xC	//relative to source address
@@ -376,14 +401,16 @@ gba_start_bkpt:
 	mov r0, #0x4
 	str r1, [r0]
 
+#ifdef DEBUG_ENABLED
 	//for debugging
-	//ldr r0,= irq_handler
-	//sub r0, #0x18	//relative to source address
-	//sub r0, #8	//pc + 8 compensation
-	//mov r1, #0xEA000000
-	//orr r1, r0, lsr #2
-	//mov r0, #0x18
-	//str r1, [r0]
+	ldr r0,= irq_handler
+	sub r0, #0x18	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x18
+	str r1, [r0]
+#endif
 
 	//set the abort mode stack
 	mrs r0, cpsr
@@ -674,6 +701,42 @@ irq_handler:
 	sub r0, lr, #4
 	ldr r1,= nibble_to_char
 	ldr r12,= (0x06202000 + 32 * 10)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
+	mrs r0, cpsr
+	msr cpsr_c, #0x93
+	ldr r1, [sp, #(7<<2)]
+	msr cpsr_c, r0
+	mov r0, r1
+	ldr r1,= nibble_to_char
+	ldr r12,= (0x06202000 + 32 * 12)
 	//print address to bottom screen
 	ldrb r2, [r1, r0, lsr #28]
 	mov r0, r0, lsl #4
