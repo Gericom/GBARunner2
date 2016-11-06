@@ -806,3 +806,44 @@ WAITCNT_copy:
 .global counter
 counter:
 	.word 0
+
+//TODO?
+//.global DMA0SAD_copy
+//DMA0SAD_copy:
+//	.word 0
+//.global DMA0DAD_copy
+//DMA0DAD_copy:
+//	.word 0
+//.global DMA0CNT_copy
+//DMA0CNT_copy:
+//	.word 0
+
+//.global DMA1SAD_copy
+//DMA1SAD_copy:
+//	.word 0
+//.global DMA1DAD_copy
+//DMA1DAD_copy:
+//	.word 0
+//.global DMA1CNT_copy
+//DMA1CNT_copy:
+//	.word 0
+
+//.global DMA2SAD_copy
+//DMA2SAD_copy:
+//	.word 0
+//.global DMA2DAD_copy
+//DMA2DAD_copy:
+//	.word 0
+//.global DMA2CNT_copy
+//DMA2CNT_copy:
+//	.word 0
+
+//.global DMA3SAD_copy
+//DMA3SAD_copy:
+//	.word 0
+//.global DMA3DAD_copy
+//DMA3DAD_copy:
+//	.word 0
+//.global DMA3CNT_copy
+//DMA3CNT_copy:
+//	.word 0

@@ -13,27 +13,27 @@ address_read_table_32bit:
 .word read_address_ignore
 .endr
 //0x040000B0
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000B4
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000B8
 .word read_address_nomod_32
 //0x040000BC
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000C0
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000C4
 .word read_address_nomod_32
 //0x040000C8
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000CC
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000D0
 .word read_address_nomod_32
 //0x040000D4
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000D8
-.word read_address_nomod_32
+.word read_address_ignore
 //0x040000DC
 .word read_address_nomod_32
 //0x040000E0-0x040000FC
@@ -84,51 +84,51 @@ address_read_table_16bit:
 .word read_address_ignore
 .endr
 //0x040000B0
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000B2
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000B4
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000B6
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000B8
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000BA
 .word read_address_nomod_16
 //0x040000BC
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000BE
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000C0
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000C2
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000C4
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000C6
 .word read_address_nomod_16
 //0x040000C8
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000CA
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000CC
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000CE
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000D0
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000D2
 .word read_address_nomod_16
 //0x040000D4
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000D6
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000D8
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000DA
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000DC
-.word read_address_nomod_16
+.word read_address_ignore
 //0x040000DE
 .word read_address_nomod_16
 //0x040000E0-0x040000FE

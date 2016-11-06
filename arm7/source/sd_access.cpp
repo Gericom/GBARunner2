@@ -46,8 +46,9 @@ extern "C" void sd_init()
 	sec_t boot_sect = 0;
 	if(mbr->non_usefull_stuff[2] != 0x90)
 	{
-		if(mbr->partitions[0].partition_type != MBR_PARTITION_TYPE_FAT32)
+		if(mbr->partitions[0].partition_type != MBR_PARTITION_TYPE_FAT32 && mbr->partitions[0].partition_type != MBR_PARTITION_TYPE_FAT32_LBA)
 		{
+			*((vu32*)0x04000188) = 0x4E464154;//NFAT = no fat found
 			while(1);
 		}
 		boot_sect = mbr->partitions[0].lba_partition_start;
@@ -69,6 +70,7 @@ extern "C" void sd_init()
 	bool found = false;
 	dir_entry_t* gba_file_entry = 0;
 	uint32_t cur_cluster = gSDInfo.root_directory_cluster;
+	*((vu32*)0x04000188) = 0x54524545;
 	while(true)
 	{
 		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);

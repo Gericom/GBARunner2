@@ -182,7 +182,7 @@ address_write_table_16bit:
 .word write_address_ignore
 .endr
 //0x04000130
-.word write_address_nomod_16
+.word write_address_ignore
 //0x04000132
 .word write_address_nomod_16
 //0x04000134-0x040001FE
@@ -240,9 +240,9 @@ address_write_table_8bit:
 .word write_address_ignore
 .endr
 //0x04000130
-.word write_address_nomod_8
+.word write_address_ignore
 //0x04000131
-.word write_address_nomod_8
+.word write_address_ignore
 //0x04000132
 .word write_address_nomod_8
 //0x04000133
