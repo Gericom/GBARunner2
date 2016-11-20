@@ -163,9 +163,9 @@ extern "C" void sd_init()
 	cur_cluster = *cluster_table++;//gba_file_entry->regular_entry.cluster_nr_bottom | (gba_file_entry->regular_entry.cluster_nr_top << 16);
 	uint32_t data_max = 0x3B0000;
 	uint32_t data_read = 0;
+	*((vu32*)0x04000188) = 0x59504F43;
 	while(cur_cluster < 0x0FFFFFF8 && (data_read + gSDInfo.nr_sectors_per_cluster * 512) < data_max)
 	{
-		*((vu32*)0x04000188) = 0x59504F43;
 		_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), gSDInfo.nr_sectors_per_cluster, (void*)(0x02040000 + data_read));//tmp_buf + 512);
 		data_read += gSDInfo.nr_sectors_per_cluster * 512;
 		cur_cluster = *cluster_table++;//get_cluster_fat_value_simple(cur_cluster);

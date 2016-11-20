@@ -148,14 +148,24 @@ data_abort_handler_cont:
 
 	ldr r10, [r5, #-8]
 	and r10, r10, #0x0FFFFFFF
-	ldr pc, [pc, r10, lsr #23]
+
+	//ldr pc, [pc, r10, lsr #23]
+	ldr pc, [pc, r10, lsr #22]
 
 	nop
 	.word ldrh_strh_address_calc
+	.word ldrh_strh_address_calc
 	.word address_calc_unknown
-	.word ldr_str_address_calc
-	.word ldr_str_address_calc
+	.word address_calc_unknown
+	.word ldr_str_address_calc_immediate_post
+	.word ldr_str_address_calc_immediate_pre
+	.word ldr_str_address_calc_shifted_reg_post
+	.word ldr_str_address_calc_shifted_reg_pre
 	.word ldm_stm_address_calc
+	.word ldm_stm_address_calc
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown

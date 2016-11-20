@@ -121,7 +121,7 @@ write_address_dispcontrol_cont:
 	and r12, r11, r12
 	tst r11, #(1 << 5)//hblank free bit is moved on the ds
 	orrne r12, #(1 << 23)
-	tst r11, #(1 << 6)//obj mode bit is moved on the ds aswell
+	tst r11, #(1 << 6)//obj mode bit is moved on the ds as well
 	orrne r12, #(1 << 4)
 	orr r12, #(1 << 16)//display mode, which did not exist on gba
 	and r13, r11, #7
@@ -160,9 +160,16 @@ write_address_dispcontrol_cont:
 	strh r12, [r11, #0x34]
 	mov r12, #240
 	strh r12, [r11, #0x36]
+
+	ldr r10,= DISPCNT_copy
+	ldrh r10, [r10]
+	tst r10, #(1 << 4)
+
 	mov r12, #0
 	str r12, [r11, #0x38]
-	str r12, [r11, #0x3C]
+	streq r12, [r11, #0x3C]
+	movne r12, #8192
+	strne r12, [r11, #0x3C]
 
 	ldrh r12, [r11, #0xC]
 	bic r12, #0xFF00
@@ -172,6 +179,10 @@ write_address_dispcontrol_cont:
 	orrne r12, #0x84
 	orreq r12, #0x80
 	orr r12, #0x6000
+
+	tst r10, #(1 << 4)
+	orrne r12, #(2 << 8)
+
 	strh r12, [r11, #0xE]
 	bx lr
 	
@@ -345,6 +356,10 @@ write_address_dma_control:
 	blt write_address_dma_control_cont2
 	cmp r13, #0x03000000
 	blt write_address_dma_control_rom_src
+	ldr r12,= 0x040000A4
+	ldr r13, [r9, #-0x6]
+	cmp r13, r12
+	bxeq lr
 write_address_dma_control_cont2:
 	strh r11, [r9]
 	bx lr
@@ -483,6 +498,10 @@ write_address_dma_size_control_cont:
 	blt write_address_dma_size_control_cont3
 	cmp r13, #0x03000000
 	blt write_address_dma_size_control_rom_src
+	ldr r12,= 0x040000A4
+	ldr r13, [r9, #-0x4]
+	cmp r13, r12
+	bxeq lr
 write_address_dma_size_control_cont3:
 	str r11, [r9]
 	bx lr

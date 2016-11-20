@@ -60,6 +60,9 @@ read_address_from_handler_sprites:
 read_address_from_handler_rom:
 	cmp r9, #0x0D000000
 	bge read_address_from_handler_eeprom
+	ldr r12,= 0x083B0000
+	cmp r9, r12
+	blt read_address_from_handler_rom_in_mem
 	//bic r12, r10, #0x06000000
 	//ldr r13,= 0x083B0000
 	//cmp r12, r13
@@ -157,6 +160,18 @@ read_address_from_handler_rom_fifo_loop:
 
 read_address_from_handler_eeprom:
 	mov r10, #1
+	bx lr
+
+read_address_from_handler_rom_in_mem:
+	bic r10, r9, #0x06000000
+	sub r10, r10, #0x05000000
+	sub r10, r10, #0x00FC0000
+	cmp r11, #1
+	ldreqb r10, [r10]
+	cmp r11, #2
+	ldreqh r10, [r10]
+	cmp r11, #4
+	ldreq r10, [r10]
 	bx lr
 
 //read_address_from_handler_highio:

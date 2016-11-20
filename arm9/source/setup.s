@@ -332,6 +332,8 @@ gba_setup_fill_H_loop:
 	ldr r0, [r0]
 	mov r1, #0x344
 	str r0, [r1]
+	mov r1, #0x1B0
+	str r0, [r1]
 
 	//We need to get into privileged mode, misuse the undefined mode for it
 	ldr r0,= gba_start_bkpt

@@ -27,31 +27,14 @@ ldrh_strh_address_calc:
 	.word address_calc_ignore_arm	//pal: can't happen
 	.word ldrh_strh_address_calc_cont	//sprites vram, manual execution
 	.word address_calc_ignore_arm	//oam: can't happen
-	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
-	.word ldrh_strh_address_calc_fix_cartridge	//card: fix	
-	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
-	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
-	.word ldrh_strh_address_calc_fix_cartridge	//card: fix
+	.word ldrh_strh_address_calc_cont	//card: fix
+	.word ldrh_strh_address_calc_cont	//card: fix	
+	.word ldrh_strh_address_calc_cont	//card: fix
+	.word ldrh_strh_address_calc_cont	//card: fix
+	.word ldrh_strh_address_calc_cont	//card: fix
 	.word ldrh_strh_address_calc_cont	//eeprom, manual execution
 	.word ldrh_strh_address_calc_fix_sram	//sram: fix
 	.word address_calc_ignore_arm	//nothing: shouldn't happen
-
-ldrh_strh_address_calc_fix_cartridge:
-	ldr r4,= 0x083B0000
-	cmp r9, r4
-	bge ldrh_strh_address_calc_cont
-	mov r8, r8, lsr #16
-	cmp lr, #0x08000000
-	bge ldrh_strh_address_calc_fix_cartridge_cont
-	tst r10, #(1 << 22)
-	andeq r8, r10, #0xF
-	ldreq lr, [r11, r8, lsl #2]
-ldrh_strh_address_calc_fix_cartridge_cont:
-	bic lr, lr, #0x06000000
-	sub lr, lr, #0x05000000
-	sub lr, lr, #0x00FC0000
-	str lr, [r11, r8, lsl #2]
-	b data_abort_handler_cont_finish
 
 ldrh_strh_address_calc_fix_sram:
 	mov r8, r8, lsr #16
@@ -113,35 +96,38 @@ ldrh_strh_address_calc_cont2_ld:
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-//calc address for ldr/str
-.global ldr_str_address_calc
-ldr_str_address_calc:
-	//r10 = instruction (and with 0x0FFFFFFF), r11 = register table
+.macro ldr_str_address_calc_part1_imm_start
 	and r8, r10, #(0xF << 16)
 	ldr lr, [r11, r8, lsr #14]
-	tst r10, #(1 << 25)
-	moveq r0, r10, lsl #20
-	moveq r0, r0, lsr #20
-	beq ldr_str_address_calc_cont
+	mov r0, r10, lsl #20
+	mov r0, r0, lsr #20
+	tst r10, #(1 << 23)
+	rsbeq r0, r0, #0
+.endm
+
+.macro ldr_str_address_calc_part1_reg_start
+	//r10 = instruction (and with 0x0FFFFFFF), r11 = register table
 	and r0, r10, #0xF
 	ldr r0, [r11, r0, lsl #2]
 	//construct shift (mov r0, r0, xxx #y)
 	and r1, r10, #0xFE0
-	strh r1, ldr_str_address_calc_shift_instruction
+	strh r1, 1f
 	//keep in mind that there should be enough instructions here for the pipeline not to read the instruction too early
 	//fix c-flag
+	//this is the wrong c-flag, since we're in fiq mode, not in abt mode
+	//TODO: fix this!
 	mrs r12, spsr
 	msr cpsr_f, r12
-	b ldr_str_address_calc_shift_instruction
-ldr_str_address_calc_shift_instruction:
-	.word 0xE1A00000
-
-ldr_str_address_calc_cont:
+	and r8, r10, #(0xF << 16)
+	ldr lr, [r11, r8, lsr #14]
+	//b ldr_str_address_calc_shift_instruction
+1:
+	mov r0, r0
 	tst r10, #(1 << 23)
 	rsbeq r0, r0, #0
-	tst r10, #(1 << 24)
-	addne r9, lr, r0
-	moveq r9, lr
+.endm
+
+.macro ldr_str_address_calc_part1_finish
 	ldr pc, [pc, r9, lsr #22]
 
 	nop
@@ -153,31 +139,39 @@ ldr_str_address_calc_cont:
 	.word address_calc_ignore_arm	//pal: can't happen
 	.word ldr_str_address_calc_cont2	//sprites vram, manual execution
 	.word address_calc_ignore_arm	//oam: can't happen
-	.word ldr_str_address_calc_fix_cartridge	//card: fix
-	.word ldr_str_address_calc_fix_cartridge	//card: fix	
-	.word ldr_str_address_calc_fix_cartridge	//card: fix
-	.word ldr_str_address_calc_fix_cartridge	//card: fix
-	.word ldr_str_address_calc_fix_cartridge	//card: fix
+	.word ldr_str_address_calc_cont2	//card: fix
+	.word ldr_str_address_calc_cont2	//card: fix	
+	.word ldr_str_address_calc_cont2	//card: fix
+	.word ldr_str_address_calc_cont2	//card: fix
+	.word ldr_str_address_calc_cont2	//card: fix
 	.word ldr_str_address_calc_cont2	//eeprom, manual execution
 	.word ldr_str_address_calc_fix_sram	//sram: fix
 	.word address_calc_ignore_arm	//nothing: shouldn't happen
+.endm
 
-ldr_str_address_calc_fix_cartridge:
-	ldr r4,= 0x083B0000
-	cmp r9, r4
-	bge ldr_str_address_calc_cont2
-	mov r8, r8, lsr #16
-	cmp lr, #0x08000000
-	bge ldr_str_address_calc_fix_cartridge_cont
-	tst r10, #(1 << 25)
-	andne r8, r10, #0xF
-	ldrne lr, [r11, r8, lsl #2]
-ldr_str_address_calc_fix_cartridge_cont:
-	bic lr, lr, #0x06000000
-	sub lr, lr, #0x05000000
-	sub lr, lr, #0x00FC0000
-	str lr, [r11, r8, lsl #2]
-	b data_abort_handler_cont_finish
+.global ldr_str_address_calc_immediate_post
+ldr_str_address_calc_immediate_post:
+	ldr_str_address_calc_part1_imm_start
+	mov r9, lr
+	ldr_str_address_calc_part1_finish
+
+.global ldr_str_address_calc_immediate_pre
+ldr_str_address_calc_immediate_pre:
+	ldr_str_address_calc_part1_imm_start
+	add r9, lr, r0
+	ldr_str_address_calc_part1_finish
+
+.global ldr_str_address_calc_shifted_reg_post
+ldr_str_address_calc_shifted_reg_post:
+	ldr_str_address_calc_part1_reg_start
+	mov r9, lr
+	ldr_str_address_calc_part1_finish
+
+.global ldr_str_address_calc_shifted_reg_pre
+ldr_str_address_calc_shifted_reg_pre:
+	ldr_str_address_calc_part1_reg_start
+	add r9, lr, r0
+	ldr_str_address_calc_part1_finish
 
 ldr_str_address_calc_fix_sram:
 	mov r8, r8, lsr #16
@@ -266,24 +260,14 @@ ldm_stm_address_calc:
 	.word address_calc_ignore_arm	//pal: can't happen
 	.word ldm_stm_address_calc_cont2	//sprites vram, manual execution
 	.word address_calc_ignore_arm	//oam: can't happen
-	.word ldm_stm_address_calc_fix_cartridge	//card: fix
-	.word ldm_stm_address_calc_fix_cartridge	//card: fix	
-	.word ldm_stm_address_calc_fix_cartridge	//card: fix
-	.word ldm_stm_address_calc_fix_cartridge	//card: fix
-	.word ldm_stm_address_calc_fix_cartridge	//card: fix
+	.word ldm_stm_address_calc_cont2	//card: fix
+	.word ldm_stm_address_calc_cont2	//card: fix	
+	.word ldm_stm_address_calc_cont2	//card: fix
+	.word ldm_stm_address_calc_cont2	//card: fix
+	.word ldm_stm_address_calc_cont2	//card: fix
 	.word ldm_stm_address_calc_cont2	//eeprom, manual execution
 	.word ldm_stm_address_calc_fix_sram	//sram: fix
 	.word address_calc_ignore_arm	//nothing: shouldn't happen
-	
-ldm_stm_address_calc_fix_cartridge:
-	ldr r4,= 0x083B0000
-	cmp r9, r4
-	bge ldm_stm_address_calc_cont2
-	bic lr, lr, #0x06000000
-	sub lr, lr, #0x05000000
-	sub lr, lr, #0x00FC0000
-	str lr, [r11, r8, lsr #14]
-	b data_abort_handler_cont_finish
 
 ldm_stm_address_calc_fix_sram:
 	sub lr, lr, #0x0B800000
