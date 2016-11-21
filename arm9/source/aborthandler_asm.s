@@ -150,25 +150,59 @@ data_abort_handler_cont:
 	and r10, r10, #0x0FFFFFFF
 
 	//ldr pc, [pc, r10, lsr #23]
-	ldr pc, [pc, r10, lsr #22]
+	//ldr pc, [pc, r10, lsr #21]
+	ldr pc, [pc, r10, lsr #18]
 
 	nop
-	.word ldrh_strh_address_calc
-	.word ldrh_strh_address_calc
+/*.rept 8
+	.word ldrh_strh_address_calc_post_down
+.endr
+.rept 8
+	.word ldrh_strh_address_calc_post_up
+.endr
+.rept 8
+	.word ldrh_strh_address_calc_pre_down
+.endr
+.rept 8
+	.word ldrh_strh_address_calc_pre_up
+.endr*/
+
+.macro list_ldrh_strh_variant a,b,c,d,e
+	.word ldrh_strh_address_calc_\a\b\c\d\e
+.endm
+
+.altmacro
+.macro list_all_ldrh_strh_variants arg=0
+	list_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x1F
+	list_all_ldrh_strh_variants %(\arg+1)
+.endif
+.endm
+	list_all_ldrh_strh_variants
+
+.rept 32
 	.word address_calc_unknown
-	.word address_calc_unknown
-	.word ldr_str_address_calc_immediate_post
-	.word ldr_str_address_calc_immediate_pre
-	.word ldr_str_address_calc_shifted_reg_post
-	.word ldr_str_address_calc_shifted_reg_pre
+.endr
+
+.macro list_ldr_str_variant a,b,c,d,e,f
+	.word ldr_str_address_calc_\a\b\c\d\e\f
+.endm
+
+.altmacro
+.macro list_all_ldr_str_variants arg=0
+	list_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x3F
+	list_all_ldr_str_variants %(\arg+1)
+.endif
+.endm
+
+	list_all_ldr_str_variants
+.rept 32
 	.word ldm_stm_address_calc
-	.word ldm_stm_address_calc
+.endr
+.rept 96
 	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
+.endr
 
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:

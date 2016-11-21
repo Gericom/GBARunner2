@@ -52,45 +52,6 @@ thumb7_8_address_calc:
 	b thumb7_8_address_calc_op1
 thumb7_8_address_calc_op1:
 	.word 0
-	ldr pc, [pc, r9, lsr #22]
-
-	nop
-	.word address_calc_ignore_thumb	//bios: ignore
-	.word address_calc_ignore_thumb	//itcm: ignore
-	.word address_calc_ignore_thumb	//main: ignore
-	.word address_calc_ignore_thumb	//wram: can't happen
-	.word thumb7_8_address_calc_cont	//io, manual execution
-	.word address_calc_ignore_thumb	//pal: can't happen
-	.word thumb7_8_address_calc_cont	//sprites vram, manual execution
-	.word address_calc_ignore_thumb	//oam: can't happen
-	.word thumb7_8_address_calc_cont	//card: fix
-	.word thumb7_8_address_calc_cont	//card: fix	
-	.word thumb7_8_address_calc_cont	//card: fix
-	.word thumb7_8_address_calc_cont	//card: fix
-	.word thumb7_8_address_calc_cont	//card: fix
-	.word thumb7_8_address_calc_cont	//eeprom, manual execution
-	.word thumb7_8_address_calc_fix_sram	//sram: fix
-	.word address_calc_ignore_thumb	//nothing: shouldn't happen
-
-thumb7_8_address_calc_fix_sram:
-	mov r12, r12, lsr #3
-	strb r12, thumb7_8_address_calc_fix_sram_op1
-	mov r13, r13, lsr #6
-	strb r13, thumb7_8_address_calc_fix_sram_op2
-	mov r12, r12, lsl #4
-	strb r12, (thumb7_8_address_calc_fix_sram_op3 + 1)
-	b thumb7_8_address_calc_fix_sram_op1
-thumb7_8_address_calc_fix_sram_op1:
-	mov lr, r0
-	cmp lr, #0x0E000000
-thumb7_8_address_calc_fix_sram_op2:
-	movlt lr, r0
-	sub lr, lr, #0x0B800000
-	sub lr, lr, #0x00008C00
-	sub lr, lr, #0x00000060
-thumb7_8_address_calc_fix_sram_op3:
-	mov r0, lr
-	finish_handler_self_modifying
 
 thumb7_8_address_calc_cont:
 	tst r10, #(1 << 9)
@@ -168,36 +129,6 @@ thumb9_address_calc_op1:
 	tst r10, #(1 << 12)
 	addeq r9, lr, r12, lsr #4
 	addne r9, lr, r12, lsr #6
-	ldr pc, [pc, r9, lsr #22]
-
-	nop
-	.word address_calc_ignore_thumb	//bios: ignore
-	.word address_calc_ignore_thumb	//itcm: ignore
-	.word address_calc_ignore_thumb	//main: ignore
-	.word address_calc_ignore_thumb	//wram: can't happen
-	.word thumb9_address_calc_cont	//io, manual execution
-	.word address_calc_ignore_thumb	//pal: can't happen
-	.word thumb9_address_calc_cont	//sprites vram, manual execution
-	.word address_calc_ignore_thumb	//oam: can't happen
-	.word thumb9_address_calc_cont	//card: fix
-	.word thumb9_address_calc_cont	//card: fix	
-	.word thumb9_address_calc_cont	//card: fix
-	.word thumb9_address_calc_cont	//card: fix
-	.word thumb9_address_calc_cont	//card: fix
-	.word thumb9_address_calc_cont	//eeprom, manual execution
-	.word thumb9_address_calc_fix_sram	//sram: fix
-	.word address_calc_ignore_thumb	//nothing: shouldn't happen
-
-thumb9_address_calc_fix_sram:
-	sub lr, lr, #0x0B800000
-	sub lr, lr, #0x00008C00
-	sub lr, lr, #0x00000060
-	mov r8, r8, lsl #4
-	strb r8, (thumb9_address_calc_fix_sram_op1 + 1)
-	b thumb9_address_calc_fix_sram_op1
-thumb9_address_calc_fix_sram_op1:
-	mov r0, lr
-	finish_handler_self_modifying
 
 thumb9_address_calc_cont:
 	tst r10, #(1 << 11)
@@ -236,36 +167,6 @@ thumb10_address_calc_op1:
 	mov lr, r0
 	and r12, r10, #(31 << 6)
 	add r9, lr, r12, lsr #5
-	ldr pc, [pc, r9, lsr #22]
-
-	nop
-	.word address_calc_ignore_thumb	//bios: ignore
-	.word address_calc_ignore_thumb	//itcm: ignore
-	.word address_calc_ignore_thumb	//main: ignore
-	.word address_calc_ignore_thumb	//wram: can't happen
-	.word thumb10_address_calc_cont	//io, manual execution
-	.word address_calc_ignore_thumb	//pal: can't happen
-	.word thumb10_address_calc_cont	//sprites vram, manual execution
-	.word address_calc_ignore_thumb	//oam: can't happen
-	.word thumb10_address_calc_cont	//card: fix
-	.word thumb10_address_calc_cont	//card: fix	
-	.word thumb10_address_calc_cont	//card: fix
-	.word thumb10_address_calc_cont	//card: fix
-	.word thumb10_address_calc_cont	//card: fix
-	.word thumb10_address_calc_cont	//eeprom, manual execution
-	.word thumb10_address_calc_fix_sram	//sram: fix
-	.word address_calc_ignore_thumb	//nothing: shouldn't happen
-
-thumb10_address_calc_fix_sram:
-	sub lr, lr, #0x0B800000
-	sub lr, lr, #0x00008C00
-	sub lr, lr, #0x00000060
-	mov r8, r8, lsl #4
-	strb r8, (thumb10_address_calc_fix_sram_op1 + 1)
-	b thumb10_address_calc_fix_sram_op1
-thumb10_address_calc_fix_sram_op1:
-	mov r0, lr
-	finish_handler_self_modifying
 
 thumb10_address_calc_cont:
 	tst r10, #(1 << 11)
@@ -296,32 +197,6 @@ thumb15_address_calc:
 	stmia r11, {r0-r7}	//non-banked registers
 	and r8, r10, #(7 << 8)
 	ldr r9, [r11, r8, lsr #6]
-	ldr pc, [pc, r9, lsr #22]
-
-	nop
-	.word address_calc_ignore_thumb	//bios: ignore
-	.word address_calc_ignore_thumb	//itcm: ignore
-	.word address_calc_ignore_thumb	//main: ignore
-	.word address_calc_ignore_thumb	//wram: can't happen
-	.word thumb15_address_calc_cont	//io, manual execution
-	.word address_calc_ignore_thumb	//pal: can't happen
-	.word thumb15_address_calc_cont	//sprites vram, manual execution
-	.word address_calc_ignore_thumb	//oam: can't happen
-	.word thumb15_address_calc_cont	//card: fix
-	.word thumb15_address_calc_cont	//card: fix	
-	.word thumb15_address_calc_cont	//card: fix
-	.word thumb15_address_calc_cont	//card: fix
-	.word thumb15_address_calc_cont	//card: fix
-	.word thumb15_address_calc_cont	//eeprom, manual execution
-	.word thumb15_address_calc_fix_sram	//sram: fix
-	.word address_calc_ignore_thumb	//nothing: shouldn't happen
-
-thumb15_address_calc_fix_sram:
-	sub r9, r9, #0x0B800000
-	sub r9, r9, #0x00008C00
-	sub r9, r9, #0x00000060
-	str r9, [r11, r8, lsr #6]
-	finish_handler
 
 thumb15_address_calc_cont:
 	and r1, r10, #0xFF

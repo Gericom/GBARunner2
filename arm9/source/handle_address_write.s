@@ -11,7 +11,8 @@ write_address_from_handler:
 //r10=address, r11=value, r12=nr bytes
 	cmp r9, #0x06000000
 	bge write_address_from_handler_sprites
-	bic r13, r9, #0x04000000
+	subs r13, r9, #0x04000000
+	bxlt lr
 	cmp r13, #0x20C
 	bxge lr
 
@@ -48,6 +49,8 @@ write_address_from_handler_4:
 	orr pc, r13, #0x01000000	//itcm
 
 write_address_from_handler_sprites:
+	cmp r9, #0x0E000000
+	bge write_address_from_handler_sram
 	add r10, r9, #0x3F0000
 	cmp r12, #1
 	orreq r11, r11, r11, lsl #8
@@ -55,6 +58,16 @@ write_address_from_handler_sprites:
 	cmp r12, #4
 	streq r11, [r10]
 	strneh r11, [r10]
+	bx lr
+
+write_address_from_handler_sram:
+	sub r10, r9, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	cmp r12, #2
+	strltb r11, [r10]
+	streqh r11, [r10]
+	strgt r11, [r10]
 	bx lr
 
 .global address_write_table_32bit_dtcm_setup

@@ -9,7 +9,8 @@ read_address_from_handler:
 //r10=address, r11=nr bytes
 	cmp r9, #0x06000000
 	bge read_address_from_handler_sprites
-	bic r12, r9, #0x04000000
+	subs r12, r9, #0x04000000
+	blt read_address_ignore
 	cmp r12, #0x20C
 	bge read_address_ignore
 
@@ -49,12 +50,10 @@ read_address_from_handler_sprites:
 	cmp r9, #0x08000000
 	bge read_address_from_handler_rom
 	add r10, r9, #0x3F0000
-	cmp r11, #1
-	ldreqb r10, [r10]
 	cmp r11, #2
+	ldrltb r10, [r10]
 	ldreqh r10, [r10]
-	cmp r11, #4
-	ldreq r10, [r10]
+	ldrgt r10, [r10]
 	bx lr
 
 read_address_from_handler_rom:
@@ -150,28 +149,36 @@ read_address_from_handler_rom_fifo_loop:
 
 	ldr r10,= 0x06868000
 //read_address_from_handler_rom_cont:
-	cmp r11, #1
-	ldreqb r10, [r10]
 	cmp r11, #2
+	ldrltb r10, [r10]
 	ldreqh r10, [r10]
-	cmp r11, #4
-	ldreq r10, [r10]
+	ldrgt r10, [r10]
 	bx lr
 
 read_address_from_handler_eeprom:
+	cmp r9, #0x0E000000
+	bge read_address_from_handler_sram
 	mov r10, #1
+	bx lr
+
+read_address_from_handler_sram:
+	sub r10, r9, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	cmp r11, #2
+	ldrltb r10, [r10]
+	ldreqh r10, [r10]
+	ldrgt r10, [r10]
 	bx lr
 
 read_address_from_handler_rom_in_mem:
 	bic r10, r9, #0x06000000
 	sub r10, r10, #0x05000000
 	sub r10, r10, #0x00FC0000
-	cmp r11, #1
-	ldreqb r10, [r10]
 	cmp r11, #2
+	ldrltb r10, [r10]
 	ldreqh r10, [r10]
-	cmp r11, #4
-	ldreq r10, [r10]
+	ldrgt r10, [r10]
 	bx lr
 
 //read_address_from_handler_highio:

@@ -1,112 +1,132 @@
 .section .itcm
 
-//calc address for arm ldrh/ldrsh/ldrsb/strh
-.global ldrh_strh_address_calc
-ldrh_strh_address_calc:
+.macro create_ldrh_strh_variant p, u, i, w, l
+.global ldrh_strh_address_calc_\p\u\i\w\l
+ldrh_strh_address_calc_\p\u\i\w\l:
 	and r8, r10, #(0xF << 16)
-	ldr lr, [r11, r8, lsr #14]
-	tst r10, #(1 << 22)
+	ldr r9, [r11, r8, lsr #14]
 	and r0, r10, #0xF
-	ldreq r0, [r11, r0, lsl #2]
-	andne r1, r10, #0xF00
-	orrne r0, r1, lsr #4
+.ifeq \i
+	ldr r0, [r11, r0, lsl #2]
+.else
+	and r1, r10, #0xF00
+	orr r0, r1, lsr #4
+.endif
+.ifeq \p
+	.ifeq \u
+		rsb r0, r0, #0
+	.endif
+.else
+	.ifeq \u
+		sub r9, r9, r0
+	.else
+		add r9, r9, r0
+	.endif
+.endif
+	b ldrh_strh_address_calc_cont_\p\w\l
+.endm
 
-	tst r10, #(1 << 23)
-	rsbeq r0, r0, #0
-	tst r10, #(1 << 24)
-	addne r9, lr, r0
-	moveq r9, lr
-	ldr pc, [pc, r9, lsr #22]
+.altmacro
+.macro create_all_ldrh_strh_variants arg=0
+	create_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x1F
+	create_all_ldrh_strh_variants %(\arg+1)
+.endif
+.endm
 
-	nop
-	.word address_calc_ignore_arm	//bios: ignore
-	.word address_calc_ignore_arm	//itcm: ignore
-	.word address_calc_ignore_arm	//main: ignore
-	.word address_calc_ignore_arm	//wram: can't happen
-	.word ldrh_strh_address_calc_cont	//io, manual execution
-	.word address_calc_ignore_arm	//pal: can't happen
-	.word ldrh_strh_address_calc_cont	//sprites vram, manual execution
-	.word address_calc_ignore_arm	//oam: can't happen
-	.word ldrh_strh_address_calc_cont	//card: fix
-	.word ldrh_strh_address_calc_cont	//card: fix	
-	.word ldrh_strh_address_calc_cont	//card: fix
-	.word ldrh_strh_address_calc_cont	//card: fix
-	.word ldrh_strh_address_calc_cont	//card: fix
-	.word ldrh_strh_address_calc_cont	//eeprom, manual execution
-	.word ldrh_strh_address_calc_fix_sram	//sram: fix
-	.word address_calc_ignore_arm	//nothing: shouldn't happen
+create_all_ldrh_strh_variants
 
-ldrh_strh_address_calc_fix_sram:
-	mov r8, r8, lsr #16
-	cmp lr, #0x0E000000
-	bge ldrh_strh_address_calc_fix_sram_cont
-	tst r10, #(1 << 22)
-	andeq r8, r10, #0xF
-	ldreq lr, [r11, r8, lsl #2]
-ldrh_strh_address_calc_fix_sram_cont:
-	sub lr, lr, #0x0B800000
-	sub lr, lr, #0x00008C00
-	sub lr, lr, #0x00000060
-	str lr, [r11, r8, lsl #2]
-	b data_abort_handler_cont_finish
-
-ldrh_strh_address_calc_cont:
-	tst r10, #(1 << 24)
-	tstne r10, #(1 << 21)
-	strne r9, [r11, r8, lsr #14]
-
-	tst r10, #(1 << 20)
-	mov r1, r10
+ldrh_strh_address_calc_cont_000:
+ldrh_strh_address_calc_cont_010:
 	mov r7, r11
-	bne ldrh_strh_address_calc_cont_load
 	and r12, r10, #(0xF << 12)
 	mov r12, r12, lsr #10
 	ldrh r11, [r11, r12]
 	mov r12, #2
 	bl write_address_from_handler
-	tst r1, #(1 << 24)
-	addeq r9, r0
-	streq r9, [r7, r8, lsr #14]
+	add r9, r0
+	str r9, [r7, r8, lsr #14]
+
 	add r5, #4
 	b data_abort_handler_cont_finish
 
-ldrh_strh_address_calc_cont_load:
+ldrh_strh_address_calc_cont_001:
+ldrh_strh_address_calc_cont_011:
+	mov r1, r10
+	mov r7, r11
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
 	mov r11, #2
 	moveq r11, #1
 	bl read_address_from_handler
 	cmp r4, #(1 << 5)
-	beq ldrh_strh_address_calc_cont2_ld
+	beq 2f
 	cmp r4, #(2 << 5)
 	mov r10, r10, lsl #16
 	moveq r10, r10, lsl #8
 	mov r10, r10, asr #16
 	moveq r10, r10, asr #8
-ldrh_strh_address_calc_cont2_ld:
+2:
 	and r11, r1, #(0xF << 12)
 	str r10, [r7, r11, lsr #10]
-	tst r1, #(1 << 24)
-	addeq r9, r0
-	streq r9, [r7, r8, lsr #14]
+
+	add r9, r0
+	str r9, [r7, r8, lsr #14]
 	add r5, #4
 	b data_abort_handler_cont_finish
 
+
+ldrh_strh_address_calc_cont_110:
+	str r9, [r11, r8, lsr #14]
+ldrh_strh_address_calc_cont_100:
+	and r12, r10, #(0xF << 12)
+	mov r12, r12, lsr #10
+	ldrh r11, [r11, r12]
+	mov r12, #2
+	bl write_address_from_handler
+	add r5, #4
+	b data_abort_handler_cont_finish
+
+ldrh_strh_address_calc_cont_111:
+	str r9, [r11, r8, lsr #14]
+ldrh_strh_address_calc_cont_101:
+	mov r1, r10
+	mov r7, r11
+	and r4, r10, #(3 << 5)
+	cmp r4, #(2 << 5)
+	mov r11, #2
+	moveq r11, #1
+	bl read_address_from_handler
+	cmp r4, #(1 << 5)
+	beq 2f
+	cmp r4, #(2 << 5)
+	mov r10, r10, lsl #16
+	moveq r10, r10, lsl #8
+	mov r10, r10, asr #16
+	moveq r10, r10, asr #8
+2:
+	and r11, r1, #(0xF << 12)
+	str r10, [r7, r11, lsr #10]
+
+	add r5, #4
+	b data_abort_handler_cont_finish
+	
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-.macro ldr_str_address_calc_part1_imm_start
+.macro create_ldr_str_variant i, p, u, bw, w, l
+.global ldr_str_address_calc_\i\p\u\bw\w\l
+ldr_str_address_calc_\i\p\u\bw\w\l:
+.ifeq \i
+	//immediate
 	and r8, r10, #(0xF << 16)
-	ldr lr, [r11, r8, lsr #14]
+	ldr r9, [r11, r8, lsr #14]
 	mov r0, r10, lsl #20
 	mov r0, r0, lsr #20
-	tst r10, #(1 << 23)
-	rsbeq r0, r0, #0
-.endm
-
-.macro ldr_str_address_calc_part1_reg_start
-	//r10 = instruction (and with 0x0FFFFFFF), r11 = register table
+.else
+	//shifted register
 	and r0, r10, #0xF
 	ldr r0, [r11, r0, lsl #2]
 	//construct shift (mov r0, r0, xxx #y)
@@ -119,110 +139,82 @@ ldrh_strh_address_calc_cont2_ld:
 	mrs r12, spsr
 	msr cpsr_f, r12
 	and r8, r10, #(0xF << 16)
-	ldr lr, [r11, r8, lsr #14]
+	ldr r9, [r11, r8, lsr #14]
 	//b ldr_str_address_calc_shift_instruction
 1:
 	mov r0, r0
-	tst r10, #(1 << 23)
-	rsbeq r0, r0, #0
+.endif	
+.ifeq \p
+	.ifeq \u
+		rsb r0, r0, #0
+	.endif
+.else
+	.ifeq \u
+		sub r9, r9, r0
+	.else
+		add r9, r9, r0
+	.endif
+.endif
+	b ldr_str_address_calc_cont2_\p\bw\w\l
 .endm
 
-.macro ldr_str_address_calc_part1_finish
-	ldr pc, [pc, r9, lsr #22]
-
-	nop
-	.word address_calc_ignore_arm	//bios: ignore
-	.word address_calc_ignore_arm	//itcm: ignore
-	.word address_calc_ignore_arm	//main: ignore
-	.word address_calc_ignore_arm	//wram: can't happen
-	.word ldr_str_address_calc_cont2	//io, manual execution
-	.word address_calc_ignore_arm	//pal: can't happen
-	.word ldr_str_address_calc_cont2	//sprites vram, manual execution
-	.word address_calc_ignore_arm	//oam: can't happen
-	.word ldr_str_address_calc_cont2	//card: fix
-	.word ldr_str_address_calc_cont2	//card: fix	
-	.word ldr_str_address_calc_cont2	//card: fix
-	.word ldr_str_address_calc_cont2	//card: fix
-	.word ldr_str_address_calc_cont2	//card: fix
-	.word ldr_str_address_calc_cont2	//eeprom, manual execution
-	.word ldr_str_address_calc_fix_sram	//sram: fix
-	.word address_calc_ignore_arm	//nothing: shouldn't happen
+.altmacro
+.macro create_all_ldr_str_variants arg=0
+	create_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x3F
+	create_all_ldr_str_variants %(\arg+1)
+.endif
 .endm
 
-.global ldr_str_address_calc_immediate_post
-ldr_str_address_calc_immediate_post:
-	ldr_str_address_calc_part1_imm_start
-	mov r9, lr
-	ldr_str_address_calc_part1_finish
+create_all_ldr_str_variants
 
-.global ldr_str_address_calc_immediate_pre
-ldr_str_address_calc_immediate_pre:
-	ldr_str_address_calc_part1_imm_start
-	add r9, lr, r0
-	ldr_str_address_calc_part1_finish
-
-.global ldr_str_address_calc_shifted_reg_post
-ldr_str_address_calc_shifted_reg_post:
-	ldr_str_address_calc_part1_reg_start
-	mov r9, lr
-	ldr_str_address_calc_part1_finish
-
-.global ldr_str_address_calc_shifted_reg_pre
-ldr_str_address_calc_shifted_reg_pre:
-	ldr_str_address_calc_part1_reg_start
-	add r9, lr, r0
-	ldr_str_address_calc_part1_finish
-
-ldr_str_address_calc_fix_sram:
-	mov r8, r8, lsr #16
-	cmp lr, #0x0E000000
-	beq ldr_str_address_calc_fix_sram_cont
-	tst r10, #(1 << 25)
-	andne r8, r10, #0xF
-	ldrne lr, [r11, r8, lsl #2]
-ldr_str_address_calc_fix_sram_cont:
-	sub lr, lr, #0x0B800000
-	sub lr, lr, #0x00008C00
-	sub lr, lr, #0x00000060
-	str lr, [r11, r8, lsl #2]
-	b data_abort_handler_cont_finish
-
-ldr_str_address_calc_cont2:
-	tst r10, #(1 << 24)
-	tstne r10, #(1 << 21)
-	strne r9, [r11, r8, lsr #14]
-
+.macro create_ldr_str_part2_variant p, bw, l
+.if \p //pre
+ldr_str_address_calc_cont2_\p\bw\()1\l:
+	str r9, [r11, r8, lsr #14]
+ldr_str_address_calc_cont2_\p\bw\()0\l:
+.else
+ldr_str_address_calc_cont2_\p\bw\()0\l:
+ldr_str_address_calc_cont2_\p\bw\()1\l:
+.endif
 	and r1, r10, #(0xF << 12)
-
-	mov r4, r10
+.if !\p || \l //post or read
 	mov r7, r11
-	tst r10, #(1 << 20)
-	beq ldr_str_address_calc_cont2_write
-	tst r10, #(1 << 22)
-	mov r11, #4
-	movne r11, #1
-	bl read_address_from_handler
-	str r10, [r7, r1, lsr #10]	
-
-	tst r4, #(1 << 24)
-	addeq r9, r0
-	streq r9, [r7, r8, lsr #14]
-	add r5, #4
-	b data_abort_handler_cont_finish
-
-ldr_str_address_calc_cont2_write:
-	tst r10, #(1 << 22)
-	ldr r11, [r11, r1, lsr #10]
-	mov r12, #4
-	movne r12, #1
-	andne r11, r11, #0xFF
+.endif
+.ifeq \l //write
+	.if \bw
+		ldrb r11, [r11, r1, lsr #10]
+		mov r12, #1
+	.else
+		ldr r11, [r11, r1, lsr #10]
+		mov r12, #4
+	.endif
 	bl write_address_from_handler
-
-	tst r4, #(1 << 24)
-	addeq r9, r0
-	streq r9, [r7, r8, lsr #14]
+.else
+	.if \bw
+		mov r11, #1
+	.else
+		mov r11, #4
+	.endif
+	bl read_address_from_handler
+	str r10, [r7, r1, lsr #10]
+.endif
+.ifeq \p
+	add r9, r0
+	str r9, [r7, r8, lsr #14]
+.endif
 	add r5, #4
 	b data_abort_handler_cont_finish
+.endm
+
+create_ldr_str_part2_variant	0,0,0
+create_ldr_str_part2_variant	0,0,1
+create_ldr_str_part2_variant	0,1,0
+create_ldr_str_part2_variant	0,1,1
+create_ldr_str_part2_variant	1,0,0
+create_ldr_str_part2_variant	1,0,1
+create_ldr_str_part2_variant	1,1,0
+create_ldr_str_part2_variant	1,1,1
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -231,7 +223,7 @@ ldr_str_address_calc_cont2_write:
 .global ldm_stm_address_calc
 ldm_stm_address_calc:
 	and r8, r10, #(0xF << 16)
-	ldr lr, [r11, r8, lsr #14]
+	ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16
 	//count nr bits
 	ldr r12,= 0x10000040
@@ -245,36 +237,8 @@ ldm_stm_address_calc:
 	orr r13, r10, lsl #5
 	msr cpsr_f, r13
 	
-	mov r9, lr
 	subvc r9, r9, r12, lsl #2
 	addge r9, r9, #4
-
-	ldr pc, [pc, r9, lsr #22]
-
-	nop
-	.word address_calc_ignore_arm	//bios: ignore
-	.word address_calc_ignore_arm	//itcm: ignore
-	.word address_calc_ignore_arm	//main: ignore
-	.word address_calc_ignore_arm	//wram: can't happen
-	.word ldm_stm_address_calc_cont2	//io, manual execution
-	.word address_calc_ignore_arm	//pal: can't happen
-	.word ldm_stm_address_calc_cont2	//sprites vram, manual execution
-	.word address_calc_ignore_arm	//oam: can't happen
-	.word ldm_stm_address_calc_cont2	//card: fix
-	.word ldm_stm_address_calc_cont2	//card: fix	
-	.word ldm_stm_address_calc_cont2	//card: fix
-	.word ldm_stm_address_calc_cont2	//card: fix
-	.word ldm_stm_address_calc_cont2	//card: fix
-	.word ldm_stm_address_calc_cont2	//eeprom, manual execution
-	.word ldm_stm_address_calc_fix_sram	//sram: fix
-	.word address_calc_ignore_arm	//nothing: shouldn't happen
-
-ldm_stm_address_calc_fix_sram:
-	sub lr, lr, #0x0B800000
-	sub lr, lr, #0x00008C00
-	sub lr, lr, #0x00000060
-	str lr, [r11, r8, lsr #14]
-	b data_abort_handler_cont_finish
 
 ldm_stm_address_calc_cont2:
 	tst r10, #(1 << 23)
