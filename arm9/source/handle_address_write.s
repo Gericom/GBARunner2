@@ -4,6 +4,91 @@ address_write_table_32bit_dtcm = 0x10000140
 address_write_table_16bit_dtcm = 0x10000248
 address_write_table_8bit_dtcm = 0x10000454
 
+.global write_address_from_handler_32bit
+write_address_from_handler_32bit:
+	cmp r9, #0x06000000
+	bge write_address_from_handler_sprites_32bit
+	subs r13, r9, #0x04000000
+	bxlt lr
+	cmp r13, #0x20C
+	bxge lr
+	mov r13, r13, lsr #1
+	ldr r12,= address_write_table_32bit_dtcm
+	ldrh r13, [r12, r13]
+	orr pc, r13, #0x01000000	//itcm
+
+write_address_from_handler_sprites_32bit:
+	cmp r9, #0x0E000000
+	bge write_address_from_handler_sram_32bit
+	add r10, r9, #0x3F0000
+	str r11, [r10]
+	bx lr
+
+write_address_from_handler_sram_32bit:
+	ldr r12,= 0x01FF8000
+	bic r10, r9, r12
+	sub r10, r10, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	str r11, [r10]
+	bx lr
+
+.global write_address_from_handler_16bit
+write_address_from_handler_16bit:
+	cmp r9, #0x06000000
+	bge write_address_from_handler_sprites_16bit
+	subs r13, r9, #0x04000000
+	bxlt lr
+	cmp r13, #0x20C
+	bxge lr
+	ldr r12,= address_write_table_16bit_dtcm
+	ldrh r13, [r12, r13]
+	orr pc, r13, #0x01000000	//itcm
+
+write_address_from_handler_sprites_16bit:
+	cmp r9, #0x0E000000
+	bge write_address_from_handler_sram_16bit
+	add r10, r9, #0x3F0000
+	strh r11, [r10]
+	bx lr
+
+write_address_from_handler_sram_16bit:
+	ldr r12,= 0x01FF8000
+	bic r10, r9, r12
+	sub r10, r10, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	strh r11, [r10]
+	bx lr
+
+.global write_address_from_handler_8bit
+write_address_from_handler_8bit:
+	cmp r9, #0x06000000
+	bge write_address_from_handler_sprites_8bit
+	subs r13, r9, #0x04000000
+	bxlt lr
+	cmp r13, #0x20C
+	bxge lr
+	mov r13, r13, lsl #1
+	ldr r12,= address_write_table_8bit_dtcm
+	ldrh r13, [r12, r13]
+	orr pc, r13, #0x01000000	//itcm
+
+write_address_from_handler_sprites_8bit:
+	cmp r9, #0x0E000000
+	bge write_address_from_handler_sram_8bit
+	//nothing written on 8 bit access
+	bx lr
+
+write_address_from_handler_sram_8bit:
+	ldr r12,= 0x01FF8000
+	bic r10, r9, r12
+	sub r10, r10, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	strb r11, [r10]
+	bx lr
+
 //consider using r9 as address value, because it's that value (almost) everywhere
 //It is okay when from arm at least, thumb7, thumb9, thumb10, thumb15
 .global write_address_from_handler

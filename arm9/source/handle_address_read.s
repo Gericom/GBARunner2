@@ -4,6 +4,202 @@ address_read_table_32bit_dtcm = 0x1000086C
 address_read_table_16bit_dtcm = 0x10000974
 address_read_table_8bit_dtcm = 0x10000B80
 
+.macro read_from_rom size
+	bic r10, r9, #0x0E000000
+	//ensure block d is mapped to the arm7
+	ldr r12,= 0x4000243
+	mov r13, #0x8A
+	strb r13, [r12]
+	//send read command
+	ldr r12,= 0x04000188
+	ldr r13,= 0xAA5500C8
+	str r13, [r12]
+	str r10, [r12]	//address
+	mov r11, #\size
+	str r11, [r12]	//size
+
+	//wait for the arm7 sync command
+	ldr r13,= 0x55AAC8AC
+	ldr r12,= 0x04000184
+1:
+	ldr r10, [r12]
+	tst r10, #(1 << 8)
+	bne 1b
+	ldr r10,= 0x04100000
+	ldr r10, [r10]	//read word from fifo
+	cmp r10, r13
+	bne 1b
+
+	//block d to arm9 lcdc
+	ldr r12,= 0x4000243
+	mov r13, #0x80
+	strb r13, [r12]
+.endm
+
+.global read_address_from_handler_32bit
+read_address_from_handler_32bit:
+	cmp r9, #0x06000000
+	bge read_address_from_handler_sprites_32bit
+	subs r12, r9, #0x04000000
+	blt read_address_ignore
+	cmp r12, #0x20C
+	bge read_address_ignore
+	mov r12, r12, lsr #1
+	ldr r13,= address_read_table_32bit_dtcm
+	ldrh r13, [r13, r12]
+	orr pc, r13, #0x01000000	//itcm
+
+read_address_from_handler_sprites_32bit:
+	cmp r9, #0x08000000
+	bge read_address_from_handler_rom_32bit
+	add r10, r9, #0x3F0000
+	ldr r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_32bit:
+	cmp r9, #0x0D000000
+	bge read_address_from_handler_eeprom_32bit
+	ldr r12,= 0x083B0000
+	cmp r9, r12
+	blt read_address_from_handler_rom_in_mem_32bit
+
+	read_from_rom 4
+
+	ldr r10,= 0x06868000
+	ldr r10, [r10]
+	bx lr
+
+read_address_from_handler_eeprom_32bit:
+	cmp r9, #0x0E000000
+	bge read_address_from_handler_sram_32bit
+	mov r10, #1
+	bx lr
+
+read_address_from_handler_sram_32bit:
+	ldr r11,= 0x01FF8000
+	bic r10, r9, r11
+	sub r10, r10, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	ldr r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_in_mem_32bit:
+	bic r10, r9, #0x06000000
+	sub r10, r10, #0x05000000
+	sub r10, r10, #0x00FC0000
+	ldr r10, [r10]
+	bx lr
+
+.global read_address_from_handler_16bit
+read_address_from_handler_16bit:
+	cmp r9, #0x06000000
+	bge read_address_from_handler_sprites_16bit
+	subs r12, r9, #0x04000000
+	blt read_address_ignore
+	cmp r12, #0x20C
+	bge read_address_ignore
+	ldr r13,= address_read_table_16bit_dtcm
+	ldrh r13, [r13, r12]
+	orr pc, r13, #0x01000000	//itcm
+
+read_address_from_handler_sprites_16bit:
+	cmp r9, #0x08000000
+	bge read_address_from_handler_rom_16bit
+	add r10, r9, #0x3F0000
+	ldrh r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_16bit:
+	cmp r9, #0x0D000000
+	bge read_address_from_handler_eeprom_16bit
+	ldr r12,= 0x083B0000
+	cmp r9, r12
+	blt read_address_from_handler_rom_in_mem_16bit
+
+	read_from_rom 2
+
+	ldr r10,= 0x06868000
+	ldrh r10, [r10]
+	bx lr
+
+read_address_from_handler_eeprom_16bit:
+	cmp r9, #0x0E000000
+	bge read_address_from_handler_sram_16bit
+	mov r10, #1
+	bx lr
+
+read_address_from_handler_sram_16bit:
+	ldr r11,= 0x01FF8000
+	bic r10, r9, r11
+	sub r10, r10, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	ldrh r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_in_mem_16bit:
+	bic r10, r9, #0x06000000
+	sub r10, r10, #0x05000000
+	sub r10, r10, #0x00FC0000
+	ldrh r10, [r10]
+	bx lr
+
+.global read_address_from_handler_8bit
+read_address_from_handler_8bit:
+	cmp r9, #0x06000000
+	bge read_address_from_handler_sprites_8bit
+	subs r12, r9, #0x04000000
+	blt read_address_ignore
+	cmp r12, #0x20C
+	bge read_address_ignore
+	mov r12, r12, lsl #1
+	ldr r13,= address_read_table_8bit_dtcm
+	ldrh r13, [r13, r12]
+	orr pc, r13, #0x01000000	//itcm
+
+read_address_from_handler_sprites_8bit:
+	cmp r9, #0x08000000
+	bge read_address_from_handler_rom_8bit
+	add r10, r9, #0x3F0000
+	ldrb r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_8bit:
+	cmp r9, #0x0D000000
+	bge read_address_from_handler_eeprom_8bit
+	ldr r12,= 0x083B0000
+	cmp r9, r12
+	blt read_address_from_handler_rom_in_mem_8bit
+
+	read_from_rom 1
+
+	ldr r10,= 0x06868000
+	ldrb r10, [r10]
+	bx lr
+
+read_address_from_handler_eeprom_8bit:
+	cmp r9, #0x0E000000
+	bge read_address_from_handler_sram_8bit
+	mov r10, #1
+	bx lr
+
+read_address_from_handler_sram_8bit:
+	ldr r11,= 0x01FF8000
+	bic r10, r9, r11
+	sub r10, r10, #0x0B800000
+	sub r10, r10, #0x00008C00
+	sub r10, r10, #0x00000060
+	ldrb r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_in_mem_8bit:
+	bic r10, r9, #0x06000000
+	sub r10, r10, #0x05000000
+	sub r10, r10, #0x00FC0000
+	ldrb r10, [r10]
+	bx lr
+
 .global read_address_from_handler
 read_address_from_handler:
 //r10=address, r11=nr bytes
@@ -162,7 +358,9 @@ read_address_from_handler_eeprom:
 	bx lr
 
 read_address_from_handler_sram:
-	sub r10, r9, #0x0B800000
+	ldr r12,= 0x01FF8000
+	bic r10, r9, r12
+	sub r10, r10, #0x0B800000
 	sub r10, r10, #0x00008C00
 	sub r10, r10, #0x00000060
 	cmp r11, #2

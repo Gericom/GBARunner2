@@ -107,14 +107,13 @@ thumb8_address_calc_read_cont_op1:
 	finish_handler_skip_op_self_modifying
 
 thumb8_address_calc_write:
-	mov r12, #2
 	and r10, r10, #7
 	strb r10, thumb8_address_calc_write_op1
 	b thumb8_address_calc_write_op1
 thumb8_address_calc_write_op1:
 	mov r11, r0, lsl #16
 	mov r11, r11, lsr #16
-	bl write_address_from_handler
+	bl write_address_from_handler_16bit
 	finish_handler_skip_op_self_modifying
 
 .global thumb9_address_calc
@@ -175,21 +174,19 @@ thumb10_address_calc_read:
 	and r8, r10, #7
 	mov r8, r8, lsl #4
 	strb r8, (thumb10_address_calc_cont_op1 + 1)
-	mov r11, #2
-	bl read_address_from_handler
+	bl read_address_from_handler_16bit
 thumb10_address_calc_cont_op1:
 	mov r0, r10
 	finish_handler_skip_op_self_modifying
 
 thumb10_address_calc_write:
-	mov r12, #2
 	and r10, r10, #7
 	strb r10, thumb10_address_calc_write_op1
 	b thumb10_address_calc_write_op1
 thumb10_address_calc_write_op1:
 	mov r11, r0, lsl #16
 	mov r11, r11, lsr #16
-	bl write_address_from_handler
+	bl write_address_from_handler_16bit
 	finish_handler_skip_op_self_modifying
 
 .global thumb15_address_calc
@@ -211,8 +208,7 @@ thumb15_address_calc_cont:
 thumb15_address_calc_cont_load_loop:
 	tst r1, #1
 	beq thumb15_address_calc_cont_load_loop_cont
-	mov r11, #4
-	bl read_address_from_handler
+	bl read_address_from_handler_32bit
 	str r10, [r8]
 	add r9, r9, #4
 thumb15_address_calc_cont_load_loop_cont:
@@ -225,8 +221,7 @@ thumb15_address_calc_cont_write_loop:
 	tst r1, #1
 	beq thumb15_address_calc_cont_write_loop_cont
 	ldr r11, [r8]
-	mov r12, #4
-	bl write_address_from_handler
+	bl write_address_from_handler_32bit
 	add r9, r9, #4
 thumb15_address_calc_cont_write_loop_cont:
 	add r8, r8, #4

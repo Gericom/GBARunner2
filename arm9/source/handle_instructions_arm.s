@@ -1,4 +1,5 @@
 .section .itcm
+.altmacro
 
 .macro create_ldrh_strh_variant p, u, i, w, l
 .global ldrh_strh_address_calc_\p\u\i\w\l
@@ -26,7 +27,6 @@ ldrh_strh_address_calc_\p\u\i\w\l:
 	b ldrh_strh_address_calc_cont_\p\w\l
 .endm
 
-.altmacro
 .macro create_all_ldrh_strh_variants arg=0
 	create_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
 .if \arg<0x1F
@@ -42,12 +42,9 @@ ldrh_strh_address_calc_cont_010:
 	and r12, r10, #(0xF << 12)
 	mov r12, r12, lsr #10
 	ldrh r11, [r11, r12]
-	mov r12, #2
-	bl write_address_from_handler
+	bl write_address_from_handler_16bit
 	add r9, r0
 	str r9, [r7, r8, lsr #14]
-
-	add r5, #4
 	b data_abort_handler_cont_finish
 
 ldrh_strh_address_calc_cont_001:
@@ -56,23 +53,26 @@ ldrh_strh_address_calc_cont_011:
 	mov r7, r11
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
-	mov r11, #2
-	moveq r11, #1
-	bl read_address_from_handler
-	cmp r4, #(1 << 5)
 	beq 2f
-	cmp r4, #(2 << 5)
-	mov r10, r10, lsl #16
-	moveq r10, r10, lsl #8
-	mov r10, r10, asr #16
-	moveq r10, r10, asr #8
-2:
+	bl read_address_from_handler_16bit
+	cmp r4, #(1 << 5)
+	movne r10, r10, lsl #16
+	movne r10, r10, asr #16
 	and r11, r1, #(0xF << 12)
 	str r10, [r7, r11, lsr #10]
 
 	add r9, r0
 	str r9, [r7, r8, lsr #14]
-	add r5, #4
+	b data_abort_handler_cont_finish
+2:
+	bl read_address_from_handler_8bit
+	mov r10, r10, lsl #24
+	mov r10, r10, asr #24
+	and r11, r1, #(0xF << 12)
+	str r10, [r7, r11, lsr #10]
+
+	add r9, r0
+	str r9, [r7, r8, lsr #14]
 	b data_abort_handler_cont_finish
 
 
@@ -82,9 +82,7 @@ ldrh_strh_address_calc_cont_100:
 	and r12, r10, #(0xF << 12)
 	mov r12, r12, lsr #10
 	ldrh r11, [r11, r12]
-	mov r12, #2
-	bl write_address_from_handler
-	add r5, #4
+	bl write_address_from_handler_16bit
 	b data_abort_handler_cont_finish
 
 ldrh_strh_address_calc_cont_111:
@@ -94,23 +92,21 @@ ldrh_strh_address_calc_cont_101:
 	mov r7, r11
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
-	mov r11, #2
-	moveq r11, #1
-	bl read_address_from_handler
-	cmp r4, #(1 << 5)
 	beq 2f
-	cmp r4, #(2 << 5)
-	mov r10, r10, lsl #16
-	moveq r10, r10, lsl #8
-	mov r10, r10, asr #16
-	moveq r10, r10, asr #8
-2:
+	bl read_address_from_handler_16bit
+	cmp r4, #(1 << 5)
+	movne r10, r10, lsl #16
+	movne r10, r10, asr #16
 	and r11, r1, #(0xF << 12)
 	str r10, [r7, r11, lsr #10]
-
-	add r5, #4
 	b data_abort_handler_cont_finish
-	
+2:
+	bl read_address_from_handler_8bit
+	mov r10, r10, lsl #24
+	mov r10, r10, asr #24
+	and r11, r1, #(0xF << 12)
+	str r10, [r7, r11, lsr #10]
+	b data_abort_handler_cont_finish
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -155,10 +151,37 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 		add r9, r9, r0
 	.endif
 .endif
-	b ldr_str_address_calc_cont2_\p\bw\w\l
+
+.if \p && \w //pre
+	str r9, [r11, r8, lsr #14]
+.endif
+	and r1, r10, #(0xF << 12)
+.if !\p || \l //post or read
+	mov r7, r11
+.endif
+.ifeq \l //write
+	.if \bw
+		ldrb r11, [r11, r1, lsr #10]
+		bl write_address_from_handler_8bit
+	.else
+		ldr r11, [r11, r1, lsr #10]
+		bl write_address_from_handler_32bit
+	.endif
+.else
+	.if \bw
+		bl read_address_from_handler_8bit
+	.else
+		bl read_address_from_handler_32bit
+	.endif
+	str r10, [r7, r1, lsr #10]
+.endif
+.ifeq \p
+	add r9, r0
+	str r9, [r7, r8, lsr #14]
+.endif
+	b data_abort_handler_cont_finish
 .endm
 
-.altmacro
 .macro create_all_ldr_str_variants arg=0
 	create_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
 .if \arg<0x3F
@@ -168,60 +191,13 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 
 create_all_ldr_str_variants
 
-.macro create_ldr_str_part2_variant p, bw, l
-.if \p //pre
-ldr_str_address_calc_cont2_\p\bw\()1\l:
-	str r9, [r11, r8, lsr #14]
-ldr_str_address_calc_cont2_\p\bw\()0\l:
-.else
-ldr_str_address_calc_cont2_\p\bw\()0\l:
-ldr_str_address_calc_cont2_\p\bw\()1\l:
-.endif
-	and r1, r10, #(0xF << 12)
-.if !\p || \l //post or read
-	mov r7, r11
-.endif
-.ifeq \l //write
-	.if \bw
-		ldrb r11, [r11, r1, lsr #10]
-		mov r12, #1
-	.else
-		ldr r11, [r11, r1, lsr #10]
-		mov r12, #4
-	.endif
-	bl write_address_from_handler
-.else
-	.if \bw
-		mov r11, #1
-	.else
-		mov r11, #4
-	.endif
-	bl read_address_from_handler
-	str r10, [r7, r1, lsr #10]
-.endif
-.ifeq \p
-	add r9, r0
-	str r9, [r7, r8, lsr #14]
-.endif
-	add r5, #4
-	b data_abort_handler_cont_finish
-.endm
-
-create_ldr_str_part2_variant	0,0,0
-create_ldr_str_part2_variant	0,0,1
-create_ldr_str_part2_variant	0,1,0
-create_ldr_str_part2_variant	0,1,1
-create_ldr_str_part2_variant	1,0,0
-create_ldr_str_part2_variant	1,0,1
-create_ldr_str_part2_variant	1,1,0
-create_ldr_str_part2_variant	1,1,1
-
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-.global ldm_stm_address_calc
-ldm_stm_address_calc:
+.macro create_ldm_stm_variant p, u, s, w, l
+.global ldm_stm_address_calc_\p\u\s\w\l
+ldm_stm_address_calc_\p\u\s\w\l:
 	and r8, r10, #(0xF << 16)
 	ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16
@@ -231,55 +207,48 @@ ldm_stm_address_calc:
 	ldrb r13, [r12, r13, lsr #16]
 	ldrb r12, [r12, r1, lsr #24]
 	add r12, r12, r13
-
-	mov r13, r10, lsl #7
-	and r13, r13, #0x80000000
-	orr r13, r10, lsl #5
-	msr cpsr_f, r13
-	
-	subvc r9, r9, r12, lsl #2
-	addge r9, r9, #4
-
-ldm_stm_address_calc_cont2:
-	tst r10, #(1 << 23)
-	rsbeq r12, r12, #0
-	tst r10, #(1 << 21)
-	ldrne r13, [r11, r8, lsr #14]
-	addne r13, r13, r12, lsl #2
-	strne r13, [r11, r8, lsr #14]
-
-	tst r10, #(1 << 20)
+.if w
+	.ifeq u
+		sub r13, r9, r12, lsl #2
+	.else
+		add r13, r9, r12, lsl #2
+	.endif
+	str r13, [r11, r8, lsr #14]
+.endif
+.ifeq u
+	sub r9, r9, r12, lsl #2
+.endif
+.if p == u
+	add r9, r9, #4
+.endif
 	mov r4, r11
 	mov r1, r1, lsr #16
-	beq ldm_stm_address_calc_cont2_write_loop
-ldm_stm_address_calc_cont2_load_loop:
+1:
 	tst r1, #1
-	beq ldm_stm_address_calc_cont2_load_loop_cont
-	mov r11, #4
-	bl read_address_from_handler
+	beq 2f
+.if l
+	bl read_address_from_handler_32bit
 	str r10, [r4]
-	add r9, r9, #4
-ldm_stm_address_calc_cont2_load_loop_cont:
-	add r4, r4, #4
-	movs r1, r1, lsr #1
-	bne ldm_stm_address_calc_cont2_load_loop
-	add r5, #4
-	b data_abort_handler_cont_finish
-
-ldm_stm_address_calc_cont2_write_loop:
-	tst r1, #1
-	beq ldm_stm_address_calc_cont2_write_loop_cont
+.else
 	ldr r11, [r4]
-	mov r12, #4
-	bl write_address_from_handler
+	bl write_address_from_handler_32bit
+.endif
 	add r9, r9, #4
-ldm_stm_address_calc_cont2_write_loop_cont:
+2:
 	add r4, r4, #4
 	movs r1, r1, lsr #1
-	bne ldm_stm_address_calc_cont2_write_loop
-	add r5, #4
+	bne 1b
 	b data_abort_handler_cont_finish
+.endm
+
+.macro create_all_ldm_stm_variants arg=0
+	create_ldm_stm_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x1F
+	create_all_ldm_stm_variants %(\arg+1)
+.endif
+.endm
+
+create_all_ldm_stm_variants
 
 address_calc_ignore_arm:
-	add r5, #4
 	b data_abort_handler_cont_finish

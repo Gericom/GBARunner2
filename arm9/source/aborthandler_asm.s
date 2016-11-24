@@ -1,4 +1,5 @@
 .section .itcm
+.altmacro
 
 //#define DEBUG_ABORT_ADDRESS
 
@@ -154,24 +155,10 @@ data_abort_handler_cont:
 	ldr pc, [pc, r10, lsr #18]
 
 	nop
-/*.rept 8
-	.word ldrh_strh_address_calc_post_down
-.endr
-.rept 8
-	.word ldrh_strh_address_calc_post_up
-.endr
-.rept 8
-	.word ldrh_strh_address_calc_pre_down
-.endr
-.rept 8
-	.word ldrh_strh_address_calc_pre_up
-.endr*/
-
 .macro list_ldrh_strh_variant a,b,c,d,e
 	.word ldrh_strh_address_calc_\a\b\c\d\e
 .endm
 
-.altmacro
 .macro list_all_ldrh_strh_variants arg=0
 	list_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
 .if \arg<0x1F
@@ -197,9 +184,18 @@ data_abort_handler_cont:
 .endm
 
 	list_all_ldr_str_variants
-.rept 32
-	.word ldm_stm_address_calc
-.endr
+
+.macro list_ldm_stm_variant a,b,c,d,e
+	.word ldm_stm_address_calc_\a\b\c\d\e
+.endm
+
+.macro list_all_ldm_stm_variants arg=0
+	list_ldm_stm_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x1F
+	list_all_ldm_stm_variants %(\arg+1)
+.endif
+.endm
+	list_all_ldm_stm_variants
 .rept 96
 	.word address_calc_unknown
 .endr
@@ -209,7 +205,6 @@ data_abort_handler_cont_finish:
 	msr cpsr_c, #0x97
 	mcr p15, 0, r6, c1, c0, 0
 
-	mov lr, r5
 	//push {r5}	//lr
 	mrs sp, spsr
 	//ldr r12,= (reg_table + (4 * 13))
@@ -233,7 +228,7 @@ data_abort_handler_cont2:
 	//bne data_abort_handler_r15_dst
 	//pop {lr}
 
-	subs pc, lr, #8
+	subs pc, lr, #4
 
 data_abort_handler_cont3:
 	//sub r12, #(4 * 13)
@@ -246,7 +241,7 @@ data_abort_handler_cont3:
 	//bne data_abort_handler_r15_dst
 	//pop {lr}
 	nop
-	subs pc, lr, #8
+	subs pc, lr, #4
 
 //data_abort_handler_r15_dst:
 //	pop {lr}
