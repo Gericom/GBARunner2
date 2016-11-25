@@ -27,9 +27,11 @@ write_address_from_handler_sprites_32bit:
 write_address_from_handler_sram_32bit:
 	ldr r12,= 0x01FF8000
 	bic r10, r9, r12
-	sub r10, r10, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	str r11, [r10]
 	bx lr
 
@@ -55,9 +57,11 @@ write_address_from_handler_sprites_16bit:
 write_address_from_handler_sram_16bit:
 	ldr r12,= 0x01FF8000
 	bic r10, r9, r12
-	sub r10, r10, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	strh r11, [r10]
 	bx lr
 
@@ -83,9 +87,11 @@ write_address_from_handler_sprites_8bit:
 write_address_from_handler_sram_8bit:
 	ldr r12,= 0x01FF8000
 	bic r10, r9, r12
-	sub r10, r10, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	strb r11, [r10]
 	bx lr
 
@@ -146,9 +152,13 @@ write_address_from_handler_sprites:
 	bx lr
 
 write_address_from_handler_sram:
-	sub r10, r9, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	ldr r13,= 0x01FF8000
+	bic r10, r9, r13
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	cmp r12, #2
 	strltb r11, [r10]
 	streqh r11, [r10]
@@ -431,6 +441,12 @@ write_address_dma_size:
 	strh r11, [r9]
 	bx lr
 
+cur_snd_buffer:
+.word 0
+
+already_playing:
+.word 0
+
 .global write_address_dma_control
 write_address_dma_control:
 	bic r11, r11, #0x1F
@@ -526,16 +542,54 @@ write_address_dma_control_cont:
 	bxne lr
 	//cmp r10, r13
 	//beq write_address_dma_control_cont_snd2
+	//ldr r13,= cur_snd_buffer
+	//ldr r12, [r13]
+	//cmp r12, #0
+	//moveq r12, #1
+	//movne r12, #0
+	//str r12, [r13]
+	//ldreq r12,= (0x02400000 - (1584 * 2))
+	//ldrne r12,= (0x02400000 - 1584)
+	//ldr r13,= cur_snd_buffer
+	//ldr r10, [r13]
+	//mov r12, #1584
+	//mul r12, r10, r12
+	//cmp r10, #9
+	//moveq r10, #0
+	//addne r10, #1
+	//str r10, [r13]
+	//ldr r13,= 0x23F8000
+	//add r12, r13, r12
+	ldr r12,= 0x23F8000
 	ldr r13,= 0x40000C0
-	ldr r12,= (0x02400000 - (1584 * 2))
 	str r12, [r13]
 	bic r11, r11, #0x3B00
 	bic r11, r11, #0x00E0
 	//orr r11, r11, #(3 << 5)
 	bic r11, r11, #0x1F
-	mov r12, #396
+	mov r12, #(396 * 2)
 	strh r12, [r9, #-2]
 	strh r11, [r9]
+
+	//ldr r13,= cur_snd_buffer
+	//ldr r12, [r13]
+	//cmp r12, #1
+	//bxeq lr
+	//ldr r12, [r13, #4]
+	//cmp r12, #1
+	//bxeq lr
+	//mov r12, #1
+	//str r12, [r13, #4]
+
+	//ldr r13,= cur_snd_buffer
+	//ldr r12, [r13]
+	//cmp r12, #5
+	//bxne lr
+	//ldr r12, [r13, #4]
+	//cmp r12, #1
+	//bxeq lr
+	//mov r12, #1
+	//str r12, [r13, #4]
 
 	ldr r10,= 0x04000188
 	ldr r11,= 0xAA5500C5
@@ -547,27 +601,27 @@ write_address_dma_control_cont:
 
 	bx lr
 
-write_address_dma_control_cont_snd2:
-	ldr r13,= 0x40000CC
-	ldr r12,= (0x02400000 - 1584)
-	str r12, [r13]
-	bic r11, r11, #0x3B00
-	bic r11, r11, #0x00E0
+//write_address_dma_control_cont_snd2:
+//	ldr r13,= 0x40000CC
+//	ldr r12,= (0x02400000 - 1584)
+//	str r12, [r13]
+//	bic r11, r11, #0x3B00
+//	bic r11, r11, #0x00E0
 	//orr r11, r11, #(3 << 5)
-	bic r11, r11, #0x1F
-	mov r12, #396
-	strh r12, [r9, #-2]
-	strh r11, [r9]
+//	bic r11, r11, #0x1F
+//	mov r12, #396
+//	strh r12, [r9, #-2]
+//	strh r11, [r9]
 
-	ldr r10,= 0x04000188
-	ldr r11,= 0xAA5500C7
-	ldr r13,= 0xAA5500C6
-	mov r12, #0
-	str r11, [r10]
-	str r13, [r10]
-	str r12, [r10]
+//	ldr r10,= 0x04000188
+//	ldr r11,= 0xAA5500C7
+//	ldr r13,= 0xAA5500C6
+//	mov r12, #0
+//	str r11, [r10]
+//	str r13, [r10]
+//	str r12, [r10]
 
-	bx lr
+//	bx lr
 
 .global write_address_dma_size_control
 write_address_dma_size_control:
@@ -671,8 +725,30 @@ write_address_dma_size_control_cont2:
 	bxne lr
 	//cmp r10, r13
 	//beq write_address_dma_size_control_cont2_snd2
+	//ldr r13,= 0x40000C0
+	//ldr r12,= (0x02400000 - (1584 * 2))
+	//str r12, [r13]
+	//ldr r13,= cur_snd_buffer
+	//ldr r12, [r13]
+	//cmp r12, #0
+	//moveq r12, #1
+	//movne r12, #0
+	//str r12, [r13]
+	//ldreq r12,= (0x02400000 - (1584 * 2))
+	//ldrne r12,= (0x02400000 - 1584)
 	ldr r13,= 0x40000C0
-	ldr r12,= (0x02400000 - (1584 * 2))
+	ldr r12,= 0x23F8000 //(0x02400000 - (1584 * 2))
+	//ldr r13,= cur_snd_buffer
+	//ldr r10, [r13]
+	//mov r12, #1584
+	//mul r12, r10, r12
+	//cmp r10, #9
+	//moveq r10, #0
+	//addne r10, #1
+	//str r10, [r13]
+	//ldr r13,= 0x23F8000
+	//add r12, r13, r12
+	//ldr r13,= 0x40000C0
 	str r12, [r13]
 	bic r11, r11, #0x3B000000
 	bic r11, r11, #0x00E00000
@@ -681,38 +757,48 @@ write_address_dma_size_control_cont2:
 	bic r11, r13
 	orr r11, r11, #396
 	str r11, [r9]
+
+	//ldr r13,= cur_snd_buffer
+	//ldr r12, [r13]
+	//cmp r12, #5
+	//bxne lr
+	//ldr r12, [r13, #4]
+	//cmp r12, #1
+	//bxeq lr
+	//mov r12, #1
+	//str r12, [r13, #4]
 	
 	ldr r10,= 0x04000188
 	ldr r11,= 0xAA5500C5
 	ldr r13,= 0xAA5500C4
-	mov r12, #0
+	mov r12, #1
 	str r11, [r10]
 	str r13, [r10]
 	str r12, [r10]
 
 	bx lr
 
-write_address_dma_size_control_cont2_snd2:
-	ldr r13,= 0x40000CC
-	ldr r12,= (0x02400000 - 1584)
-	str r12, [r13]
-	bic r11, r11, #0x3B000000
-	bic r11, r11, #0x00E00000
+//write_address_dma_size_control_cont2_snd2:
+//	ldr r13,= 0x40000CC
+//	ldr r12,= (0x02400000 - 1584)
+//	str r12, [r13]
+//	bic r11, r11, #0x3B000000
+//	bic r11, r11, #0x00E00000
 	//orr r11, r11, #(3 << (5 + 16))
-	ldr r13,= 0x1FFFFF
-	bic r11, r13
-	orr r11, r11, #396
-	str r11, [r9]
+//	ldr r13,= 0x1FFFFF
+//	bic r11, r13
+//	orr r11, r11, #396
+//	str r11, [r9]
 	
-	ldr r10,= 0x04000188
-	ldr r11,= 0xAA5500C7
-	ldr r13,= 0xAA5500C6
-	mov r12, #0
-	str r11, [r10]
-	str r13, [r10]
-	str r12, [r10]
+//	ldr r10,= 0x04000188
+//	ldr r11,= 0xAA5500C7
+//	ldr r13,= 0xAA5500C6
+//	mov r12, #0
+//	str r11, [r10]
+//	str r13, [r10]
+//	str r12, [r10]
 
-	bx lr
+//	bx lr
 
 .global write_address_timer_counter
 write_address_timer_counter:

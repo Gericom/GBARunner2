@@ -299,7 +299,7 @@ dldi_name_copy:
 	//strb r1, [r0]
 
 	mov r0, #0 //#0xFFFFFFFF
-	ldr r1,= (0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
+	ldr r1,= 0x23F0000 //(0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
 	mov r2, #(32 * 1024)
 gba_setup_fill_H_loop:
 	str r0, [r1], #4

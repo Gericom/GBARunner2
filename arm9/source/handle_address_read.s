@@ -63,10 +63,23 @@ read_address_from_handler_rom_32bit:
 	cmp r9, r12
 	blt read_address_from_handler_rom_in_mem_32bit
 
-	read_from_rom 4
+	bic r10, r9, #0x0E000000
+	//ensure block d is mapped to the arm7
+	ldr r12,= 0x4000000
+	mov r13, #0x8A
+	strb r13, [r12, #0x243]
+	//send read command
+	ldr r13,= 0xAA5500C9
+	str r13, [r12, #0x188]
+	str r10, [r12, #0x188]	//address
 
-	ldr r10,= 0x06868000
-	ldr r10, [r10]
+	//wait for the arm7 sync command
+1:
+	ldr r10, [r12, #0x184]
+	tst r10, #(1 << 8)
+	bne 1b
+	ldr r10,= 0x04100000
+	ldr r10, [r10]	//read word from fifo
 	bx lr
 
 read_address_from_handler_eeprom_32bit:
@@ -78,9 +91,11 @@ read_address_from_handler_eeprom_32bit:
 read_address_from_handler_sram_32bit:
 	ldr r11,= 0x01FF8000
 	bic r10, r9, r11
-	sub r10, r10, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	ldr r10, [r10]
 	bx lr
 
@@ -117,10 +132,23 @@ read_address_from_handler_rom_16bit:
 	cmp r9, r12
 	blt read_address_from_handler_rom_in_mem_16bit
 
-	read_from_rom 2
+	bic r10, r9, #0x0E000000
+	//ensure block d is mapped to the arm7
+	ldr r12,= 0x4000000
+	mov r13, #0x8A
+	strb r13, [r12, #0x243]
+	//send read command
+	ldr r13,= 0xAA5500CA
+	str r13, [r12, #0x188]
+	str r10, [r12, #0x188]	//address
 
-	ldr r10,= 0x06868000
-	ldrh r10, [r10]
+	//wait for the arm7 sync command
+1:
+	ldr r10, [r12, #0x184]
+	tst r10, #(1 << 8)
+	bne 1b
+	ldr r10,= 0x04100000
+	ldr r10, [r10]	//read word from fifo
 	bx lr
 
 read_address_from_handler_eeprom_16bit:
@@ -132,9 +160,11 @@ read_address_from_handler_eeprom_16bit:
 read_address_from_handler_sram_16bit:
 	ldr r11,= 0x01FF8000
 	bic r10, r9, r11
-	sub r10, r10, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	ldrh r10, [r10]
 	bx lr
 
@@ -172,10 +202,23 @@ read_address_from_handler_rom_8bit:
 	cmp r9, r12
 	blt read_address_from_handler_rom_in_mem_8bit
 
-	read_from_rom 1
+	bic r10, r9, #0x0E000000
+	//ensure block d is mapped to the arm7
+	ldr r12,= 0x4000000
+	mov r13, #0x8A
+	strb r13, [r12, #0x243]
+	//send read command
+	ldr r13,= 0xAA5500CB
+	str r13, [r12, #0x188]
+	str r10, [r12, #0x188]	//address
 
-	ldr r10,= 0x06868000
-	ldrb r10, [r10]
+	//wait for the arm7 sync command
+1:
+	ldr r10, [r12, #0x184]
+	tst r10, #(1 << 8)
+	bne 1b
+	ldr r10,= 0x04100000
+	ldr r10, [r10]	//read word from fifo
 	bx lr
 
 read_address_from_handler_eeprom_8bit:
@@ -187,9 +230,11 @@ read_address_from_handler_eeprom_8bit:
 read_address_from_handler_sram_8bit:
 	ldr r11,= 0x01FF8000
 	bic r10, r9, r11
-	sub r10, r10, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	ldrb r10, [r10]
 	bx lr
 
@@ -258,6 +303,34 @@ read_address_from_handler_rom:
 	ldr r12,= 0x083B0000
 	cmp r9, r12
 	blt read_address_from_handler_rom_in_mem
+
+	bic r10, r9, #0x0E000000
+	//ensure block d is mapped to the arm7
+	//ldr r12,= 0x4000243
+	ldr r12,= 0x04000000
+	mov r13, #0x8A
+	strb r13, [r12, #0x243]
+	//send read command
+	
+	cmp r11, #2
+	ldrlt r13,= 0xAA5500CB
+	ldreq r13,= 0xAA5500CA
+	ldrgt r13,= 0xAA5500C9
+
+	str r13, [r12, #0x188]
+	str r10, [r12, #0x188]	//address
+
+	//wait for the arm7 sync command
+	//ldr r12,= 0x04000184
+1:
+	ldr r10, [r12, #0x184]
+	tst r10, #(1 << 8)
+	bne 1b
+	ldr r10,= 0x04100000
+	ldr r10, [r10]	//read word from fifo
+	bx lr
+
+
 	//bic r12, r10, #0x06000000
 	//ldr r13,= 0x083B0000
 	//cmp r12, r13
@@ -360,9 +433,11 @@ read_address_from_handler_eeprom:
 read_address_from_handler_sram:
 	ldr r12,= 0x01FF8000
 	bic r10, r9, r12
-	sub r10, r10, #0x0B800000
-	sub r10, r10, #0x00008C00
-	sub r10, r10, #0x00000060
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	//sub r10, r10, #0x0B800000
+	//sub r10, r10, #0x00008C00
+	//sub r10, r10, #0x00000060
 	cmp r11, #2
 	ldrltb r10, [r10]
 	ldreqh r10, [r10]

@@ -52,12 +52,12 @@ dldi_copy_loop:
 	str r1, [r0]
 
 	ldr r0,= 0x04000404
-	ldr r1,= (0x02400000 - (1584 * 2))
+	ldr r1,= 0x23F8000 //(0x02400000 - (1584 * 2))
 	str r1, [r0]
 	add r1, #1584
 	str r1, [r0, #0x10]
 	ldr r0,= 0x04000408
-	ldr r1,= -1594
+	ldr r1,= -1594 //-1253
 	strh r1, [r0]
 	strh r1, [r0, #0x10]
 	ldr r0,= 0x0400040A
@@ -65,7 +65,8 @@ dldi_copy_loop:
 	strh r1, [r0]
 	strh r1, [r0, #0x10]
 	ldr r0,= 0x0400040C
-	ldr r1,= 396
+	ldr r1,= (396 * 10)
+	//ldr r1,= 396 * 2
 	str r1, [r0]
 	str r1, [r0, #0x10]
 
@@ -74,6 +75,11 @@ dldi_copy_loop:
 	str r2, [r1]
 	str r2, [r1, #0x10]
 
+	//ldr r8,= 0x04000400
+	//ldr r7,= 0x0840007F
+	//str r7, [r8]
+	//orr r7, #0x80000000
+	//str r7, [r8]
 	
 	ldr r5,= 0x04100000
 	ldr r4,= 0x04000184
@@ -90,17 +96,34 @@ fifo_loop:
 
 fifo_got_command:
 	bic r7, r8, lsl #16
-	cmp r7, #0xC4
-	beq fifo_start_sound_command
-	cmp r7, #0xC5
-	beq fifo_stop_sound_command
-	cmp r7, #0xC6
-	beq fifo_start_sound_command2
-	cmp r7, #0xC7
-	beq fifo_stop_sound_command2
-	cmp r7, #0xC8
-	beq fifo_read_rom_command
-	b fifo_loop
+	cmp r7, #0xCB
+	bgt fifo_loop
+	sub r7, r7, #0xC4
+	ldr pc, [pc, r7, lsl #2]
+	//cmp r7, #0xC8
+	//beq fifo_read_rom_command
+	//cmp r7, #0xC9
+	//beq fifo_read_rom_32_command
+	//cmp r7, #0xC4
+	//beq fifo_start_sound_command
+	//cmp r7, #0xC5
+	//beq fifo_stop_sound_command
+	//cmp r7, #0xC6
+	//beq fifo_start_sound_command2
+	//cmp r7, #0xC7
+	//beq fifo_stop_sound_command2
+	//b fifo_loop
+	nop
+
+fifo_command_list:
+.word fifo_start_sound_command
+.word fifo_stop_sound_command
+.word fifo_start_sound_command2
+.word fifo_stop_sound_command2
+.word fifo_read_rom_command
+.word fifo_read_rom_32_command
+.word fifo_read_rom_16_command
+.word fifo_read_rom_8_command
 
 fifo_start_sound_command:
 	ldr r8,= 0x04000400
@@ -170,9 +193,35 @@ fifo_read_rom_command_loop2:
 	ldr r1, [r5]	//size
 	bl read_gba_rom
 	//send ready ack
-	ldr r0,= 0x04000188
 	ldr r1,= 0x55AAC8AC
-	str r1, [r0]
+	str r1, [r4, #4]
+	b fifo_loop
+
+fifo_read_rom_32_command:
+	ldr r7, [r4]
+	tst r7, #(1 << 8)
+	bne fifo_read_rom_32_command
+	ldr r0, [r5]	//address
+	bl sdread32
+	str r0, [r4, #4]
+	b fifo_loop
+
+fifo_read_rom_16_command:
+	ldr r7, [r4]
+	tst r7, #(1 << 8)
+	bne fifo_read_rom_16_command
+	ldr r0, [r5]	//address
+	bl sdread16
+	str r0, [r4, #4]
+	b fifo_loop
+
+fifo_read_rom_8_command:
+	ldr r7, [r4]
+	tst r7, #(1 << 8)
+	bne fifo_read_rom_8_command
+	ldr r0, [r5]	//address
+	bl sdread8
+	str r0, [r4, #4]
 	b fifo_loop
 
 pan_table:

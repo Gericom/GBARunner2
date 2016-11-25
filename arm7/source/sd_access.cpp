@@ -269,6 +269,39 @@ void* get_cluster_data(uint32_t cluster_index)
 		*((uint32_t*)dst) = *((uint32_t*)(cluster_data + cluster_offset));
 }*/
 
+extern "C" uint32_t sdread32(uint32_t address)
+{
+	vram_cd_t* vram_cd = (vram_cd_t*)0x06000000;
+	if(address >= gSDInfo.gba_rom_size)
+		return 0;
+	uint32_t cluster = address >> gSDInfo.cluster_shift;
+	uint32_t cluster_offset = address & gSDInfo.cluster_mask;
+	void* cluster_data = get_cluster_data(cluster);
+	return *((uint32_t*)(cluster_data + cluster_offset));
+}
+
+extern "C" uint32_t sdread16(uint32_t address)
+{
+	vram_cd_t* vram_cd = (vram_cd_t*)0x06000000;
+	if(address >= gSDInfo.gba_rom_size)
+		return 0;
+	uint32_t cluster = address >> gSDInfo.cluster_shift;
+	uint32_t cluster_offset = address & gSDInfo.cluster_mask;
+	void* cluster_data = get_cluster_data(cluster);
+	return *((uint16_t*)(cluster_data + cluster_offset));
+}
+
+extern "C" uint32_t sdread8(uint32_t address)
+{
+	vram_cd_t* vram_cd = (vram_cd_t*)0x06000000;
+	if(address >= gSDInfo.gba_rom_size)
+		return 0;
+	uint32_t cluster = address >> gSDInfo.cluster_shift;
+	uint32_t cluster_offset = address & gSDInfo.cluster_mask;
+	void* cluster_data = get_cluster_data(cluster);
+	return *((uint8_t*)(cluster_data + cluster_offset));
+}
+
 extern "C" void read_gba_rom(uint32_t address, uint32_t size)
 {
 	vram_cd_t* vram_cd = (vram_cd_t*)0x06000000;
