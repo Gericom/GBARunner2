@@ -4,8 +4,10 @@ reg_table = 0x10000000
 
 .macro finish_handler
 	msr cpsr_c, #0x97
-	orr sp, #1
-	mcr p15, 0, sp, c1, c0, 0
+	//orr sp, #1
+	//mcr p15, 0, sp, c1, c0, 0
+	ldr sp,= 0x33660003
+	mcr p15, 0, sp, c5, c0, 2
 
 	ldr sp,= reg_table
 	ldmia sp, {r0-r7}	//non-banked registers
@@ -15,8 +17,10 @@ reg_table = 0x10000000
 
 .macro finish_handler_skip_op
 	msr cpsr_c, #0x97
-	orr sp, #1
-	mcr p15, 0, sp, c1, c0, 0
+	//orr sp, #1
+	//mcr p15, 0, sp, c1, c0, 0
+	ldr sp,= 0x33660003
+	mcr p15, 0, sp, c5, c0, 2
 
 	ldr sp,= reg_table
 	ldmia sp, {r0-r7}	//non-banked registers
@@ -26,16 +30,20 @@ reg_table = 0x10000000
 
 .macro finish_handler_self_modifying
 	msr cpsr_c, #0x97
-	orr sp, #1
-	mcr p15, 0, sp, c1, c0, 0
+	//orr sp, #1
+	//mcr p15, 0, sp, c1, c0, 0
+	ldr sp,= 0x33660003
+	mcr p15, 0, sp, c5, c0, 2
 
 	subs pc, lr, #8
 .endm
 
 .macro finish_handler_skip_op_self_modifying
 	msr cpsr_c, #0x97
-	orr sp, #1
-	mcr p15, 0, sp, c1, c0, 0
+	//orr sp, #1
+	//mcr p15, 0, sp, c1, c0, 0
+	ldr sp,= 0x33660003
+	mcr p15, 0, sp, c5, c0, 2
 
 	subs pc, lr, #6
 .endm

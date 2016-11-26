@@ -249,7 +249,7 @@ write_address_dispcontrol_cont:
 	//move gba vram block b to either bg or obj
 	ldr r11,= 0x04000245
 	movlt r12, #0x82
-	movge r12, #0x89
+	movge r12, #0x91 //#0x89
 	strb r12, [r11]
 
 	//and change the pu settings accordingly
@@ -276,7 +276,7 @@ write_address_dispcontrol_cont:
 	mov r12, #0
 	str r12, [r11, #0x38]
 	streq r12, [r11, #0x3C]
-	movne r12, #8192
+	ldrne r12,= 8192
 	strne r12, [r11, #0x3C]
 
 	ldrh r12, [r11, #0xC]
@@ -479,18 +479,18 @@ write_address_dma_control_cont2:
 	bx lr
 
 write_address_dma_control_rom_src:
-	//ensure block d is mapped to the arm7
-	ldr r12,= 0x4000243
-	mov r13, #0x8A
-	strb r13, [r12]
+	//ensure block c and d are mapped to the arm7
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8A82
+	strh r13, [r12]
+	ldr r12,= 0x4000000
 
-	ldr r12,= 0x04000188
 	ldr r13,= 0xAA5500C8
-	str r13, [r12]
+	str r13, [r12, #0x188]
 
 	ldr r13, [r9, #-0xA]
 	sub r13, #0x02040000
-	str r13, [r12]	//address
+	str r13, [r12, #0x188]	//address
 
 	ldrh r13, [r9, #-0x2]
 	and r12, r11, #0x1F
@@ -660,18 +660,18 @@ write_address_dma_size_control_cont3:
 
 
 write_address_dma_size_control_rom_src:
-	//ensure block d is mapped to the arm7
-	ldr r12,= 0x4000243
-	mov r13, #0x8A
-	strb r13, [r12]
+	//ensure block c and d are mapped to the arm7
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8A82
+	strh r13, [r12]
+	ldr r12,= 0x4000000
 
-	ldr r12,= 0x04000188
 	ldr r13,= 0xAA5500C8
-	str r13, [r12]
+	str r13, [r12, #0x188]
 
 	ldr r13, [r9, #-0x8]
 	sub r13, #0x02040000
-	str r13, [r12]	//address
+	str r13, [r12, #0x188]	//address
 
 	//ldrh r13, [r10, #-0x2]
 	//and r12, r11, #0x1F
@@ -755,7 +755,7 @@ write_address_dma_size_control_cont2:
 	//orr r11, r11, #(3 << (5 + 16))
 	ldr r13,= 0x1FFFFF
 	bic r11, r13
-	orr r11, r11, #396
+	orr r11, r11, #(396 * 2)
 	str r11, [r9]
 
 	//ldr r13,= cur_snd_buffer

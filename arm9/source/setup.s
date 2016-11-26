@@ -81,15 +81,16 @@ gba_setup:
 
 	//TODO: cartridge area protection and d-cache
 
-	mov r0, #0
+	//mov r0, #0
 	//mcr p15, 0, r0, c6, c5, 0
 	//mcr p15, 0, r0, c6, c6, 0
 	//mcr p15, 0, r0, c6, c7, 0
 
-	mov r0, #3
-	orr r0, r0, #(0x6 << (4 * 4))
-	orr r0, r0, #(0x36 << (4 * 5))
-	orr r0, r0, #(0x3 << (4 * 7))
+	ldr r0,= 0x33660003
+	//mov r0, #3
+	//orr r0, r0, #(0x6 << (4 * 4))
+	//orr r0, r0, #(0x36 << (4 * 5))
+	//orr r0, r0, #(0x3 << (4 * 7))
 	mcr p15, 0, r0, c5, c0, 2
 	mcr p15, 0, r0, c5, c0, 3
 
@@ -270,7 +271,7 @@ dldi_name_copy:
 	strb r1, [r0, #4]	//bank E to bg at 0x06000000
 
 	mov r1, #0x82	
-	strb r1, [r0, #5]	//bank F to obj at 0x06400000	(would be 0x89 for mapping to bg at 0x06010000)
+	strb r1, [r0, #5]	//bank F to obj at 0x06400000	(would be 0x91 for mapping to bg at 0x06010000)
 
 	mov r1, #0x8A
 	strb r1, [r0, #6]	//bank G to obj at 0x06404000

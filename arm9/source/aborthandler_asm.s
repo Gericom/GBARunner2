@@ -143,9 +143,12 @@ data_abort_handler_cont:
 	add r6, r5, #4	//pc+12
 	str r6, [r11, #(4 * 15)]
 
-	mrc p15, 0, r6, c1, c0, 0
-	bic r2, r6, #1
-	mcr p15, 0, r2, c1, c0, 0
+	ldr r6,= 0x33333333
+	mcr p15, 0, r6, c5, c0, 2
+
+	//mrc p15, 0, r6, c1, c0, 0
+	//bic r2, r6, #1
+	//mcr p15, 0, r2, c1, c0, 0
 
 	ldr r10, [r5, #-8]
 	and r10, r10, #0x0FFFFFFF
@@ -203,7 +206,11 @@ data_abort_handler_cont:
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:
 	msr cpsr_c, #0x97
-	mcr p15, 0, r6, c1, c0, 0
+
+	ldr r6,= 0x33660003
+	mcr p15, 0, r6, c5, c0, 2
+
+	//mcr p15, 0, r6, c1, c0, 0
 
 	//push {r5}	//lr
 	mrs sp, spsr
@@ -289,9 +296,12 @@ data_abort_handler_thumb:
 
 #endif
 
-	mrc p15, 0, sp, c1, c0, 0
-	bic sp, #1
-	mcr p15, 0, sp, c1, c0, 0
+	ldr sp,= 0x33333333
+	mcr p15, 0, sp, c5, c0, 2
+
+	//mrc p15, 0, sp, c1, c0, 0
+	//bic sp, #1
+	//mcr p15, 0, sp, c1, c0, 0
 	
 	msr cpsr_c, #0x91
 	ldr r11,= reg_table

@@ -202,7 +202,7 @@ fifo_read_rom_32_command:
 	tst r7, #(1 << 8)
 	bne fifo_read_rom_32_command
 	ldr r0, [r5]	//address
-	bl sdread32
+	bl sdread32_uncached
 	str r0, [r4, #4]
 	b fifo_loop
 
@@ -211,7 +211,7 @@ fifo_read_rom_16_command:
 	tst r7, #(1 << 8)
 	bne fifo_read_rom_16_command
 	ldr r0, [r5]	//address
-	bl sdread16
+	bl sdread16_uncached
 	str r0, [r4, #4]
 	b fifo_loop
 
@@ -220,7 +220,7 @@ fifo_read_rom_8_command:
 	tst r7, #(1 << 8)
 	bne fifo_read_rom_8_command
 	ldr r0, [r5]	//address
-	bl sdread8
+	bl sdread8_uncached
 	str r0, [r4, #4]
 	b fifo_loop
 

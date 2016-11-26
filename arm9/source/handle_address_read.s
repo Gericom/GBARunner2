@@ -64,10 +64,57 @@ read_address_from_handler_rom_32bit:
 	blt read_address_from_handler_rom_in_mem_32bit
 
 	bic r10, r9, #0x0E000000
-	//ensure block d is mapped to the arm7
+
+	//block c and d to arm9
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8080
+	strh r13, [r12]
+
+	ldr r11,= 0x0685C404
+	ldr r13, [r11] //rom size
+	cmp r10, r13
+	movgt r10, #0
+	bxgt lr
+
+	ldr r13, [r11, #4]//cluster shift
+	mov r13, r10, lsr r13
+
+	ldr r12,= 0x06858000	//is cluster cached table
+	ldrb r13, [r12, r13]
+	cmp r13, #0xFF
+	beq read_address_from_handler_rom_32bit_not_cached
+	ldr r12,= 0x0685C000
+	ldr r11, [r12, r13, lsl #3]
+	bic r11, #0xFFFFFF
+
+	ldr r12, [r12, #0x410]//access counter
+	and r12, #0xFFFFFF
+	orr r11, r12
+	ldr r12,= 0x0685C000
+	str r11, [r12, r13, lsl #3]
+	
+	ldr r11, [r12, #0x410]
+	add r11, #1
+	str r11, [r12, #0x410]
+
+	ldr r11, [r12, #0x408]//cluster shift
+	mov r13, r13, lsl r11
+	ldr r11, [r12, #0x40C]//cluster mask
+	and r10, r10, r11
+	ldr r12,= 0x6840000
+	add r12, r13
+	ldr r10, [r12, r10]
+	bx lr
+
+read_address_from_handler_rom_32bit_not_cached:
+
+	//ensure block c and d are mapped to the arm7
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8A82
+	strh r13, [r12]
+
 	ldr r12,= 0x4000000
-	mov r13, #0x8A
-	strb r13, [r12, #0x243]
+
 	//send read command
 	ldr r13,= 0xAA5500C9
 	str r13, [r12, #0x188]
@@ -133,10 +180,54 @@ read_address_from_handler_rom_16bit:
 	blt read_address_from_handler_rom_in_mem_16bit
 
 	bic r10, r9, #0x0E000000
-	//ensure block d is mapped to the arm7
+
+	//block c and d to arm9
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8080
+	strh r13, [r12]
+
+	ldr r11,= 0x0685C404
+	ldr r13, [r11] //rom size
+	cmp r10, r13
+	movgt r10, #0
+	bxgt lr
+
+	ldr r13, [r11, #4]//cluster shift
+	mov r13, r10, lsr r13
+
+	ldr r12,= 0x06858000	//is cluster cached table
+	ldrb r13, [r12, r13]
+	cmp r13, #0xFF
+	beq read_address_from_handler_rom_16bit_not_cached
+	ldr r12,= 0x0685C000
+	ldr r11, [r12, r13, lsl #3]
+	bic r11, #0xFFFFFF
+
+	ldr r12, [r12, #0x410]//access counter
+	and r12, #0xFFFFFF
+	orr r11, r12
+	ldr r12,= 0x0685C000
+	str r11, [r12, r13, lsl #3]
+	
+	ldr r11, [r12, #0x410]
+	add r11, #1
+	str r11, [r12, #0x410]
+
+	ldr r11, [r12, #0x408]//cluster shift
+	mov r13, r13, lsl r11
+	ldr r11, [r12, #0x40C]//cluster mask
+	and r10, r10, r11
+	ldr r12,= 0x6840000
+	add r12, r13
+	ldrh r10, [r12, r10]
+	bx lr
+
+read_address_from_handler_rom_16bit_not_cached:
+	//ensure block c and d are mapped to the arm7
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8A82
+	strh r13, [r12]
 	ldr r12,= 0x4000000
-	mov r13, #0x8A
-	strb r13, [r12, #0x243]
 	//send read command
 	ldr r13,= 0xAA5500CA
 	str r13, [r12, #0x188]
@@ -203,10 +294,54 @@ read_address_from_handler_rom_8bit:
 	blt read_address_from_handler_rom_in_mem_8bit
 
 	bic r10, r9, #0x0E000000
-	//ensure block d is mapped to the arm7
+
+	//block c and d to arm9
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8080
+	strh r13, [r12]
+
+	ldr r11,= 0x0685C404
+	ldr r13, [r11] //rom size
+	cmp r10, r13
+	movgt r10, #0
+	bxgt lr
+
+	ldr r13, [r11, #4]//cluster shift
+	mov r13, r10, lsr r13
+
+	ldr r12,= 0x06858000	//is cluster cached table
+	ldrb r13, [r12, r13]
+	cmp r13, #0xFF
+	beq read_address_from_handler_rom_8bit_not_cached
+	ldr r12,= 0x0685C000
+	ldr r11, [r12, r13, lsl #3]
+	bic r11, #0xFFFFFF
+
+	ldr r12, [r12, #0x410]//access counter
+	and r12, #0xFFFFFF
+	orr r11, r12
+	ldr r12,= 0x0685C000
+	str r11, [r12, r13, lsl #3]
+	
+	ldr r11, [r12, #0x410]
+	add r11, #1
+	str r11, [r12, #0x410]
+
+	ldr r11, [r12, #0x408]//cluster shift
+	mov r13, r13, lsl r11
+	ldr r11, [r12, #0x40C]//cluster mask
+	and r10, r10, r11
+	ldr r12,= 0x6840000
+	add r12, r13
+	ldrb r10, [r12, r10]
+	bx lr
+
+read_address_from_handler_rom_8bit_not_cached:
+	//ensure block c and d are mapped to the arm7
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8A82
+	strh r13, [r12]
 	ldr r12,= 0x4000000
-	mov r13, #0x8A
-	strb r13, [r12, #0x243]
 	//send read command
 	ldr r13,= 0xAA5500CB
 	str r13, [r12, #0x188]
@@ -305,11 +440,60 @@ read_address_from_handler_rom:
 	blt read_address_from_handler_rom_in_mem
 
 	bic r10, r9, #0x0E000000
-	//ensure block d is mapped to the arm7
-	//ldr r12,= 0x4000243
-	ldr r12,= 0x04000000
-	mov r13, #0x8A
-	strb r13, [r12, #0x243]
+
+	//block c and d to arm9
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8080
+	strh r13, [r12]
+
+	ldr r12,= 0x0685C404
+	ldr r13, [r12] //rom size
+	cmp r10, r13
+	movgt r10, #0
+	bxgt lr
+
+	ldr r13, [r12, #4]//cluster shift
+	mov r13, r10, lsr r13
+
+	ldr r12,= 0x06858000	//is cluster cached table
+	ldrb r13, [r12, r13]
+	cmp r13, #0xFF
+	beq read_address_from_handler_rom_not_cached
+	cmp r11, #2
+
+	ldr r12,= 0x0685C000
+	ldr r11, [r12, r13, lsl #3]
+	bic r11, #0xFFFFFF
+
+	ldr r12, [r12, #0x410]//access counter
+	and r12, #0xFFFFFF
+	orr r11, r12
+	ldr r12,= 0x0685C000
+	str r11, [r12, r13, lsl #3]
+	
+	ldr r11, [r12, #0x410]
+	add r11, #1
+	str r11, [r12, #0x410]
+
+	ldr r11, [r12, #0x408]//cluster shift
+	mov r13, r13, lsl r11
+	ldr r11, [r12, #0x40C]//cluster mask
+	and r10, r10, r11
+	ldr r12,= 0x6840000
+	add r12, r13
+	
+	ldrltb r10, [r12,r10]
+	ldreqh r10, [r12,r10]
+	ldrgt r10, [r12,r10]
+	//ldrb r10, [r12, r10]
+	bx lr
+
+read_address_from_handler_rom_not_cached:
+	//ensure block c and d are mapped to the arm7
+	ldr r12,= 0x4000242
+	ldr r13,= 0x8A82
+	strh r13, [r12]
+	ldr r12,= 0x4000000
 	//send read command
 	
 	cmp r11, #2

@@ -158,17 +158,15 @@ typedef union
 
 typedef struct
 {
+	uint32_t gba_rom_size;
+	uint32_t cluster_shift;
+	uint32_t cluster_mask;
+	uint32_t access_counter;
+
 	uint8_t nr_sectors_per_cluster;
 	sec_t first_fat_sector;
 	sec_t first_cluster_sector;
 	uint32_t root_directory_cluster;
-
-	uint32_t cluster_shift;
-	uint32_t cluster_mask;
-
-	uint32_t gba_rom_size;
-
-	uint32_t access_counter;
 } sd_info_t;
 
 typedef struct
@@ -194,7 +192,11 @@ typedef struct
 	union
 	{
 		uint8_t reserved[16 * 1024];//will be used for memory management of the cached clusters
-		cluster_cache_info_t cluster_cache_info;
+		struct
+		{
+			cluster_cache_info_t cluster_cache_info;
+			sd_info_t sd_info;
+		};
 	};
 	//vram d
 	uint32_t gba_rom_cluster_table[32 * 1024 / 4];//allows roms up to 32MB
