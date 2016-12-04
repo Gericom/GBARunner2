@@ -18,9 +18,12 @@ bios_cpufastset_sd_patch:
 	bge 0xBD8
 
 	//ensure block d is mapped to the arm7
-	ldr r3,= 0x4000243
-	mov r4, #0x8A
-	strb r4, [r3]
+	//ldr r3,= 0x4000243
+	//mov r4, #0x8A
+	//strb r4, [r3]
+	ldr r3,= 0x4000242
+	ldr r4,= 0x8080
+	strh r4, [r3]
 
 	ldr r3,= 0x04000188
 	ldr r4,= 0xAA5500C8

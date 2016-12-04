@@ -1,4 +1,5 @@
 //.org 0x8000
+.org 0
 .global main
 main:
 	//enable the arm7-arm9 fifo

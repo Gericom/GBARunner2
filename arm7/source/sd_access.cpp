@@ -32,6 +32,8 @@ void initialize_cache()
 	memset(&vram_cd->gba_rom_is_cluster_cached_table, 0xFF, sizeof(vram_cd->gba_rom_is_cluster_cached_table));
 	memset(&vram_cd->cluster_cache_info, 0, sizeof(vram_cd->cluster_cache_info));
 	vram_cd->cluster_cache_info.total_nr_cacheblocks = sizeof(vram_cd->cluster_cache) >> vram_cd->sd_info.cluster_shift;
+	if(vram_cd->cluster_cache_info.total_nr_cacheblocks >= 256)
+		vram_cd->cluster_cache_info.total_nr_cacheblocks = 255;
 }
 
 //to be called after dldi has been initialized (with the appropriate init function)

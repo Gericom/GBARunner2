@@ -4,8 +4,8 @@
 .macro create_ldrh_strh_variant p, u, i, w, l
 .global ldrh_strh_address_calc_\p\u\i\w\l
 ldrh_strh_address_calc_\p\u\i\w\l:
-	and r8, r10, #(0xF << 16)
-	ldr r9, [r11, r8, lsr #14]
+	//and r8, r10, #(0xF << 16)
+	//ldr r9, [r11, r8, lsr #14]
 	and r0, r10, #0xF
 .ifeq \i
 	ldr r0, [r11, r0, lsl #2]
@@ -117,8 +117,8 @@ ldrh_strh_address_calc_cont_101:
 ldr_str_address_calc_\i\p\u\bw\w\l:
 .ifeq \i
 	//immediate
-	and r8, r10, #(0xF << 16)
-	ldr r9, [r11, r8, lsr #14]
+	//and r8, r10, #(0xF << 16)
+	//ldr r9, [r11, r8, lsr #14]
 	mov r0, r10, lsl #20
 	mov r0, r0, lsr #20
 .else
@@ -132,11 +132,12 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 	//fix c-flag
 	//this is the wrong c-flag, since we're in fiq mode, not in abt mode
 	//TODO: fix this!
-	mrs r12, spsr
-	msr cpsr_f, r12
-	and r8, r10, #(0xF << 16)
-	ldr r9, [r11, r8, lsr #14]
+	//mrs r12, spsr
+	//msr cpsr_f, r12
+	//and r8, r10, #(0xF << 16)
+	//ldr r9, [r11, r8, lsr #14]
 	//b ldr_str_address_calc_shift_instruction
+	b 1f
 1:
 	mov r0, r0
 .endif	
@@ -198,8 +199,8 @@ create_all_ldr_str_variants
 .macro create_ldm_stm_variant p, u, s, w, l
 .global ldm_stm_address_calc_\p\u\s\w\l
 ldm_stm_address_calc_\p\u\s\w\l:
-	and r8, r10, #(0xF << 16)
-	ldr r9, [r11, r8, lsr #14]
+	//and r8, r10, #(0xF << 16)
+	//ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16
 	//count nr bits
 	ldr r12,= 0x10000040

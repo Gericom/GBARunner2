@@ -4,6 +4,12 @@ address_read_table_32bit_dtcm = 0x1000086C
 address_read_table_16bit_dtcm = 0x10000974
 address_read_table_8bit_dtcm = 0x10000B80
 
+sd_cluster_cache = 0x06840000
+sd_is_cluster_cached_table = (sd_cluster_cache + (224 * 1024)) //(96 * 1024))
+sd_cluster_cache_info = (sd_is_cluster_cached_table + (16 * 1024))
+sd_sd_info = (sd_cluster_cache_info + (256 * 8 + 4)) //0x0685C404
+
+
 .macro read_from_rom size
 	bic r10, r9, #0x0E000000
 	//ensure block d is mapped to the arm7
@@ -70,7 +76,7 @@ read_address_from_handler_rom_32bit:
 	ldr r13,= 0x8080
 	strh r13, [r12]
 
-	ldr r11,= 0x0685C404
+	ldr r11,= sd_sd_info
 	ldr r13, [r11] //rom size
 	cmp r10, r13
 	movgt r10, #0
@@ -79,29 +85,29 @@ read_address_from_handler_rom_32bit:
 	ldr r13, [r11, #4]//cluster shift
 	mov r13, r10, lsr r13
 
-	ldr r12,= 0x06858000	//is cluster cached table
+	ldr r12,= sd_is_cluster_cached_table
 	ldrb r13, [r12, r13]
 	cmp r13, #0xFF
 	beq read_address_from_handler_rom_32bit_not_cached
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 
-	ldr r12, [r12, #0x410]//access counter
+	ldr r12, [r12, #0x810]//access counter
 	and r12, #0xFFFFFF
 	orr r11, r12
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	str r11, [r12, r13, lsl #3]
 	
-	ldr r11, [r12, #0x410]
+	ldr r11, [r12, #0x810]
 	add r11, #1
-	str r11, [r12, #0x410]
+	str r11, [r12, #0x810]
 
-	ldr r11, [r12, #0x408]//cluster shift
+	ldr r11, [r12, #0x808]//cluster shift
 	mov r13, r13, lsl r11
-	ldr r11, [r12, #0x40C]//cluster mask
+	ldr r11, [r12, #0x80C]//cluster mask
 	and r10, r10, r11
-	ldr r12,= 0x6840000
+	ldr r12,= sd_cluster_cache
 	add r12, r13
 	ldr r10, [r12, r10]
 	bx lr
@@ -186,7 +192,7 @@ read_address_from_handler_rom_16bit:
 	ldr r13,= 0x8080
 	strh r13, [r12]
 
-	ldr r11,= 0x0685C404
+	ldr r11,= sd_sd_info
 	ldr r13, [r11] //rom size
 	cmp r10, r13
 	movgt r10, #0
@@ -195,29 +201,29 @@ read_address_from_handler_rom_16bit:
 	ldr r13, [r11, #4]//cluster shift
 	mov r13, r10, lsr r13
 
-	ldr r12,= 0x06858000	//is cluster cached table
+	ldr r12,= sd_is_cluster_cached_table
 	ldrb r13, [r12, r13]
 	cmp r13, #0xFF
 	beq read_address_from_handler_rom_16bit_not_cached
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 
-	ldr r12, [r12, #0x410]//access counter
+	ldr r12, [r12, #0x810]//access counter
 	and r12, #0xFFFFFF
 	orr r11, r12
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	str r11, [r12, r13, lsl #3]
 	
-	ldr r11, [r12, #0x410]
+	ldr r11, [r12, #0x810]
 	add r11, #1
-	str r11, [r12, #0x410]
+	str r11, [r12, #0x810]
 
-	ldr r11, [r12, #0x408]//cluster shift
+	ldr r11, [r12, #0x808]//cluster shift
 	mov r13, r13, lsl r11
-	ldr r11, [r12, #0x40C]//cluster mask
+	ldr r11, [r12, #0x80C]//cluster mask
 	and r10, r10, r11
-	ldr r12,= 0x6840000
+	ldr r12,= sd_cluster_cache
 	add r12, r13
 	ldrh r10, [r12, r10]
 	bx lr
@@ -300,7 +306,7 @@ read_address_from_handler_rom_8bit:
 	ldr r13,= 0x8080
 	strh r13, [r12]
 
-	ldr r11,= 0x0685C404
+	ldr r11,= sd_sd_info
 	ldr r13, [r11] //rom size
 	cmp r10, r13
 	movgt r10, #0
@@ -309,29 +315,29 @@ read_address_from_handler_rom_8bit:
 	ldr r13, [r11, #4]//cluster shift
 	mov r13, r10, lsr r13
 
-	ldr r12,= 0x06858000	//is cluster cached table
+	ldr r12,= sd_is_cluster_cached_table
 	ldrb r13, [r12, r13]
 	cmp r13, #0xFF
 	beq read_address_from_handler_rom_8bit_not_cached
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 
-	ldr r12, [r12, #0x410]//access counter
+	ldr r12, [r12, #0x810]//access counter
 	and r12, #0xFFFFFF
 	orr r11, r12
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	str r11, [r12, r13, lsl #3]
 	
-	ldr r11, [r12, #0x410]
+	ldr r11, [r12, #0x810]
 	add r11, #1
-	str r11, [r12, #0x410]
+	str r11, [r12, #0x810]
 
-	ldr r11, [r12, #0x408]//cluster shift
+	ldr r11, [r12, #0x808]//cluster shift
 	mov r13, r13, lsl r11
-	ldr r11, [r12, #0x40C]//cluster mask
+	ldr r11, [r12, #0x80C]//cluster mask
 	and r10, r10, r11
-	ldr r12,= 0x6840000
+	ldr r12,= sd_cluster_cache
 	add r12, r13
 	ldrb r10, [r12, r10]
 	bx lr
@@ -446,7 +452,7 @@ read_address_from_handler_rom:
 	ldr r13,= 0x8080
 	strh r13, [r12]
 
-	ldr r12,= 0x0685C404
+	ldr r12,= sd_sd_info
 	ldr r13, [r12] //rom size
 	cmp r10, r13
 	movgt r10, #0
@@ -455,31 +461,31 @@ read_address_from_handler_rom:
 	ldr r13, [r12, #4]//cluster shift
 	mov r13, r10, lsr r13
 
-	ldr r12,= 0x06858000	//is cluster cached table
+	ldr r12,= sd_is_cluster_cached_table
 	ldrb r13, [r12, r13]
 	cmp r13, #0xFF
 	beq read_address_from_handler_rom_not_cached
 	cmp r11, #2
 
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 
-	ldr r12, [r12, #0x410]//access counter
+	ldr r12, [r12, #0x810]//access counter
 	and r12, #0xFFFFFF
 	orr r11, r12
-	ldr r12,= 0x0685C000
+	ldr r12,= sd_cluster_cache_info
 	str r11, [r12, r13, lsl #3]
 	
-	ldr r11, [r12, #0x410]
+	ldr r11, [r12, #0x810]
 	add r11, #1
-	str r11, [r12, #0x410]
+	str r11, [r12, #0x810]
 
-	ldr r11, [r12, #0x408]//cluster shift
+	ldr r11, [r12, #0x808]//cluster shift
 	mov r13, r13, lsl r11
-	ldr r11, [r12, #0x40C]//cluster mask
+	ldr r11, [r12, #0x80C]//cluster mask
 	and r10, r10, r11
-	ldr r12,= 0x6840000
+	ldr r12,= sd_cluster_cache
 	add r12, r13
 	
 	ldrltb r10, [r12,r10]

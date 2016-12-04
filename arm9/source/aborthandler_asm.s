@@ -153,6 +153,9 @@ data_abort_handler_cont:
 	ldr r10, [r5, #-8]
 	and r10, r10, #0x0FFFFFFF
 
+	and r8, r10, #(0xF << 16)
+	ldr r9, [r11, r8, lsr #14]
+
 	//ldr pc, [pc, r10, lsr #23]
 	//ldr pc, [pc, r10, lsr #21]
 	ldr pc, [pc, r10, lsr #18]

@@ -1,5 +1,5 @@
 .global _dldi_start
-.equ _dldi_start,					0x06038000
+.equ _dldi_start,					0x03804000 //0x06038000
 .global _io_dldi
 .equ _io_dldi,						(_dldi_start + 0x60)
 .global _DLDI_startup_ptr
