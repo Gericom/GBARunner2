@@ -1,14 +1,6 @@
 .section .itcm
 
-address_read_table_32bit_dtcm = 0x1000086C
-address_read_table_16bit_dtcm = 0x10000974
-address_read_table_8bit_dtcm = 0x10000B80
-
-sd_cluster_cache = 0x06840000
-sd_is_cluster_cached_table = (sd_cluster_cache + (224 * 1024)) //(96 * 1024))
-sd_cluster_cache_info = (sd_is_cluster_cached_table + (16 * 1024))
-sd_sd_info = (sd_cluster_cache_info + (256 * 8 + 4)) //0x0685C404
-
+.include "consts.s"
 
 .macro read_from_rom size
 	bic r10, r9, #0x0E000000
@@ -133,6 +125,12 @@ read_address_from_handler_rom_32bit_not_cached:
 	bne 1b
 	ldr r10,= 0x04100000
 	ldr r10, [r10]	//read word from fifo
+
+	//block d to arm9 lcdc for safety
+	ldr r12,= 0x4000243
+	mov r13, #0x80
+	strb r13, [r12]
+
 	bx lr
 
 read_address_from_handler_eeprom_32bit:
@@ -246,6 +244,12 @@ read_address_from_handler_rom_16bit_not_cached:
 	bne 1b
 	ldr r10,= 0x04100000
 	ldr r10, [r10]	//read word from fifo
+
+	//block d to arm9 lcdc for safety
+	ldr r12,= 0x4000243
+	mov r13, #0x80
+	strb r13, [r12]
+
 	bx lr
 
 read_address_from_handler_eeprom_16bit:
@@ -360,6 +364,12 @@ read_address_from_handler_rom_8bit_not_cached:
 	bne 1b
 	ldr r10,= 0x04100000
 	ldr r10, [r10]	//read word from fifo
+
+	//block d to arm9 lcdc for safety
+	ldr r12,= 0x4000243
+	mov r13, #0x80
+	strb r13, [r12]
+
 	bx lr
 
 read_address_from_handler_eeprom_8bit:
@@ -518,100 +528,12 @@ read_address_from_handler_rom_not_cached:
 	bne 1b
 	ldr r10,= 0x04100000
 	ldr r10, [r10]	//read word from fifo
-	bx lr
 
-
-	//bic r12, r10, #0x06000000
-	//ldr r13,= 0x083B0000
-	//cmp r12, r13
-	//sublt r10, r12, #0x05000000
-	//sublt r10, r10, #0x00FC0000
-	//blt read_address_from_handler_rom_cont
-	
-
-	//ldr r12,= nibble_to_char
-	//mov r13, r10
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12]
-	
-	//ldr r12,= nibble_to_char
-	//mov r13, r10, lsl #4
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12, #2]
-
-	//ldr r12,= nibble_to_char
-	//mov r13, r10, lsl #8
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12, #4]
-
-	//ldr r12,= nibble_to_char
-	//mov r13, r10, lsl #12
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12, #6]
-
-	//ldr r12,= nibble_to_char
-	//mov r13, r10, lsl #16
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12, #8]
-
-	//ldr r12,= nibble_to_char
-	//mov r13, r10, lsl #20
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12, #10]
-
-	//ldr r12,= nibble_to_char
-	//mov r13, r10, lsl #24
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12, #12]
-
-	//ldr r12,= nibble_to_char
-	//mov r13, r10, lsl #28
-	//ldrb r13, [r12, r13, lsr #28]
-	//ldr r12,= (0x06202000 + 32 * 11)
-	//strh r13, [r12, #14]
-
-	bic r10, r9, #0x0E000000
-	//ensure block d is mapped to the arm7
-	ldr r12,= 0x4000243
-	mov r13, #0x8A
-	strb r13, [r12]
-	//send read command
-	ldr r12,= 0x04000188
-	ldr r13,= 0xAA5500C8
-	str r13, [r12]
-	str r10, [r12]	//address
-	str r11, [r12]	//size
-
-	//wait for the arm7 sync command
-	ldr r13,= 0x55AAC8AC
-	ldr r12,= 0x04000184
-read_address_from_handler_rom_fifo_loop:
-	ldr r10, [r12]
-	tst r10, #(1 << 8)
-	bne read_address_from_handler_rom_fifo_loop
-	ldr r10,= 0x04100000
-	ldr r10, [r10]	//read word from fifo
-	cmp r10, r13
-	bne read_address_from_handler_rom_fifo_loop
-
-	//block d to arm9 lcdc
+	//block d to arm9 lcdc for safety
 	ldr r12,= 0x4000243
 	mov r13, #0x80
 	strb r13, [r12]
 
-	ldr r10,= 0x06868000
-//read_address_from_handler_rom_cont:
-	cmp r11, #2
-	ldrltb r10, [r10]
-	ldreqh r10, [r10]
-	ldrgt r10, [r10]
 	bx lr
 
 read_address_from_handler_eeprom:

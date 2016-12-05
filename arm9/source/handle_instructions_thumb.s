@@ -202,6 +202,7 @@ thumb15_address_calc:
 	stmia r11, {r0-r7}	//non-banked registers
 	and r8, r10, #(7 << 8)
 	ldr r9, [r11, r8, lsr #6]
+	bic r9, r9, #3
 
 thumb15_address_calc_cont:
 	and r1, r10, #0xFF

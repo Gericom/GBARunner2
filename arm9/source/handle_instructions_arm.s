@@ -199,6 +199,7 @@ create_all_ldr_str_variants
 .macro create_ldm_stm_variant p, u, s, w, l
 .global ldm_stm_address_calc_\p\u\s\w\l
 ldm_stm_address_calc_\p\u\s\w\l:
+	bic r9, r9, #3
 	//and r8, r10, #(0xF << 16)
 	//ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16

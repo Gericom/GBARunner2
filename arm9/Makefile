@@ -33,7 +33,7 @@ CFLAGS	:=	-g -Wall -O3\
 CFLAGS	+=	$(INCLUDE) -DARM9
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
 
-ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s
+ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s $(INCLUDE)
 
 LDFLAGS	=	-specs=../ds_arm9_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 

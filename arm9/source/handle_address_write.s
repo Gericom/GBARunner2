@@ -1,8 +1,6 @@
 .section .itcm
 
-address_write_table_32bit_dtcm = 0x10000140
-address_write_table_16bit_dtcm = 0x10000248
-address_write_table_8bit_dtcm = 0x10000454
+.include "consts.s"
 
 .global write_address_from_handler_32bit
 write_address_from_handler_32bit:
@@ -376,7 +374,12 @@ write_address_dma_src:
 	str r11, [r9]
 	bx lr
 write_address_dma_src_cont:
-	ldr r13,= 0x06010000
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r13, #7
+	cmp r13, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
 	cmp r11, r13
 	blt write_address_dma_src_cont2
 	ldr r13,= 0x06018000

@@ -301,7 +301,7 @@ dldi_name_copy:
 
 	mov r0, #0 //#0xFFFFFFFF
 	ldr r1,= 0x23F0000 //(0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
-	mov r2, #(32 * 1024)
+	mov r2, #(64 * 1024)
 gba_setup_fill_H_loop:
 	str r0, [r1], #4
 	subs r2, #4
@@ -319,14 +319,16 @@ gba_setup_fill_H_loop:
 	//ROM:00000BD4                 BEQ     loc_C24
 	//replace with jump to address check code
 
-	ldr r0,= bios_cpufastset_sd_patch
-	ldr r1,= 0xBD4
-	sub r0, r1	//relative to source address
-	sub r0, #8	//pc + 8 compensation
-	mov r1, #0xEA000000
-	orr r1, r0, lsr #2
-	ldr r0,= 0xBD4
-	str r1, [r0]
+	//this works unsafe at the moment, because it seems interrupts can occur fucking everything up
+
+	//ldr r0,= bios_cpufastset_sd_patch
+	//ldr r1,= 0xBD4
+	//sub r0, r1	//relative to source address
+	//sub r0, #8	//pc + 8 compensation
+	//mov r1, #0xEA000000
+	//orr r1, r0, lsr #2
+	//ldr r0,= 0xBD4
+	//str r1, [r0]
 
 	//replace the write to haltcnt in waitintr with a cp15 instruction that does the same on arm9
 	ldr r0,= bios_waitintr_fix

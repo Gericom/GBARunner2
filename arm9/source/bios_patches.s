@@ -17,6 +17,9 @@ bios_cpufastset_sd_patch:
 	cmp r0, #0x0D000000
 	bge 0xBD8
 
+	ldr r12,= 0x33333333
+	mcr p15, 0, r12, c5, c0, 2
+
 	//ensure block d is mapped to the arm7
 	//ldr r3,= 0x4000243
 	//mov r4, #0x8A
@@ -57,6 +60,9 @@ bios_cpufastset_sd_patch_fifo_loop:
 	ldr r3,= 0x4000243
 	mov r4, #0x80
 	strb r4, [r3]
+
+	ldr r12,= 0x33660003
+	mcr p15, 0, r12, c5, c0, 2
 
 	ldr r0,= 0x06868000
 	
