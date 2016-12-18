@@ -1,3 +1,1 @@
-Put a gba bios as bios.bin in arm9/data/
-
-The rom should be called runner.gba and be on the root of your sd card. Make sure it's sram patched if needed.
+The rom should be called runner.gba and be on the root of your sd card. Also put a gba bios in the root of your sd card: bios.bin. Make sure the rom is sram patched if needed.

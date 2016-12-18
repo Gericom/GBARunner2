@@ -1,5 +1,8 @@
 #include <nds.h>
 extern "C" void gba_setup();
+
+uint8_t bios_tmp[16 * 1024];
+
 int main()
 {
 	REG_IME = 0;

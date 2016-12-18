@@ -36,8 +36,113 @@ void initialize_cache()
 		vram_cd->cluster_cache_info.total_nr_cacheblocks = 255;
 }
 
+void copy_bios(uint8_t* bios_dst)
+{
+	void* tmp_buf = (void*)0x06000000;
+	uint32_t root_dir_sector = get_sector_from_cluster(vram_cd->sd_info.root_directory_cluster);
+	_DLDI_readSectors_ptr(root_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	bool name_found = false;
+	bool found = false;
+	dir_entry_t* gba_file_entry = 0;
+	uint32_t cur_cluster = vram_cd->sd_info.root_directory_cluster;
+	*((vu32*)0x04000188) = 0x54524545;
+	while(true)
+	{
+		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);
+		for(int i = 0; i < vram_cd->sd_info.nr_sectors_per_cluster * 512 / 32; i++)
+		{
+			dir_entry_t* cur_dir_entry = &dir_entries[i];
+			if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
+			{
+				//construct name
+				if((cur_dir_entry->long_name_entry.order & ~0x40) == 1)
+				{
+					if(READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[0]) == (uint16_t)'b' &&
+						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[1]) == (uint16_t)'i' &&
+						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[2]) == (uint16_t)'o' &&
+						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[3]) == (uint16_t)'s' &&
+						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[4]) == (uint16_t)'.' &&
+						cur_dir_entry->long_name_entry.name_part_two[0] == (uint16_t)'b' &&
+						cur_dir_entry->long_name_entry.name_part_two[1] == (uint16_t)'i' &&
+						cur_dir_entry->long_name_entry.name_part_two[2] == (uint16_t)'n')
+					{
+						name_found = true;
+					}
+				}
+			}
+			else if(cur_dir_entry->regular_entry.record_type == 0)
+			{
+				*((vu32*)0x04000188) = 0x5453414C;
+				//last entry
+				while(1);//not found
+			}
+			else if(cur_dir_entry->regular_entry.record_type == 0xE5)
+			{
+				//erased
+			}
+			else
+			{
+				if(name_found)
+				{
+					*((vu32*)0x04000188) = 0x444E4946;
+					gba_file_entry = cur_dir_entry;
+					found = true;
+					break;
+				}
+				else if(cur_dir_entry->regular_entry.short_name[0] == 'B' &&
+					cur_dir_entry->regular_entry.short_name[1] == 'I' &&
+					cur_dir_entry->regular_entry.short_name[2] == 'O' &&
+					cur_dir_entry->regular_entry.short_name[3] == 'S' &&
+					cur_dir_entry->regular_entry.short_name[4] == ' ' &&
+					cur_dir_entry->regular_entry.short_name[5] == ' ' &&
+					cur_dir_entry->regular_entry.short_name[6] == ' ' &&
+					cur_dir_entry->regular_entry.short_name[7] == ' ' &&
+					cur_dir_entry->regular_entry.short_name[8] == 'B' &&
+					cur_dir_entry->regular_entry.short_name[9] == 'I' &&
+					cur_dir_entry->regular_entry.short_name[10] == 'N')
+				{
+					*((vu32*)0x04000188) = 0x534F4942;
+					gba_file_entry = cur_dir_entry;
+					found = true;
+					break;
+				}
+			}
+		}
+		if(found) break;
+		//follow the chain
+		uint32_t next = get_cluster_fat_value_simple(cur_cluster);
+		if(next >= 0x0FFFFFF8)
+		{
+			*((vu32*)0x04000188) = 0x5453414C;
+			while(1);//last
+		}
+		cur_cluster = next;
+		_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	}
+	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	cur_cluster = gba_file_entry->regular_entry.cluster_nr_bottom | (gba_file_entry->regular_entry.cluster_nr_top << 16);
+	while(cur_cluster < 0x0FFFFFF8)
+	{
+		*cluster_table = cur_cluster;
+		cluster_table++;
+		cur_cluster = get_cluster_fat_value_simple(cur_cluster);
+	}
+	*cluster_table = cur_cluster;
+	cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	cur_cluster = *cluster_table++;
+	uint32_t data_max = 16 * 1024;
+	uint32_t data_read = 0;
+	*((vu32*)0x04000188) = 0x59504F43;
+	while(cur_cluster < 0x0FFFFFF8 && (data_read + vram_cd->sd_info.nr_sectors_per_cluster * 512) <= data_max)
+	{
+		_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(bios_dst + data_read));
+		data_read += vram_cd->sd_info.nr_sectors_per_cluster * 512;
+		cur_cluster = *cluster_table++;
+	}
+}
+
 //to be called after dldi has been initialized (with the appropriate init function)
-extern "C" void sd_init()
+extern "C" void sd_init(uint8_t* bios_dst)
 {
 	void* tmp_buf = (void*)0x06000000;//vram block d, mapped to the arm 7
 	_DLDI_readSectors_ptr(0, 1, tmp_buf);//read mbr
@@ -66,6 +171,9 @@ extern "C" void sd_init()
 
 	vram_cd->sd_info.cluster_shift = 31 - __builtin_clz(bootsect->nr_sector_per_cluster * 512);
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
+
+	copy_bios(bios_dst);
+
 	//we'll search for runner.gba
 	uint32_t root_dir_sector = get_sector_from_cluster(vram_cd->sd_info.root_directory_cluster);
 	_DLDI_readSectors_ptr(root_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
@@ -166,7 +274,7 @@ extern "C" void sd_init()
 	uint32_t data_max = 0x3B0000;
 	uint32_t data_read = 0;
 	*((vu32*)0x04000188) = 0x59504F43;
-	while(cur_cluster < 0x0FFFFFF8 && (data_read + vram_cd->sd_info.nr_sectors_per_cluster * 512) < data_max)
+	while(cur_cluster < 0x0FFFFFF8 && (data_read + vram_cd->sd_info.nr_sectors_per_cluster * 512) <= data_max)
 	{
 		_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(0x02040000 + data_read));//tmp_buf + 512);
 		data_read += vram_cd->sd_info.nr_sectors_per_cluster * 512;
@@ -355,7 +463,7 @@ extern "C" uint32_t sdread8_uncached(uint32_t address)
 }
 
 
-extern "C" void read_gba_rom(uint32_t address, uint32_t size)
+extern "C" void read_gba_rom(uint32_t address, uint32_t size, uint8_t* dst)
 {
 	if(size > sizeof(vram_cd->arm9_transfer_region) || address >= vram_cd->sd_info.gba_rom_size)
 		return;
@@ -364,7 +472,7 @@ extern "C" void read_gba_rom(uint32_t address, uint32_t size)
 		read_gba_rom_small(address, size);
 		return;
 	}*/
-	uint8_t* dst = vram_cd->arm9_transfer_region;
+	//uint8_t* dst = vram_cd->arm9_transfer_region;
 	uint32_t cluster = address >> vram_cd->sd_info.cluster_shift;
 	uint32_t cluster_offset = address & vram_cd->sd_info.cluster_mask;
 	uint32_t size_left = size;

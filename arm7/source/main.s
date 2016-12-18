@@ -17,12 +17,18 @@ fifo_loop_1:
 	ldr r1, [r0]	//read word from fifo
 	cmp r1, r3
 	bne fifo_loop_1
-	ldr r1, [r0]	//dldi data address
+	ldr r6, [r0]	//dldi data address
+
+fifo_loop_2:
+	ldr r1, [r4]
+	tst r1, #(1 << 8)
+	bne fifo_loop_2
+	ldr r5, [r0]	//bios location
 
 	ldr r0,= 32 * 1024
 	ldr r2,= _dldi_start
 dldi_copy_loop:
-	ldr r3, [r1], #4
+	ldr r3, [r6], #4
 	str r3, [r2], #4
 	subs r0, #4
 	bne dldi_copy_loop
@@ -38,6 +44,7 @@ dldi_copy_loop:
 	streq r2, [r1]
 	beq .
 
+	mov r0, r5
 	bl sd_init
 
 	//send done command to arm9
@@ -97,7 +104,7 @@ fifo_loop:
 
 fifo_got_command:
 	bic r7, r8, lsl #16
-	cmp r7, #0xCB
+	cmp r7, #0xCC
 	bgt fifo_loop
 	sub r7, r7, #0xC4
 	ldr pc, [pc, r7, lsl #2]
@@ -125,6 +132,7 @@ fifo_command_list:
 .word fifo_read_rom_32_command
 .word fifo_read_rom_16_command
 .word fifo_read_rom_8_command
+.word fifo_read_rom_with_dst_command
 
 fifo_start_sound_command:
 	ldr r8,= 0x04000400
@@ -192,6 +200,7 @@ fifo_read_rom_command_loop2:
 	bne fifo_read_rom_command_loop2
 
 	ldr r1, [r5]	//size
+	ldr r2,= 0x06028000
 	bl read_gba_rom
 	//send ready ack
 	ldr r1,= 0x55AAC8AC
@@ -223,6 +232,30 @@ fifo_read_rom_8_command:
 	ldr r0, [r5]	//address
 	bl sdread8_uncached
 	str r0, [r4, #4]
+	b fifo_loop
+
+fifo_read_rom_with_dst_command:
+	ldr r7, [r4]
+	tst r7, #(1 << 8)
+	bne fifo_read_rom_with_dst_command
+	ldr r0, [r5]	//address
+
+fifo_read_rom_with_dst_command_loop2:
+	ldr r7, [r4]
+	tst r7, #(1 << 8)
+	bne fifo_read_rom_with_dst_command_loop2
+	ldr r1, [r5]	//size
+
+fifo_read_rom_with_dst_command_loop3:
+	ldr r7, [r4]
+	tst r7, #(1 << 8)
+	bne fifo_read_rom_with_dst_command_loop3
+	ldr r2, [r5]	//dst
+
+	bl read_gba_rom
+	//send ready ack
+	ldr r1,= 0x55AAC8AC
+	str r1, [r4, #4]
 	b fifo_loop
 
 pan_table:

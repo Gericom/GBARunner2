@@ -63,9 +63,11 @@ gba_setup:
 	ldr r0,= (1 | (14 << 1) | 0x06010000)
 	mcr p15, 0, r0, c6, c3, 0
 
-	//bios protection
+	//bios protection + itcm
 	//ldr r0,= (1 | (13 << 1) | 0x00000000)
-	ldr r0,= (1 | (23 << 1) | 0x00000000)
+	//ldr r0,= (1 | (23 << 1) | 0x00000000)
+	//mcr p15, 0, r0, c6, c4, 0
+	ldr r0,= (1 | (24 << 1) | 0x00000000)
 	mcr p15, 0, r0, c6, c4, 0
 
 	//main memory
@@ -106,14 +108,14 @@ gba_setup:
 	mcr p15, 0, r0, c3, c0, 0
 
 	//Copy GBA Bios in place
-	ldr r0,= bios_bin
-	mov r1, #0x4000
-	mov r2, #0
-gba_setup_copyloop:
-	ldmia r0!, {r3-r10}
-	stmia r2!, {r3-r10}
-	subs r1, #0x20
-	bne gba_setup_copyloop
+//	ldr r0,= bios_bin
+//	mov r1, #0x4000
+//	mov r2, #0
+//gba_setup_copyloop:
+//	ldmia r0!, {r3-r10}
+//	stmia r2!, {r3-r10}
+//	subs r1, #0x20
+//	bne gba_setup_copyloop
 
 	//Setup debugging on the bottom screen
 	//Set vram block H for sub bg
@@ -121,11 +123,21 @@ gba_setup_copyloop:
 	mov r1, #0x81
 	strb r1, [r0]
 	//decompress debugFont to 0x06200000
-	ldr r0,= debugFont
-	ldr r1,= 0x06200000
+	//ldr r0,= debugFont
+	//ldr r1,= 0x06200000
 	//ldr r2,=0x1194
 	//blx r2
-	svc 0x120000
+	//svc 0x120000
+
+	//Copy debug font
+	ldr r0,= debugFont
+	mov r1, #0x4000
+	ldr r2,= 0x06200000
+font_setup_copyloop:
+	ldmia r0!, {r3-r10}
+	stmia r2!, {r3-r10}
+	subs r1, #0x20
+	bne font_setup_copyloop
 
 	ldr r0,= 0x04001000
 	ldr r1,= 0x10801
@@ -185,8 +197,10 @@ gba_setup_fill_sub_loop:
 	ldr r2,= _dldi_start
 	ldr r0,= 0x04000188
 	ldr r1,= 0xAA5555AA
+	ldr r3,= bios_tmp
 	str r1, [r0]
 	str r2, [r0]
+	str r3, [r0]
 
 	//wait for the arm7 sync command
 	ldr r3,= 0x55AAAA55
@@ -210,6 +224,16 @@ dldi_name_copy:
 	str r3, [r1], #4
 	subs r2, #4
 	bne dldi_name_copy
+
+	//Copy GBA Bios in place
+	ldr r0,= bios_tmp
+	mov r1, #0x4000
+	mov r2, #0
+gba_setup_copyloop:
+	ldmia r0!, {r3-r10}
+	stmia r2!, {r3-r10}
+	subs r1, #0x20
+	bne gba_setup_copyloop
 
 	//patch the stack to be in dtcm for speed
 	//doesn't seem to work right for some reason

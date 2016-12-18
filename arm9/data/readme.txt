@@ -1,1 +1,0 @@
-Put a gba bios here as bios.bin

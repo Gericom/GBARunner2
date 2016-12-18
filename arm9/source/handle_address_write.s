@@ -488,6 +488,11 @@ write_address_dma_control_rom_src:
 	strh r13, [r12]
 	ldr r12,= 0x4000000
 
+	ldrb r13, [r9, #-0x3] //top byte of dst address
+	cmp r13, #2
+	cmpne r13, #3
+	beq write_address_dma_control_rom_src_iwram_ewram_dst
+
 	ldr r13,= 0xAA5500C8
 	str r13, [r12, #0x188]
 
@@ -532,6 +537,56 @@ write_address_dma_control_rom_src_wait_loop:
 	ldrh r11, [r9]
 	tst r11, #0x8000
 	bne write_address_dma_control_rom_src_wait_loop
+
+	bx lr
+
+write_address_dma_control_rom_src_iwram_ewram_dst:
+	ldr r13,= 0xAA5500CC
+	str r13, [r12, #0x188]
+
+	ldr r13, [r9, #-0xA]
+	sub r13, #0x02040000
+	str r13, [r12, #0x188]	//address
+
+	ldrh r13, [r9, #-0x2]
+	and r12, r11, #0x1F
+	orr r13, r12, lsl #16
+	tst r11, #(1 << 10)
+	moveq r13, r13, lsl #1
+	movne r13, r13, lsl #2
+
+	//iwram to arm7
+	ldr r12,= 0x04000247
+	mov r11, #3
+	strb r11, [r12]
+
+	ldr r12,= 0x04000188
+	str r13, [r12]	//size
+
+	ldr r13, [r9, #-0x6]
+	str r13, [r12]	//dst
+
+	//wait for the arm7 sync command
+write_address_dma_control_rom_src_fifo_loop_iwram_ewram_dst:
+	ldr r12,= 0x04000184
+	ldr r12, [r12]
+	tst r12, #(1 << 8)
+	bne write_address_dma_control_rom_src_fifo_loop_iwram_ewram_dst
+	ldr r12,= 0x04100000
+	ldr r12, [r12]	//read word from fifo
+	ldr r13,= 0x55AAC8AC
+	cmp r12, r13
+	bne write_address_dma_control_rom_src_fifo_loop_iwram_ewram_dst
+
+	//block d to arm9 lcdc for safety
+	ldr r12,= 0x4000243
+	mov r13, #0x80
+	strb r13, [r12]
+
+	//iwram to arm9
+	ldr r12,= 0x04000247
+	mov r13, #0
+	strb r13, [r12]
 
 	bx lr
 
@@ -669,6 +724,11 @@ write_address_dma_size_control_rom_src:
 	strh r13, [r12]
 	ldr r12,= 0x4000000
 
+	ldrb r13, [r9, #-0x1] //top byte of dst address
+	cmp r13, #2
+	cmpne r13, #3
+	beq write_address_dma_size_control_rom_src_iwram_ewram_dst
+
 	ldr r13,= 0xAA5500C8
 	str r13, [r12, #0x188]
 
@@ -715,6 +775,58 @@ write_address_dma_size_control_rom_src_wait_loop:
 	ldr r11, [r9]
 	tst r11, #0x80000000
 	bne write_address_dma_size_control_rom_src_wait_loop
+
+	bx lr
+
+write_address_dma_size_control_rom_src_iwram_ewram_dst:
+	ldr r13,= 0xAA5500CC
+	str r13, [r12, #0x188]
+
+	ldr r13, [r9, #-0x8]
+	sub r13, #0x02040000
+	str r13, [r12, #0x188]	//address
+
+	//ldrh r13, [r10, #-0x2]
+	//and r12, r11, #0x1F
+	//orr r13, r12, lsl #16
+	ldr r12,= 0x1FFFFF
+	and r13, r11, r12
+	tst r11, #(1 << 26)
+	moveq r13, r13, lsl #1
+	movne r13, r13, lsl #2
+
+	//iwram to arm7
+	ldr r12,= 0x04000247
+	mov r11, #3
+	strb r11, [r12]
+
+	ldr r12,= 0x04000188
+	str r13, [r12]	//size
+
+	ldr r13, [r9, #-0x4]
+	str r13, [r12]	//dst
+
+	//wait for the arm7 sync command
+write_address_dma_size_control_rom_src_fifo_loop_iwram_ewram_dst:
+	ldr r12,= 0x04000184
+	ldr r12, [r12]
+	tst r12, #(1 << 8)
+	bne write_address_dma_size_control_rom_src_fifo_loop_iwram_ewram_dst
+	ldr r12,= 0x04100000
+	ldr r12, [r12]	//read word from fifo
+	ldr r13,= 0x55AAC8AC
+	cmp r12, r13
+	bne write_address_dma_size_control_rom_src_fifo_loop_iwram_ewram_dst
+
+	//block d to arm9 lcdc for safety
+	ldr r12,= 0x4000243
+	mov r13, #0x80
+	strb r13, [r12]
+
+	//iwram to arm9
+	ldr r12,= 0x04000247
+	mov r13, #0
+	strb r13, [r12]
 
 	bx lr
 
