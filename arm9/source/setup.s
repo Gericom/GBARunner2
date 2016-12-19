@@ -16,19 +16,36 @@ gba_setup:
 	//map the gba cartridge to the arm7 and nds card too
 	ldr r0,= 0x4000204
 	ldrh r1, [r0]
-	orr r1, #0x80
-	orr r1, #0x800
+	bic r1, #0x80
+	bic r1, #0x800 //card to arm9
 	bic r1, #0x8000	//set memory priority to arm9
 	strh r1, [r0]
 
+	//abcd to arm9
+	ldr r0,= 0x4000240
+	mov r1, #0x80
+	strb r1, [r0]
+	ldr r0,= 0x4000241
+	mov r1, #0x80
+	strb r1, [r0]
 	//map vram block c to 0x06000000 on the arm7
 	ldr r0,= 0x4000242
-	mov r1, #0x82
+	mov r1, #0x80
 	strb r1, [r0]
 	//map vram block d to 0x06020000 on the arm7
 	ldr r0,= 0x4000243
-	mov r1, #0x8A
+	mov r1, #0x80
 	strb r1, [r0]
+
+	//copy the vram code to a
+	ldr r0,= __vram_lma
+	ldr r1,= (128 * 1024)
+	ldr r2,= __vram_start
+vram_setup_copyloop:
+	ldmia r0!, {r3-r10}
+	stmia r2!, {r3-r10}
+	subs r1, #0x20
+	bne vram_setup_copyloop
 
 	//dim the screen a bit for gba colors:
 	//ldr r0,= 0x0400006C
@@ -74,7 +91,9 @@ gba_setup:
 	ldr r0,= (1 | (21 << 1) | 0x02000000)
 	mcr p15, 0, r0, c6, c5, 0
 
-	ldr r0,= (1 | (14 << 1) | 0x03000000)
+	//ldr r0,= (1 | (14 << 1) | 0x03000000)
+	//mcr p15, 0, r0, c6, c6, 0
+	ldr r0,= (1 | (18 << 1) | 0x06800000)
 	mcr p15, 0, r0, c6, c6, 0
 
 	//ewram
@@ -98,6 +117,7 @@ gba_setup:
 
 	//only instruction and data cache for (fake) cartridge
 	mov r0, #(1 << 5)
+	orr r0, #(1 << 6)
 	mcr p15, 0, r0, c2, c0, 0	//data cache
 	//orr r1, #(1 << 6)
 	//orr r1, #(1 << 7)
@@ -105,6 +125,7 @@ gba_setup:
 
 	//no write buffer
 	mov r0, #0
+	orr r0, #(1 << 6)
 	mcr p15, 0, r0, c3, c0, 0
 
 	//Copy GBA Bios in place
@@ -194,13 +215,13 @@ gba_setup_fill_sub_loop:
 	str r1, [r0]
 
 	//send setup command to arm7
-	ldr r2,= _dldi_start
+	//ldr r2,= _dldi_start
 	ldr r0,= 0x04000188
 	ldr r1,= 0xAA5555AA
-	ldr r3,= bios_tmp
+	//ldr r3,= bios_tmp
 	str r1, [r0]
-	str r2, [r0]
-	str r3, [r0]
+	//str r2, [r0]
+	//str r3, [r0]
 
 	//wait for the arm7 sync command
 	ldr r3,= 0x55AAAA55
@@ -216,6 +237,15 @@ fifo_loop_1:
 	strne r1, [r2]
 	bne fifo_loop_1
 
+	ldr sp,= 0x10000000 + (16 * 1024)
+
+	//setup dldi
+	ldr r0,= (_io_dldi + 8)
+	ldr r0, [r0]
+	blx r0
+	cmp r0, #0
+	beq .
+
 	ldr r0,= _dldi_start + 16
 	ldr r1,= 0x06202000
 	mov r2, #48
@@ -225,15 +255,18 @@ dldi_name_copy:
 	subs r2, #4
 	bne dldi_name_copy
 
+	mov r0, #0x01000000
+	bl sd_init
+
 	//Copy GBA Bios in place
-	ldr r0,= bios_tmp
-	mov r1, #0x4000
-	mov r2, #0
-gba_setup_copyloop:
-	ldmia r0!, {r3-r10}
-	stmia r2!, {r3-r10}
-	subs r1, #0x20
-	bne gba_setup_copyloop
+//	ldr r0,= bios_tmp
+//	mov r1, #0x4000
+//	mov r2, #0
+//gba_setup_copyloop:
+//	ldmia r0!, {r3-r10}
+//	stmia r2!, {r3-r10}
+//	subs r1, #0x20
+//	bne gba_setup_copyloop
 
 	//patch the stack to be in dtcm for speed
 	//doesn't seem to work right for some reason
@@ -282,9 +315,9 @@ gba_setup_copyloop:
 	//C - 16kb - always mapped to obj (0x06014000)	-> different on nds as block G
 
 	ldr r0,= 0x04000240
-	mov r1, #0
-	strb r1, [r0, #0] //disable bank a
-	strb r1, [r0, #1] //disable bank b
+	//mov r1, #0
+	//strb r1, [r0, #0] //disable bank a
+	//strb r1, [r0, #1] //disable bank b
 	////used for debugging on the sub screen, so don't disable it
 	//mapped to the arm7, so don't disable it
 	//strb r1, [r0, #2] //disable bank c

@@ -1,3 +1,4 @@
+.section .vram
 @---------------------------------------------------------------------------------
 	.align	4
 	.arm
@@ -33,8 +34,8 @@ _dldi_start:
 @---------------------------------------------------------------------------------
 @ Offsets to important sections within the data	-- 32 bytes
 	.align	6
-	.word   0x03804000 //0x06038000 //_dldi_start		@ data start
-	.word   0x0380C000 //0x06040000 //_dldi_end		@ data end
+	.word   _dldi_start		@ data start
+	.word   _dldi_end		@ data end
 	.word	0x00000000		@ Interworking glue start	-- Needs address fixing
 	.word	0x00000000		@ Interworking glue end
 	.word   0x00000000		@ GOT start					-- Needs address fixing

@@ -482,10 +482,26 @@ write_address_dma_control_cont2:
 	bx lr
 
 write_address_dma_control_rom_src:
+	ldr sp,= 0x10000000 + (16 * 1024)
+	push {r0-r9,lr}
+	ldr r0, [r9, #-0xA]
+	sub r0, #0x02040000
+	ldrh r13, [r9, #-0x2]
+	and r12, r11, #0x1F
+	orr r13, r12, lsl #16
+	tst r11, #(1 << 10)
+	moveq r1, r13, lsl #1
+	movne r1, r13, lsl #2
+	ldr r2, [r9, #-0x6]
+	ldr r3,= read_gba_rom
+	blx r3
+	pop {r0-r9,lr}
+	bx lr
+
 	//ensure block c and d are mapped to the arm7
-	ldr r12,= 0x4000242
-	ldr r13,= 0x8A82
-	strh r13, [r12]
+	//ldr r12,= 0x4000242
+	//ldr r13,= 0x8A82
+	//strh r13, [r12]
 	ldr r12,= 0x4000000
 
 	ldrb r13, [r9, #-0x3] //top byte of dst address
@@ -718,6 +734,22 @@ write_address_dma_size_control_cont3:
 
 
 write_address_dma_size_control_rom_src:
+	ldr sp,= 0x10000000 + (16 * 1024)
+	push {r0-r9,lr}
+	ldr r0, [r9, #-0x8]
+	sub r0, #0x02040000
+	ldr r12,= 0x1FFFFF
+	and r13, r11, r12
+	tst r11, #(1 << 26)
+	moveq r1, r13, lsl #1
+	movne r1, r13, lsl #2
+	ldr r2, [r9, #-0x4]
+	ldr r3,= read_gba_rom
+	blx r3
+	pop {r0-r9,lr}
+	bx lr
+
+
 	//ensure block c and d are mapped to the arm7
 	ldr r12,= 0x4000242
 	ldr r13,= 0x8A82

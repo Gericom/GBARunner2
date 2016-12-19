@@ -64,9 +64,9 @@ read_address_from_handler_rom_32bit:
 	bic r10, r9, #0x0E000000
 
 	//block c and d to arm9
-	ldr r12,= 0x4000242
-	ldr r13,= 0x8080
-	strh r13, [r12]
+	//ldr r12,= 0x4000242
+	//ldr r13,= 0x8080
+	//strh r13, [r12]
 
 	ldr r11,= sd_sd_info
 	ldr r13, [r11] //rom size
@@ -105,6 +105,14 @@ read_address_from_handler_rom_32bit:
 	bx lr
 
 read_address_from_handler_rom_32bit_not_cached:
+	ldr sp,= 0x10000000 + (16 * 1024)
+	push {r0-r9,lr}
+	mov r0, r10
+	ldr r1,= sdread32_uncached
+	blx r1
+	mov r10, r0
+	pop {r0-r9,lr}
+	bx lr
 
 	//ensure block c and d are mapped to the arm7
 	ldr r12,= 0x4000242
@@ -186,9 +194,9 @@ read_address_from_handler_rom_16bit:
 	bic r10, r9, #0x0E000000
 
 	//block c and d to arm9
-	ldr r12,= 0x4000242
-	ldr r13,= 0x8080
-	strh r13, [r12]
+	//ldr r12,= 0x4000242
+	//ldr r13,= 0x8080
+	//strh r13, [r12]
 
 	ldr r11,= sd_sd_info
 	ldr r13, [r11] //rom size
@@ -227,6 +235,15 @@ read_address_from_handler_rom_16bit:
 	bx lr
 
 read_address_from_handler_rom_16bit_not_cached:
+	ldr sp,= 0x10000000 + (16 * 1024)
+	push {r0-r9,lr}
+	mov r0, r10
+	ldr r1,= sdread16_uncached
+	blx r1
+	mov r10, r0
+	pop {r0-r9,lr}
+	bx lr
+
 	//ensure block c and d are mapped to the arm7
 	ldr r12,= 0x4000242
 	ldr r13,= 0x8A82
@@ -306,9 +323,9 @@ read_address_from_handler_rom_8bit:
 	bic r10, r9, #0x0E000000
 
 	//block c and d to arm9
-	ldr r12,= 0x4000242
-	ldr r13,= 0x8080
-	strh r13, [r12]
+	//ldr r12,= 0x4000242
+	//ldr r13,= 0x8080
+	//strh r13, [r12]
 
 	ldr r11,= sd_sd_info
 	ldr r13, [r11] //rom size
@@ -347,6 +364,15 @@ read_address_from_handler_rom_8bit:
 	bx lr
 
 read_address_from_handler_rom_8bit_not_cached:
+	ldr sp,= 0x10000000 + (16 * 1024)
+	push {r0-r9,lr}
+	mov r0, r10
+	ldr r1,= sdread8_uncached
+	blx r1
+	mov r10, r0
+	pop {r0-r9,lr}
+	bx lr
+
 	//ensure block c and d are mapped to the arm7
 	ldr r12,= 0x4000242
 	ldr r13,= 0x8A82
@@ -458,9 +484,9 @@ read_address_from_handler_rom:
 	bic r10, r9, #0x0E000000
 
 	//block c and d to arm9
-	ldr r12,= 0x4000242
-	ldr r13,= 0x8080
-	strh r13, [r12]
+	//ldr r12,= 0x4000242
+	//ldr r13,= 0x8080
+	//strh r13, [r12]
 
 	ldr r12,= sd_sd_info
 	ldr r13, [r12] //rom size
@@ -505,6 +531,18 @@ read_address_from_handler_rom:
 	bx lr
 
 read_address_from_handler_rom_not_cached:
+	ldr sp,= 0x10000000 + (16 * 1024)
+	push {r0-r9,lr}
+	mov r0, r10
+	cmp r11, #2
+	ldrlt r1,= sdread8_uncached
+	ldreq r1,= sdread16_uncached
+	ldrgt r1,= sdread32_uncached
+	blx r1
+	mov r10, r0
+	pop {r0-r9,lr}
+	bx lr
+
 	//ensure block c and d are mapped to the arm7
 	ldr r12,= 0x4000242
 	ldr r13,= 0x8A82

@@ -17,35 +17,35 @@ fifo_loop_1:
 	ldr r1, [r0]	//read word from fifo
 	cmp r1, r3
 	bne fifo_loop_1
-	ldr r6, [r0]	//dldi data address
+//	ldr r6, [r0]	//dldi data address
 
-fifo_loop_2:
-	ldr r1, [r4]
-	tst r1, #(1 << 8)
-	bne fifo_loop_2
-	ldr r5, [r0]	//bios location
+//fifo_loop_2:
+//	ldr r1, [r4]
+//	tst r1, #(1 << 8)
+//	bne fifo_loop_2
+//	ldr r5, [r0]	//bios location
 
-	ldr r0,= 32 * 1024
-	ldr r2,= _dldi_start
-dldi_copy_loop:
-	ldr r3, [r6], #4
-	str r3, [r2], #4
-	subs r0, #4
-	bne dldi_copy_loop
+//	ldr r0,= 32 * 1024
+//	ldr r2,= _dldi_start
+//dldi_copy_loop:
+//	ldr r3, [r6], #4
+//	str r3, [r2], #4
+//	subs r0, #4
+//	bne dldi_copy_loop
 
 	//init dldi
-	ldr r3,= _DLDI_startup_ptr
-	ldr r3, [r3]
-	bl call_by_r3
+//	ldr r3,= _DLDI_startup_ptr
+//	ldr r3, [r3]
+//	bl call_by_r3
 
-	cmp r0, #0
-	ldreq r1,= 0x04000188
-	ldreq r2,= 0x4C494146
-	streq r2, [r1]
-	beq .
+//	cmp r0, #0
+//	ldreq r1,= 0x04000188
+//	ldreq r2,= 0x4C494146
+//	streq r2, [r1]
+//	beq .
 
-	mov r0, r5
-	bl sd_init
+//	mov r0, r5
+//	bl sd_init
 
 	//send done command to arm9
 	ldr r0,= 0x04000188
