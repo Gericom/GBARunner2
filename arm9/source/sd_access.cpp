@@ -513,9 +513,9 @@ extern "C" PUT_IN_VRAM void read_gba_rom(uint32_t address, uint32_t size, uint8_
 	if(left_in_this_cluster > size)
 		left_in_this_cluster = size;
 	void* cluster_data = get_cluster_data(cluster);
-	for(int i = 0; i < left_in_this_cluster; i++)
+	for(int i = 0; i < left_in_this_cluster / 2; i++)
 	{
-		dst[i] = ((uint8_t*)cluster_data + cluster_offset)[i];
+		((uint16_t*)dst)[i] = ((uint16_t*)((uint8_t*)cluster_data + cluster_offset))[i];
 	}
 	//memcpy(dst, cluster_data + cluster_offset, left_in_this_cluster);
 	size_left -= left_in_this_cluster;
@@ -526,9 +526,9 @@ extern "C" PUT_IN_VRAM void read_gba_rom(uint32_t address, uint32_t size, uint8_
 	while(size_left >= (1 << vram_cd->sd_info.cluster_shift))
 	{
 		cluster_data = get_cluster_data(cluster++);
-		for(int i = 0; i < (1 << vram_cd->sd_info.cluster_shift); i++)
+		for(int i = 0; i < (1 << vram_cd->sd_info.cluster_shift) / 2; i++)
 		{
-			dst[i] = ((uint8_t*)cluster_data)[i];
+			((uint16_t*)dst)[i] = ((uint16_t*)cluster_data)[i];
 		}
 		//memcpy(dst, cluster_data, 1 << vram_cd->sd_info.cluster_shift);
 		//dmaCopyWords(3, cluster_data, dst, 1 << vram_cd->sd_info.cluster_shift);
@@ -539,9 +539,9 @@ extern "C" PUT_IN_VRAM void read_gba_rom(uint32_t address, uint32_t size, uint8_
 	if(size_left <= 0) return;
 	//read data that's left
 	cluster_data = get_cluster_data(cluster);
-	for(int i = 0; i < size_left; i++)
+	for(int i = 0; i < size_left / 2; i++)
 	{
-		dst[i] = ((uint8_t*)cluster_data)[i];
+		((uint16_t*)dst)[i] = ((uint16_t*)cluster_data)[i];
 	}
 	//memcpy(dst, cluster_data, size_left);
 }

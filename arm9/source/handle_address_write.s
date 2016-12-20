@@ -486,12 +486,12 @@ write_address_dma_control_rom_src:
 	push {r0-r9,lr}
 	ldr r0, [r9, #-0xA]
 	sub r0, #0x02040000
-	ldrh r13, [r9, #-0x2]
+	ldrh r10, [r9, #-0x2]
 	and r12, r11, #0x1F
-	orr r13, r12, lsl #16
+	orr r10, r12, lsl #16
 	tst r11, #(1 << 10)
-	moveq r1, r13, lsl #1
-	movne r1, r13, lsl #2
+	moveq r1, r10, lsl #1
+	movne r1, r10, lsl #2
 	ldr r2, [r9, #-0x6]
 	ldr r3,= read_gba_rom
 	blx r3
@@ -739,10 +739,10 @@ write_address_dma_size_control_rom_src:
 	ldr r0, [r9, #-0x8]
 	sub r0, #0x02040000
 	ldr r12,= 0x1FFFFF
-	and r13, r11, r12
+	and r10, r11, r12
 	tst r11, #(1 << 26)
-	moveq r1, r13, lsl #1
-	movne r1, r13, lsl #2
+	moveq r1, r10, lsl #1
+	movne r1, r10, lsl #2
 	ldr r2, [r9, #-0x4]
 	ldr r3,= read_gba_rom
 	blx r3
