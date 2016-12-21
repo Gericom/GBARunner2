@@ -214,6 +214,8 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	dir_entry_t* gba_file_entry = 0;
 	uint32_t cur_cluster = vram_cd->sd_info.root_directory_cluster;
 	*((vu32*)0x06202000) = 0x54524545;
+	//debug
+	int name_idx = 0;
 	while(true)
 	{
 		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);
@@ -252,6 +254,14 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 			}
 			else
 			{
+				if(name_idx < 23)
+				{
+					uint32_t name_a = cur_dir_entry->regular_entry.short_name[0] | (cur_dir_entry->regular_entry.short_name[1] << 8) | (cur_dir_entry->regular_entry.short_name[2] << 16) | (cur_dir_entry->regular_entry.short_name[3] << 24);
+					uint32_t name_b = cur_dir_entry->regular_entry.short_name[4] | (cur_dir_entry->regular_entry.short_name[5] << 8) | (cur_dir_entry->regular_entry.short_name[6] << 16) | (cur_dir_entry->regular_entry.short_name[7] << 24);
+					((vu32*)0x06202000)[8 + name_idx * 8] = name_a;
+					((vu32*)0x06202000)[8 + name_idx * 8 + 1] = name_b;
+					name_idx++;
+				}
 				if(name_found)
 				{
 					*((vu32*)0x06202000) = 0x444E4946;
