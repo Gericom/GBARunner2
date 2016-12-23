@@ -666,12 +666,12 @@ write_address_dma_control_cont:
 	//str r12, [r13, #4]
 
 	ldr r10,= 0x04000188
-	ldr r11,= 0xAA5500C5
+	//ldr r11,= 0xAA5500C5
 	ldr r13,= 0xAA5500C4
-	mov r12, #0
-	str r11, [r10]
+	//mov r12, #0
+	//str r11, [r10]
 	str r13, [r10]
-	str r12, [r10]
+	//str r12, [r10]
 
 	bx lr
 
