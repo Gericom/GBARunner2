@@ -11,7 +11,7 @@ extern uint8_t _io_dldi;
 
 #define _DLDI_readSectors_ptr ((FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10))))
 
-#define vram_cd		((vram_cd_t*)0x06840000)
+#define vram_cd		((vram_cd_t*)0x06820000)
 
 PUT_IN_VRAM void MI_WriteByte(void *address, uint8_t value)
 {
@@ -35,7 +35,7 @@ PUT_IN_VRAM static uint32_t get_cluster_fat_value_simple(uint32_t cluster)
 	uint32_t fat_offset = cluster * 4;
 	uint32_t fat_sector = vram_cd->sd_info.first_fat_sector + (fat_offset >> 9); //sector_size);
 	uint32_t ent_offset = fat_offset & 0x1FF;//% sector_size;
-	void* tmp_buf = (void*)0x06840000;
+	void* tmp_buf = (void*)0x06820000;
 	_DLDI_readSectors_ptr(fat_sector, 1, tmp_buf);
 	return *((uint32_t*)(((uint8_t*)tmp_buf) + ent_offset)) & 0x0FFFFFFF;
 }
@@ -48,6 +48,11 @@ PUT_IN_VRAM static inline uint32_t get_sector_from_cluster(uint32_t cluster)
 PUT_IN_VRAM void initialize_cache()
 {
 	vram_cd->sd_info.access_counter = 0;
+	//--Issue #2--
+	//WATCH OUT! These 3 loops should be loops, and not calls to memset
+	//Newer versions of the gcc compiler enable -ftree-loop-distribute-patterns when O3 is used
+	//and replace those loops with calls to memset, which is not available anymore at the time this is called
+	//Solution: Use O2 instead (which is a stupid solution in my opinion)
 	for(int i = 0; i < sizeof(vram_cd->cluster_cache) / 4; i++)
 	{
 		((uint32_t*)&vram_cd->cluster_cache)[i] = 0;
@@ -70,7 +75,7 @@ PUT_IN_VRAM void initialize_cache()
 
 PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 {
-	void* tmp_buf = (void*)0x06840000;
+	void* tmp_buf = (void*)0x06820000;
 	uint32_t root_dir_sector = get_sector_from_cluster(vram_cd->sd_info.root_directory_cluster);
 	_DLDI_readSectors_ptr(root_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	bool name_found = false;
@@ -176,7 +181,7 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 //to be called after dldi has been initialized (with the appropriate init function)
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
-	void* tmp_buf = (void*)0x06840000;//vram block d, mapped to the arm 7
+	void* tmp_buf = (void*)0x06820000;//vram block d, mapped to the arm 7
 	_DLDI_readSectors_ptr(0, 1, tmp_buf);//read mbr
 	mbr_t* mbr = (mbr_t*)tmp_buf;
 	if(mbr->signature != 0xAA55)
@@ -430,7 +435,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread32_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();
-	vram_cd->gba_rom_is_cluster_cached_table[cluster_index] = block;
+	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
@@ -456,7 +461,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread16_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();
-	vram_cd->gba_rom_is_cluster_cached_table[cluster_index] = block;
+	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
@@ -482,7 +487,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread8_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();
-	vram_cd->gba_rom_is_cluster_cached_table[cluster_index] = block;
+	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
@@ -513,9 +518,12 @@ extern "C" PUT_IN_VRAM void read_gba_rom(uint32_t address, uint32_t size, uint8_
 	if(left_in_this_cluster > size)
 		left_in_this_cluster = size;
 	void* cluster_data = get_cluster_data(cluster);
+	uint16_t* pDst = (uint16_t*)dst;
+	uint16_t* pSrc = (uint16_t*)((uint8_t*)cluster_data + cluster_offset);
 	for(int i = 0; i < left_in_this_cluster / 2; i++)
 	{
-		((uint16_t*)dst)[i] = ((uint16_t*)((uint8_t*)cluster_data + cluster_offset))[i];
+		*pDst++ = *pSrc++;
+		//((uint16_t*)dst)[i] = ((uint16_t*)((uint8_t*)cluster_data + cluster_offset))[i];
 	}
 	//memcpy(dst, cluster_data + cluster_offset, left_in_this_cluster);
 	size_left -= left_in_this_cluster;
@@ -526,9 +534,12 @@ extern "C" PUT_IN_VRAM void read_gba_rom(uint32_t address, uint32_t size, uint8_
 	while(size_left >= (1 << vram_cd->sd_info.cluster_shift))
 	{
 		cluster_data = get_cluster_data(cluster++);
+		pDst = (uint16_t*)dst;
+		pSrc = (uint16_t*)cluster_data;
 		for(int i = 0; i < (1 << vram_cd->sd_info.cluster_shift) / 2; i++)
 		{
-			((uint16_t*)dst)[i] = ((uint16_t*)cluster_data)[i];
+			*pDst++ = *pSrc++;
+			//((uint16_t*)dst)[i] = ((uint16_t*)cluster_data)[i];
 		}
 		//memcpy(dst, cluster_data, 1 << vram_cd->sd_info.cluster_shift);
 		//dmaCopyWords(3, cluster_data, dst, 1 << vram_cd->sd_info.cluster_shift);
@@ -539,9 +550,12 @@ extern "C" PUT_IN_VRAM void read_gba_rom(uint32_t address, uint32_t size, uint8_
 	if(size_left <= 0) return;
 	//read data that's left
 	cluster_data = get_cluster_data(cluster);
+	pDst = (uint16_t*)dst;
+	pSrc = (uint16_t*)cluster_data;
 	for(int i = 0; i < size_left / 2; i++)
 	{
-		((uint16_t*)dst)[i] = ((uint16_t*)cluster_data)[i];
+		*pDst++ = *pSrc++;
+		//((uint16_t*)dst)[i] = ((uint16_t*)cluster_data)[i];
 	}
 	//memcpy(dst, cluster_data, size_left);
 }

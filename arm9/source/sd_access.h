@@ -186,8 +186,8 @@ typedef struct
 //vram config
 typedef struct
 {
-	//vram c
-	uint8_t cluster_cache[128 * 1024];//96 * 1024];
+	//vram b and c
+	uint8_t cluster_cache[256 * 1024];//96 * 1024];
 	/*uint8_t gba_rom_is_cluster_cached_table[16 * 1024];	//allows roms up to 64MB
 	union
 	{
