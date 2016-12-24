@@ -210,9 +210,12 @@ gba_setup_fill_sub_loop:
 	
 	//wait for the arm7 to copy the dldi data
 	//enable the arm7-arm9 fifo
-	ldr r0,= 0x04000184
-	mov r1, #0x8000
-	str r1, [r0]
+	ldr r0,= 0x04000180
+	ldr r1,= (0x8000 | (1 << 3))
+	str r1, [r0, #4]
+
+	//mov r1, #(1 << 14)
+	//str r1, [r0]
 
 	//send setup command to arm7
 	//ldr r2,= _dldi_start

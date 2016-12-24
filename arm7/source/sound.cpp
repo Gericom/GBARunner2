@@ -18,7 +18,7 @@ int sampleFreq;
 
 volatile int soundStarted;
 
-static void gba_sound_timer2_handler()
+/*static void gba_sound_timer2_handler()
 {
 	soundBufferVirtualReadOffset += 256;
 	if(soundBufferVirtualReadOffset > soundBufferVirtualWriteOffset + (SOUND_BUFFER_SIZE * 4))
@@ -27,7 +27,7 @@ static void gba_sound_timer2_handler()
 		REG_TM[2].CNT_H = 0;
 		soundStarted = 0;//resync
 	}
-}
+}*/
 
 void gba_sound_init()
 {
@@ -55,7 +55,6 @@ void gba_sound_notify_reset()
 		return;
 	if(!(*((vu32*)0x04000136) & 1))
 		gba_sound_resync();
-	//int oldirq = enterCriticalSection();
 	//old value
 	u16 count = REG_TM[1].CNT_L; //in samples
 	//reset
@@ -118,7 +117,6 @@ void gba_sound_notify_reset()
 		//REG_TM[2].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_256;
 		//irqEnable(IRQ_TIMER2);
 	}
-	//leaveCriticalSection(oldirq);
 }
 
 void gba_sound_vblank()

@@ -972,13 +972,22 @@ write_address_timer:
 .global write_address_ie
 write_address_ie:
 	ldr r13,= 0x4000210
+	//tst r11, #1
+	//bic r11, #1
+	//orrne r11, r11, #(1 << 16)	//fifo sync as early vblank
 	strh r11, [r13]
 	bx lr
 
 .global write_address_ie_bottom8
 write_address_ie_bottom8:
 	ldr r13,= 0x4000210
+	//tst r11, #1
+	//bic r11, #1
 	strb r11, [r13]
+	//ldrb r11, [r13, #2]
+	//biceq r11, r11, #1	//fifo sync as early vblank
+	//orrne r11, r11, #1	//fifo sync as early vblank
+	//strb r11, [r13, #2]
 	bx lr
 
 .global write_address_ie_top8
@@ -990,6 +999,9 @@ write_address_ie_top8:
 .global write_address_if
 write_address_if:
 	ldr r13,= 0x4000214
+	//tst r11, #1
+	//orrne r11, #(1 << 16)
+	//orr r11, #0x3E0000
 	orr r11, #0x3F0000
 	str r11, [r13]
 	bx lr
@@ -997,6 +1009,9 @@ write_address_if:
 .global write_address_if_bottom8
 write_address_if_bottom8:
 	ldr r13,= 0x4000214
+	//tst r11, #1
+	//orrne r11, #(1 << 16)
+	//orr r11, #0x3E0000
 	orr r11, #0x3F0000
 	str r11, [r13]
 	bx lr
@@ -1012,8 +1027,17 @@ write_address_if_top8:
 .global write_address_ie_if
 write_address_ie_if:
 	ldr r13,= 0x4000210
+	//tst r11, #1
+	//bic r11, #1
+	//biceq r12, r11, #(1 << 16)	//fifo sync as early vblank
+	//orrne r12, r11, #(1 << 16)	//fifo sync as early vblank
+	//bic r12, //#0x3E0000
+	//str r12, [r13]
 	strh r11, [r13]
 	mov r11, r11, lsr #16
+	//tst r11, #1
+	//orrne r11, #(1 << 16)
+	//orr r11, #0x3E0000
 	orr r11, #0x3F0000
 	str r11, [r13, #4]
 	bx lr

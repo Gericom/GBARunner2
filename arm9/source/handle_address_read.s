@@ -690,6 +690,12 @@ read_address_dispcontrol_top8:
 .global read_address_vcount
 read_address_vcount:
 	ldrh r10, [r9]
+	cmp r10, #160
+	bxlt lr
+	cmp r10, #192
+	movlt r10, #159
+	bxlt lr
+	sub r10, #32
 	cmp r10, #227
 	movgt r10, #227
 	bx lr
@@ -714,12 +720,18 @@ read_address_timer:
 read_address_ie:
 	ldr r13,= 0x4000210
 	ldrh r10, [r13]
+	//ldrb r11, [r13, #2]
+	//tst r11, #1
+	//orrne r10, #1
 	bx lr
 
 .global read_address_ie_bottom8
 read_address_ie_bottom8:
 	ldr r13,= 0x4000000
 	ldrb r10, [r13, #0x210]
+	//ldrb r11, [r13, #0x212]
+	//tst r11, #1
+	//orrne r10, #1
 	bx lr
 
 .global read_address_ie_top8
@@ -738,6 +750,10 @@ read_address_if:
 read_address_if_bottom8:
 	ldr r13,= 0x4000000
 	ldrb r10, [r13, #0x214]
+	//ldrb r11, [r13, #0x216]
+	//bic r10, #1
+	//tst r11, #1
+	//orrne r10, #1
 	bx lr
 
 .global read_address_if_top8
@@ -750,8 +766,15 @@ read_address_if_top8:
 read_address_ie_if:
 	ldr r13,= 0x4000210
 	ldrh r12, [r13]
+	//ldrb r11, [r13, #2]
+	//tst r11, #1
+	//orrne r12, #1
+	//ldrb r11, [r13, #6]
 	ldrh r13, [r13, #4]
 	orr r10, r12, r13, lsl #16
+	//bic r10, #(1 << 16)
+	//tst r11, #1
+	//orrne r10, #(1 << 16)
 	bx lr
 
 .global read_address_wait_control
