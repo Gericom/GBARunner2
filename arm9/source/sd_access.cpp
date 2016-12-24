@@ -13,7 +13,7 @@ extern uint8_t _io_dldi;
 
 #define vram_cd		((vram_cd_t*)0x06820000)
 
-PUT_IN_VRAM void MI_WriteByte(void *address, uint8_t value)
+PUT_IN_VRAM __attribute__ ((noinline)) static void MI_WriteByte(void *address, uint8_t value)
 {
     uint16_t     val = *(uint16_t *)((uint32_t)address & ~1);
 

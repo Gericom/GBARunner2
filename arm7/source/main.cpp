@@ -27,18 +27,38 @@ int main()
 	//REG_SOUND[0].LEN = 396 * 10;
 	//REG_SOUND[0].CNT = SOUND_CHANNEL_0_SETTINGS;
 	//fifo loop
+	vu32 val;
 	while(1)
 	{
 		while(*((vu32*)0x04000184) & (1 << 8));
 		u32 cmd = REG_RECV_FIFO;
-		if((cmd >> 16) != 0xAA55)
-			continue;
-		switch(cmd & 0xFFFF)
+		//if((cmd >> 16) != 0xAA55)
+		//	continue;
+		switch(cmd)
 		{
-		case 0xC4://fifo_start_sound_command
+		case 0xAA5500C4://fifo_start_sound_command
 			//REG_SOUND[0].CNT |= REG_SOUNDXCNT_E;
 			gba_sound_notify_reset();
 			break;
+		case 0x04000100:
+		case 0x04000102:
+			{
+				while(*((vu32*)0x04000184) & (1 << 8));
+				val = REG_RECV_FIFO;
+				gba_sound_timer_updated(val & 0xFFFF);
+				break;
+			}
+		case 0x04000104:
+		case 0x04000106:
+		case 0x04000108:
+		case 0x0400010A:
+		case 0x0400010C:
+		case 0x0400010E:
+			{
+				while(*((vu32*)0x04000184) & (1 << 8));
+				val = REG_RECV_FIFO;
+				break;
+			}
 		//case 0xC5://fifo_stop_sound_command
 			//REG_SOUND[0].CNT = SOUND_CHANNEL_0_SETTINGS;
 		//	break;

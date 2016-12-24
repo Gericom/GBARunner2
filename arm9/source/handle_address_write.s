@@ -916,12 +916,12 @@ write_address_dma_size_control_cont2:
 	//str r12, [r13, #4]
 	
 	ldr r10,= 0x04000188
-	ldr r11,= 0xAA5500C5
+	//ldr r11,= 0xAA5500C5
 	ldr r13,= 0xAA5500C4
-	mov r12, #1
-	str r11, [r10]
+	//mov r12, #1
+	//str r11, [r10]
 	str r13, [r10]
-	str r12, [r10]
+	//str r12, [r10]
 
 	bx lr
 
@@ -949,9 +949,12 @@ write_address_dma_size_control_cont2:
 
 .global write_address_timer_counter
 write_address_timer_counter:
-	mov r11, r11, lsl #17
-	mov r11, r11, lsr #16
-	strh r11, [r9]
+	mov r12, r11, lsl #17
+	mov r12, r12, lsr #16
+	strh r12, [r9]
+	ldr r12,= 0x04000188
+	str r9, [r12]
+	str r11, [r12]
 	bx lr
 
 .global write_address_timer
@@ -961,6 +964,9 @@ write_address_timer:
 	mov r13, r13, lsr #16
 	orr r12, r13, r12, lsl #16
 	str r12, [r9]
+	ldr r12,= 0x04000188
+	str r9, [r12]
+	str r11, [r12]
 	bx lr
 
 .global write_address_ie
