@@ -65,7 +65,7 @@ void gba_sound_notify_reset()
 	REG_TM[1].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_CH;
 	REG_TM[0].CNT_H = REG_TMXCNT_H_E;
 	uint32_t newSamplesPerBlock = (count + 8) & ~0xF;
-	if(newSamplesPerBlock > samplesPerBlock * 2)
+	if(newSamplesPerBlock > samplesPerBlock * 3)
 		gba_sound_resync();
 	//if(samplesPerBlock == 0)
 		samplesPerBlock = newSamplesPerBlock;
