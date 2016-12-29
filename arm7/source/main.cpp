@@ -196,6 +196,8 @@ int main()
 					REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_CH;
 				}
 				line = line % 263;
+				//Line 262 seems to reset the lcd so it starts drawing from the top again. Thus, it's important to have line 262 executed at it's physical place
+				//This has a neasty side effect when centering; affine bgs are offset in that case :(
 				if(line == 262 || line < 15)
 					*((vu16*)0x04000006) = 192;
 				else if(line == 15)

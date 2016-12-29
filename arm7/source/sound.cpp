@@ -126,6 +126,10 @@ void gba_sound_vblank()
 
 void gba_sound_timer_updated(uint16_t reloadVal)
 {
-	sampleFreq = (-16 * 1024 * 1024) / ((int16_t)reloadVal);
-	gba_sound_resync();
+	int freq = (-16 * 1024 * 1024) / ((int16_t)reloadVal);
+	if(sampleFreq != freq)
+	{
+		sampleFreq = freq;
+		gba_sound_resync();
+	}
 }

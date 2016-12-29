@@ -201,12 +201,18 @@ gba_setup_fill_sub_loop:
 	ldr r0,= 0x1000000A
 	mcr p15, 0, r0, c9, c1, 0
 
-	bl address_write_table_32bit_dtcm_setup
-	bl address_write_table_16bit_dtcm_setup
-	bl address_write_table_8bit_dtcm_setup
-	bl address_read_table_32bit_dtcm_setup
-	bl address_read_table_16bit_dtcm_setup
-	bl address_read_table_8bit_dtcm_setup
+	ldr r0,= address_write_table_32bit_dtcm_setup
+	blx r0
+	ldr r0,= address_write_table_16bit_dtcm_setup
+	blx r0
+	ldr r0,= address_write_table_8bit_dtcm_setup
+	blx r0
+	ldr r0,= address_read_table_32bit_dtcm_setup
+	blx r0
+	ldr r0,= address_read_table_16bit_dtcm_setup
+	blx r0
+	ldr r0,= address_read_table_8bit_dtcm_setup
+	blx r0
 	
 	//wait for the arm7 to copy the dldi data
 	//enable the arm7-arm9 fifo
@@ -486,13 +492,14 @@ gba_start_bkpt:
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
 
-	bl count_bits_initialize
+	ldr r0,= count_bits_initialize
+	blx r0
 
 	ldr r0,= 0x05000000
 	ldr r1,= 0x3E0
 	strh r1, [r0]
 	mrc p15, 0, r0, c1, c0, 0
-	orr r0, #(1<<15)
+	//orr r0, #(1<<15)
 	orr r0, #(1 | (1 << 2))	//enable pu and data cache
 	orr r0, #(1 << 12) //and cache
 	orr r0, #(1 << 14) //round robin cache replacement improves worst case performance
@@ -579,154 +586,10 @@ instruction_abort_handler_error_2:
 
 	b .
 
-.global nibble_to_char
-nibble_to_char:
-.byte	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46
-
 .align 4
 
 undef_inst_handler:
-	mrc p15, 0, r0, c1, c0, 0
-	bic r0, #(1 | (1 << 2))	//disable pu and data cache
-	bic r0, #(1 << 12) //and cache
-	mcr p15, 0, r0, c1, c0, 0
-
-	ldr r0,= 0x06202000
-	ldr r1,= 0x46444E55
-	str r1, [r0]
-
-	mov r0, lr
-	ldr r1,= nibble_to_char
-	ldr r4,= (0x06202000 + 32 * 8)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldr r0, [lr]
-	ldr r1,= nibble_to_char
-	ldr r4,= (0x06202000 + 32 * 9)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	mrs r0, spsr
-	ldr r1,= nibble_to_char
-	ldr r4,= (0x06202000 + 32 * 10)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	msr cpsr_c, #0x9F
-	mov r0, lr
-	msr cpsr_c, #0x9B
-	ldr r1,= nibble_to_char
-	ldr r4,= (0x06202000 + 32 * 11)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-undef_inst_handler_loop:
-	b undef_inst_handler_loop
+	ldr pc,= undef_inst_handler_vram
 
 //inbetween to catch the current running function in usermode
 irq_handler:

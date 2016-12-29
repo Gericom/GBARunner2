@@ -613,42 +613,6 @@ read_address_from_handler_rom_in_mem:
 //	mov r10, #0
 //	bx lr
 
-.global address_read_table_32bit_dtcm_setup
-address_read_table_32bit_dtcm_setup:
-	ldr r10,= address_read_table_32bit_dtcm
-	ldr r11,= address_read_table_32bit
-	mov r12, #0x20C
-address_read_table_32bit_dtcm_setup_loop:
-	ldr r13, [r11], #4
-	strh r13, [r10], #2
-	subs r12, #4
-	bne address_read_table_32bit_dtcm_setup_loop
-	bx lr
-
-.global address_read_table_16bit_dtcm_setup
-address_read_table_16bit_dtcm_setup:
-	ldr r10,= address_read_table_16bit_dtcm
-	ldr r11,= address_read_table_16bit
-	mov r12, #0x20C
-address_read_table_16bit_dtcm_setup_loop:
-	ldr r13, [r11], #4
-	strh r13, [r10], #2
-	subs r12, #2
-	bne address_read_table_16bit_dtcm_setup_loop
-	bx lr
-
-.global address_read_table_8bit_dtcm_setup
-address_read_table_8bit_dtcm_setup:
-	ldr r10,= address_read_table_8bit_dtcm
-	ldr r11,= address_read_table_8bit
-	mov r12, #0x20C
-address_read_table_8bit_dtcm_setup_loop:
-	ldr r13, [r11], #4
-	strh r13, [r10], #2
-	subs r12, #1
-	bne address_read_table_8bit_dtcm_setup_loop
-	bx lr
-
 .global read_address_nomod_8
 read_address_nomod_8:
 	ldrb r10, [r9]
