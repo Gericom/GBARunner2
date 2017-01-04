@@ -93,76 +93,6 @@ write_address_from_handler_sram_8bit:
 	strb r11, [r10]
 	bx lr
 
-//consider using r9 as address value, because it's that value (almost) everywhere
-//It is okay when from arm at least, thumb7, thumb9, thumb10, thumb15
-.global write_address_from_handler
-write_address_from_handler:
-//r10=address, r11=value, r12=nr bytes
-	cmp r9, #0x06000000
-	bge write_address_from_handler_sprites
-	subs r13, r9, #0x04000000
-	bxlt lr
-	cmp r13, #0x20C
-	bxge lr
-
-	add pc, r12, lsl #4
-
-	nop
-
-	nop
-	nop
-	nop
-	nop
-
-write_address_from_handler_1:
-	mov r13, r13, lsl #1
-	ldr r12,= address_write_table_8bit_dtcm
-	ldrh r13, [r12, r13]
-	orr pc, r13, #0x01000000	//itcm
-
-write_address_from_handler_2:
-	ldr r12,= address_write_table_16bit_dtcm
-	ldrh r13, [r12, r13]
-	orr pc, r13, #0x01000000	//itcm
-	nop
-
-	nop
-	nop
-	nop
-	nop
-
-write_address_from_handler_4:
-	mov r13, r13, lsr #1
-	ldr r12,= address_write_table_32bit_dtcm
-	ldrh r13, [r12, r13]
-	orr pc, r13, #0x01000000	//itcm
-
-write_address_from_handler_sprites:
-	cmp r9, #0x0E000000
-	bge write_address_from_handler_sram
-	add r10, r9, #0x3F0000
-	cmp r12, #1
-	orreq r11, r11, r11, lsl #8
-	moveq r12, #2
-	cmp r12, #4
-	streq r11, [r10]
-	strneh r11, [r10]
-	bx lr
-
-write_address_from_handler_sram:
-	ldr r13,= 0x01FF8000
-	bic r10, r9, r13
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
-	//sub r10, r10, #0x0B800000
-	//sub r10, r10, #0x00008C00
-	//sub r10, r10, #0x00000060
-	cmp r12, #2
-	strltb r11, [r10]
-	streqh r11, [r10]
-	strgt r11, [r10]
-	bx lr
-
 .global write_address_nomod_8
 write_address_nomod_8:
 	strb r11, [r9]
@@ -326,6 +256,13 @@ write_address_sound_cnt:
 	mov r11, r11, lsr #16
 	b write_address_sound_cnt_top16
 
+.global write_address_snd_fifo_A
+write_address_snd_fifo_A:
+	ldr r12,= 0x04000188
+	str r9, [r12]
+	str r11, [r12]
+	bx lr
+
 .global write_address_dma_src
 write_address_dma_src:
 	cmp r11, #0x08000000
@@ -462,114 +399,6 @@ write_address_dma_control_rom_src:
 	pop {r0-r9,lr}
 	bx lr
 
-	//ensure block c and d are mapped to the arm7
-	//ldr r12,= 0x4000242
-	//ldr r13,= 0x8A82
-	//strh r13, [r12]
-	ldr r12,= 0x4000000
-
-	ldrb r13, [r9, #-0x3] //top byte of dst address
-	cmp r13, #2
-	cmpne r13, #3
-	beq write_address_dma_control_rom_src_iwram_ewram_dst
-
-	ldr r13,= 0xAA5500C8
-	str r13, [r12, #0x188]
-
-	ldr r13, [r9, #-0xA]
-	sub r13, #0x02040000
-	str r13, [r12, #0x188]	//address
-
-	ldrh r13, [r9, #-0x2]
-	and r12, r11, #0x1F
-	orr r13, r12, lsl #16
-	tst r11, #(1 << 10)
-	moveq r13, r13, lsl #1
-	movne r13, r13, lsl #2
-
-	ldr r12,= 0x04000188
-	str r13, [r12]	//size
-
-	//wait for the arm7 sync command
-write_address_dma_control_rom_src_fifo_loop:
-	ldr r12,= 0x04000184
-	ldr r12, [r12]
-	tst r12, #(1 << 8)
-	bne write_address_dma_control_rom_src_fifo_loop
-	ldr r12,= 0x04100000
-	ldr r12, [r12]	//read word from fifo
-	ldr r13,= 0x55AAC8AC
-	cmp r12, r13
-	bne write_address_dma_control_rom_src_fifo_loop
-
-	//block d to arm9 lcdc
-	ldr r12,= 0x4000243
-	mov r13, #0x80
-	strb r13, [r12]
-
-	ldr r13,= 0x06868000
-	str r13, [r9, #-0xA]
-
-	strh r11, [r9]
-	nop
-	nop
-write_address_dma_control_rom_src_wait_loop:
-	ldrh r11, [r9]
-	tst r11, #0x8000
-	bne write_address_dma_control_rom_src_wait_loop
-
-	bx lr
-
-write_address_dma_control_rom_src_iwram_ewram_dst:
-	ldr r13,= 0xAA5500CC
-	str r13, [r12, #0x188]
-
-	ldr r13, [r9, #-0xA]
-	sub r13, #0x02040000
-	str r13, [r12, #0x188]	//address
-
-	ldrh r13, [r9, #-0x2]
-	and r12, r11, #0x1F
-	orr r13, r12, lsl #16
-	tst r11, #(1 << 10)
-	moveq r13, r13, lsl #1
-	movne r13, r13, lsl #2
-
-	//iwram to arm7
-	ldr r12,= 0x04000247
-	mov r11, #3
-	strb r11, [r12]
-
-	ldr r12,= 0x04000188
-	str r13, [r12]	//size
-
-	ldr r13, [r9, #-0x6]
-	str r13, [r12]	//dst
-
-	//wait for the arm7 sync command
-write_address_dma_control_rom_src_fifo_loop_iwram_ewram_dst:
-	ldr r12,= 0x04000184
-	ldr r12, [r12]
-	tst r12, #(1 << 8)
-	bne write_address_dma_control_rom_src_fifo_loop_iwram_ewram_dst
-	ldr r12,= 0x04100000
-	ldr r12, [r12]	//read word from fifo
-	ldr r13,= 0x55AAC8AC
-	cmp r12, r13
-	bne write_address_dma_control_rom_src_fifo_loop_iwram_ewram_dst
-
-	//block d to arm9 lcdc for safety
-	ldr r12,= 0x4000243
-	mov r13, #0x80
-	strb r13, [r12]
-
-	//iwram to arm9
-	ldr r12,= 0x04000247
-	mov r13, #0
-	strb r13, [r12]
-
-	bx lr
-
 write_address_dma_control_cont:
 	ldr r13,= 0x40000C6
 	cmp r9, r13
@@ -602,12 +431,20 @@ write_address_dma_control_cont:
 	ldr r13,= 0x40000C0
 	str r12, [r13]
 	bic r11, r11, #0x3B00
-	bic r11, r11, #0x00E0
+	//bic r11, r11, #0x00E0
 	//orr r11, r11, #(3 << 5)
-	bic r11, r11, #0x1F
-	mov r12, #(396 * 2)
+	//bic r11, r11, #0x1F
+	bic r11, r11, #0x00FF
+	mov r12, #1024 //#(396 * 4)
 	strh r12, [r9, #-2]
 	strh r11, [r9]
+
+//	nop
+//	nop
+//write_address_dma_size_control_cont_dma_wait_loop:
+//	ldrh r11, [r9]
+//	tst r11, #0x8000
+//	bne write_address_dma_size_control_cont_dma_wait_loop
 
 	//ldr r13,= cur_snd_buffer
 	//ldr r12, [r13]
@@ -713,119 +550,6 @@ write_address_dma_size_control_rom_src:
 	pop {r0-r9,lr}
 	bx lr
 
-
-	//ensure block c and d are mapped to the arm7
-	ldr r12,= 0x4000242
-	ldr r13,= 0x8A82
-	strh r13, [r12]
-	ldr r12,= 0x4000000
-
-	ldrb r13, [r9, #-0x1] //top byte of dst address
-	cmp r13, #2
-	cmpne r13, #3
-	beq write_address_dma_size_control_rom_src_iwram_ewram_dst
-
-	ldr r13,= 0xAA5500C8
-	str r13, [r12, #0x188]
-
-	ldr r13, [r9, #-0x8]
-	sub r13, #0x02040000
-	str r13, [r12, #0x188]	//address
-
-	//ldrh r13, [r10, #-0x2]
-	//and r12, r11, #0x1F
-	//orr r13, r12, lsl #16
-	ldr r12,= 0x1FFFFF
-	and r13, r11, r12
-	tst r11, #(1 << 26)
-	moveq r13, r13, lsl #1
-	movne r13, r13, lsl #2
-
-	ldr r12,= 0x04000188
-	str r13, [r12]	//size
-
-	//wait for the arm7 sync command
-write_address_dma_size_control_rom_src_fifo_loop:
-	ldr r12,= 0x04000184
-	ldr r12, [r12]
-	tst r12, #(1 << 8)
-	bne write_address_dma_size_control_rom_src_fifo_loop
-	ldr r12,= 0x04100000
-	ldr r12, [r12]	//read word from fifo
-	ldr r13,= 0x55AAC8AC
-	cmp r12, r13
-	bne write_address_dma_size_control_rom_src_fifo_loop
-
-	//block d to arm9 lcdc
-	ldr r12,= 0x4000243
-	mov r13, #0x80
-	strb r13, [r12]
-
-	ldr r13,= 0x06868000
-	str r13, [r9, #-0x8]
-
-	str r11, [r9]
-	nop
-	nop
-write_address_dma_size_control_rom_src_wait_loop:
-	ldr r11, [r9]
-	tst r11, #0x80000000
-	bne write_address_dma_size_control_rom_src_wait_loop
-
-	bx lr
-
-write_address_dma_size_control_rom_src_iwram_ewram_dst:
-	ldr r13,= 0xAA5500CC
-	str r13, [r12, #0x188]
-
-	ldr r13, [r9, #-0x8]
-	sub r13, #0x02040000
-	str r13, [r12, #0x188]	//address
-
-	//ldrh r13, [r10, #-0x2]
-	//and r12, r11, #0x1F
-	//orr r13, r12, lsl #16
-	ldr r12,= 0x1FFFFF
-	and r13, r11, r12
-	tst r11, #(1 << 26)
-	moveq r13, r13, lsl #1
-	movne r13, r13, lsl #2
-
-	//iwram to arm7
-	ldr r12,= 0x04000247
-	mov r11, #3
-	strb r11, [r12]
-
-	ldr r12,= 0x04000188
-	str r13, [r12]	//size
-
-	ldr r13, [r9, #-0x4]
-	str r13, [r12]	//dst
-
-	//wait for the arm7 sync command
-write_address_dma_size_control_rom_src_fifo_loop_iwram_ewram_dst:
-	ldr r12,= 0x04000184
-	ldr r12, [r12]
-	tst r12, #(1 << 8)
-	bne write_address_dma_size_control_rom_src_fifo_loop_iwram_ewram_dst
-	ldr r12,= 0x04100000
-	ldr r12, [r12]	//read word from fifo
-	ldr r13,= 0x55AAC8AC
-	cmp r12, r13
-	bne write_address_dma_size_control_rom_src_fifo_loop_iwram_ewram_dst
-
-	//block d to arm9 lcdc for safety
-	ldr r12,= 0x4000243
-	mov r13, #0x80
-	strb r13, [r12]
-
-	//iwram to arm9
-	ldr r12,= 0x04000247
-	mov r13, #0
-	strb r13, [r12]
-
-	bx lr
-
 write_address_dma_size_control_cont2:
 	ldr r13,= 0x040000C4
 	cmp r9, r13
@@ -861,13 +585,20 @@ write_address_dma_size_control_cont2:
 	//add r12, r13, r12
 	//ldr r13,= 0x40000C0
 	str r12, [r13]
-	bic r11, r11, #0x3B000000
-	bic r11, r11, #0x00E00000
+	//bic r11, r11, #0x3B000000
+	//bic r11, r11, #0x00E00000
 	//orr r11, r11, #(3 << (5 + 16))
-	ldr r13,= 0x1FFFFF
+	ldr r13,= 0x3BFFFFFF
 	bic r11, r13
-	orr r11, r11, #(396 * 2)
+	orr r11, r11, #1024 //(396 * 2)
 	str r11, [r9]
+	
+//	nop
+//	nop
+//write_address_dma_size_control_cont2_dma_wait_loop:
+//	ldr r11, [r9]
+//	tst r11, #0x80000000
+//	bne write_address_dma_size_control_cont2_dma_wait_loop
 
 	//ldr r13,= cur_snd_buffer
 	//ldr r12, [r13]

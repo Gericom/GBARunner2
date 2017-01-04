@@ -44,5 +44,6 @@ void gba_sound_init();
 void gba_sound_notify_reset();
 void gba_sound_vblank();
 void gba_sound_timer_updated(uint16_t reloadVal);
+void gba_sound_fifo_write(uint32_t samps);
 
 #endif

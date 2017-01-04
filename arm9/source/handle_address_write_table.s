@@ -23,10 +23,18 @@ address_write_table_32bit:
 .endr
 //0x04000080
 .word write_address_sound_cnt
-//0x04000084-0x040000AC
-.rept 11
+//0x04000084-0x0400009C
+.rept 7
 .word write_address_ignore
 .endr
+//0x040000A0
+.word write_address_snd_fifo_A
+//0x040000A4
+.word write_address_ignore
+//0x040000A8
+.word write_address_ignore
+//0x040000AC
+.word write_address_ignore
 //0x040000B0
 .word write_address_dma_src
 //0x040000B4

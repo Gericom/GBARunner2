@@ -3,79 +3,6 @@
 
 //#define DEBUG_ABORT_ADDRESS
 
-//data_abort_handler_new:
-//	push {lr}
-//	mrs lr, spsr
-//	tst lr, #0x20 //thumb bit
-//	bne data_abort_handler_new_thumb
-//data_abort_handler_new_arm:
-//	ldr lr, [sp]
-//	ldr lr, [lr]
-//	and lr, lr, #(7 << 25)
-//	add pc, lr, lsr #23
-
-//	nop
-//	b data_abort_handler_new_arm_half_load_store
-//	b data_abort_handler_new_arm_unk
-//	b data_abort_handler_new_arm_single_load_store
-//	b data_abort_handler_new_arm_single_load_store
-//	b data_abort_handler_new_arm_block_load_store
-//	b data_abort_handler_new_arm_unk
-//	b data_abort_handler_new_arm_unk
-//	b data_abort_handler_new_arm_unk
-
-//data_abort_handler_new_arm_half_load_store:
-//	pop {lr}
-//	b data_abort_handler
-	
-//data_abort_handler_new_arm_single_load_store:
-	//change the instruction to quickly get the address with the processor
-//	ldr lr, [sp]
-//	ldr lr, [lr]
-//	bic lr, lr, #0xF0000000 //condition
-//	bic lr, lr, #0x0000F000 //dst register
-//	tst lr, #(1 << 24)
-//	biceq lr, lr, #0xFFF00FFF //#0xF3000FFF is enough
-//	orreq lr, lr, #0x05000000
-//	orr lr, lr, #0xE0000000 //condition
-//	orr lr, lr, #0x00300000 //writeback and load
-//	str lr, [pc, #0x28]
-//	mov lr, lr, lsr #16
-//	and lr, lr, #0xF
-//	orr lr, lr, #0xE1000000
-//	orr lr, lr, #0x00A00000	//mov r0, rb
-//	str lr, [pc, #0x20]
-
-//	push {r0-r2}
-//	mrs lr, spsr
-//	ands lr, lr, #0xF
-//	moveq lr, #0xF
-//	orr lr, lr, #0x90
-//	msr cpsr_c, lr
-//	nop //move instruction here
-//	nop //move instruction here
-//	nop	//load instruction will be placed here
-//	nop //move instruction will be placed here
-//	msr cpsr_c, #0x97
-	//address is in r0 now
-//	mov lr, r0, lsr #24
-//	cmp lr, #0xE
-
-//	pop {r0-r2}
-
-//data_abort_handler_new_arm_block_load_store:
-//	pop {lr}
-//	b data_abort_handler
-
-//data_abort_handler_new_arm_unk:
-//	pop {lr}
-//	b data_abort_handler
-	//b data_abort_handler_new_arm_unk
-
-
-//data_abort_handler_new_thumb:
-//	pop {lr}
-
 reg_table = 0x10000000
 
 //when r15 is used as destination, problems will arise, as it's currently not supported
@@ -311,17 +238,138 @@ data_abort_handler_thumb:
 	ldr r10, [r11, #(8 << 2)]
 	ldrh r10, [r10, #-8]
 
-	ldr pc, [pc, r10, lsr #11]
+	//ldr pc, [pc, r10, lsr #11]
+	ldr pc, [pc, r10, lsr #7]
 
 	nop
 
 	.word address_calc_unknown
 	.word address_calc_unknown
-	.word thumb7_8_address_calc
-	.word thumb9_address_calc
-	.word thumb10_address_calc
 	.word address_calc_unknown
-	.word thumb15_address_calc
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word thumb7_address_calc_00
+	.word thumb8_address_calc_00
+	.word thumb7_address_calc_01
+	.word thumb8_address_calc_01
+	.word thumb7_address_calc_10
+	.word thumb8_address_calc_10
+	.word thumb7_address_calc_11
+	.word thumb8_address_calc_11
+	.word thumb9_address_calc_00
+	.word thumb9_address_calc_00
+	.word thumb9_address_calc_00
+	.word thumb9_address_calc_00
+	.word thumb9_address_calc_01
+	.word thumb9_address_calc_01
+	.word thumb9_address_calc_01
+	.word thumb9_address_calc_01
+	.word thumb9_address_calc_10
+	.word thumb9_address_calc_10
+	.word thumb9_address_calc_10
+	.word thumb9_address_calc_10
+	.word thumb9_address_calc_11
+	.word thumb9_address_calc_11
+	.word thumb9_address_calc_11
+	.word thumb9_address_calc_11
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_1
+	.word thumb10_address_calc_1
+	.word thumb10_address_calc_1
+	.word thumb10_address_calc_1
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_0
+	.word thumb10_address_calc_1
+	.word thumb10_address_calc_1
+	.word thumb10_address_calc_1
+	.word thumb10_address_calc_1
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_1
+	.word thumb15_address_calc_1
+	.word thumb15_address_calc_1
+	.word thumb15_address_calc_1
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_0
+	.word thumb15_address_calc_1
+	.word thumb15_address_calc_1
+	.word thumb15_address_calc_1
+	.word thumb15_address_calc_1
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
 	.word address_calc_unknown
 
 address_calc_unknown:

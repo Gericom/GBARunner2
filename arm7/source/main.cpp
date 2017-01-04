@@ -274,6 +274,11 @@ int main()
 			//REG_SOUND[0].CNT |= REG_SOUNDXCNT_E;
 			gba_sound_notify_reset();
 			break;
+		case 0x040000A0:
+			while(*((vu32*)0x04000184) & (1 << 8));
+			val = REG_RECV_FIFO;
+			gba_sound_fifo_write(val);
+			break;
 		case 0x04000100:
 		case 0x04000102:
 			{
