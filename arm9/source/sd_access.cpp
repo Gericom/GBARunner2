@@ -15,7 +15,7 @@ extern uint8_t _io_dldi;
 
 extern "C" uint16_t *arm9_memcpy16(uint16_t *_dst, uint16_t *_src, size_t _count);
 
-PUT_IN_VRAM __attribute__ ((noinline)) static void MI_WriteByte(void *address, uint8_t value)
+ITCM_CODE __attribute__ ((noinline)) static void MI_WriteByte(void *address, uint8_t value)
 {
     uint16_t     val = *(uint16_t *)((uint32_t)address & ~1);
 
@@ -47,7 +47,7 @@ PUT_IN_VRAM static uint32_t get_cluster_fat_value_simple(uint32_t cluster)
 	return *((uint32_t*)(((uint8_t*)tmp_buf) + ent_offset)) & 0x0FFFFFFF;
 }
 
-PUT_IN_VRAM static inline uint32_t get_sector_from_cluster(uint32_t cluster)
+ITCM_CODE static inline uint32_t get_sector_from_cluster(uint32_t cluster)
 {
 	return vram_cd->sd_info.first_cluster_sector + (cluster - 2) * vram_cd->sd_info.nr_sectors_per_cluster;
 }
@@ -330,7 +330,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 }
 
 //gets an empty one or wipes the oldest
-PUT_IN_VRAM int get_new_cache_block()
+ITCM_CODE int get_new_cache_block()
 {
 	/*int oldest = -1;
 	int oldest_counter_val = -1;
@@ -368,7 +368,7 @@ PUT_IN_VRAM int get_new_cache_block()
 	return least_used;
 }
 
-PUT_IN_VRAM int ensure_cluster_cached(uint32_t cluster_index)
+ITCM_CODE int ensure_cluster_cached(uint32_t cluster_index)
 {
 	int block = vram_cd->gba_rom_is_cluster_cached_table[cluster_index];
 	if(block == 0xFF)
@@ -393,7 +393,7 @@ extern "C" PUT_IN_VRAM void ensure_next_cluster_cached(uint32_t address)
 	ensure_cluster_cached(cluster + 1);
 }
 
-PUT_IN_VRAM void* get_cluster_data(uint32_t cluster_index)
+ITCM_CODE void* get_cluster_data(uint32_t cluster_index)
 {
 	int block = ensure_cluster_cached(cluster_index);
 	//int block = vram_cd->gba_rom_is_cluster_cached_table[cluster_index];
@@ -404,17 +404,7 @@ PUT_IN_VRAM void* get_cluster_data(uint32_t cluster_index)
 	return (void*)&vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift];
 }
 
-extern "C" PUT_IN_VRAM uint32_t sdread32(uint32_t address)
-{
-	if(address >= vram_cd->sd_info.gba_rom_size)
-		return 0;
-	uint32_t cluster = address >> vram_cd->sd_info.cluster_shift;
-	uint32_t cluster_offset = address & vram_cd->sd_info.cluster_mask;
-	void* cluster_data = get_cluster_data(cluster);
-	return *((uint32_t*)(cluster_data + cluster_offset));
-}
-
-extern "C" PUT_IN_VRAM uint32_t sdread32_uncached(uint32_t address)
+extern "C" ITCM_CODE uint32_t sdread32_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();
@@ -430,17 +420,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread32_uncached(uint32_t address)
 	return *((uint32_t*)(cluster_data + cluster_offset));
 }
 
-extern "C" PUT_IN_VRAM uint32_t sdread16(uint32_t address)
-{
-	if(address >= vram_cd->sd_info.gba_rom_size)
-		return 0;
-	uint32_t cluster = address >> vram_cd->sd_info.cluster_shift;
-	uint32_t cluster_offset = address & vram_cd->sd_info.cluster_mask;
-	void* cluster_data = get_cluster_data(cluster);
-	return *((uint16_t*)(cluster_data + cluster_offset));
-}
-
-extern "C" PUT_IN_VRAM uint32_t sdread16_uncached(uint32_t address)
+extern "C" ITCM_CODE uint16_t sdread16_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();
@@ -456,17 +436,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread16_uncached(uint32_t address)
 	return *((uint16_t*)(cluster_data + cluster_offset));
 }
 
-extern "C" PUT_IN_VRAM uint32_t sdread8(uint32_t address)
-{
-	if(address >= vram_cd->sd_info.gba_rom_size)
-		return 0;
-	uint32_t cluster = address >> vram_cd->sd_info.cluster_shift;
-	uint32_t cluster_offset = address & vram_cd->sd_info.cluster_mask;
-	void* cluster_data = get_cluster_data(cluster);
-	return *((uint8_t*)(cluster_data + cluster_offset));
-}
-
-extern "C" PUT_IN_VRAM uint32_t sdread8_uncached(uint32_t address)
+extern "C" ITCM_CODE uint8_t sdread8_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();
@@ -483,7 +453,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread8_uncached(uint32_t address)
 }
 
 
-extern "C" PUT_IN_VRAM void read_gba_rom(uint32_t address, uint32_t size, uint8_t* dst)
+extern "C" ITCM_CODE void read_gba_rom(uint32_t address, uint32_t size, uint8_t* dst)
 {
 	if(size > sizeof(vram_cd->arm9_transfer_region) || address >= vram_cd->sd_info.gba_rom_size)
 		return;
