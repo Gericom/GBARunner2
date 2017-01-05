@@ -1,6 +1,8 @@
 #include <nds.h>
+#include <string.h>
 #include "timer.h"
 #include "sound.h"
+#include "dldi_handler.h"
 
 #define SOUND_CHANNEL_0_SETTINGS	(REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) | REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(64) | REG_SOUNDXCNT_VOLUME(0x7F))	//0x0840007F;
 
@@ -111,6 +113,14 @@ int main()
 	{
 		while(*((vu32*)0x04000184) & (1 << 8));
 	} while(REG_RECV_FIFO != 0xAA5555AA);
+	while(*((vu32*)0x04000184) & (1 << 8));
+	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
+	memcpy((void*)0x03805000, dldi_src, 32 * 1024);
+	if(!dldi_handler_init())
+	{
+		REG_SEND_FIFO = 0x46494944;
+		while(1);
+	}
 
 	//int oldirq = enterCriticalSection();
 	//irqSet(IRQ_HBLANK, hblank_handler);
@@ -274,6 +284,18 @@ int main()
 			//REG_SOUND[0].CNT |= REG_SOUNDXCNT_E;
 			gba_sound_notify_reset();
 			break;
+		case 0xAA5500DF:
+			{
+				while(*((vu32*)0x04000184) & (1 << 8));
+				uint32_t sector = REG_RECV_FIFO;
+				while(*((vu32*)0x04000184) & (1 << 8));
+				uint32_t count = REG_RECV_FIFO;
+				while(*((vu32*)0x04000184) & (1 << 8));
+				uint8_t* dst = (uint8_t*)REG_RECV_FIFO;
+				dldi_handler_read_sectors(sector, count, dst);
+				REG_SEND_FIFO = 0x55AAAA55;
+				break;
+			}
 		case 0x040000A0:
 			while(*((vu32*)0x04000184) & (1 << 8));
 			val = REG_RECV_FIFO;

@@ -2,16 +2,29 @@
 #include <string.h>
 #include <sd_access.h>
 
+#define REG_VRAMCNT_C	(*((vu8*)0x04000242))
+
+#define VRAM_C_ARM9		0x80
+#define VRAM_C_ARM7		0x82
+
+#define REG_VRAMCNT_CD	(*((vu16*)0x04000242))
+
+#define VRAM_CD_ARM9		0x8080
+#define VRAM_CD_ARM7		0x8A82
+
+#define REG_SEND_FIFO	(*((vu32*)0x04000188))
+#define REG_RECV_FIFO	(*((vu32*)0x04100000))
+
 #define PUT_IN_VRAM	__attribute__((section(".vram")))
 
-extern uint8_t _io_dldi;
+//extern uint8_t _io_dldi;
 
 //FN_MEDIUM_READSECTORS _DLDI_readSectors_ptr = (FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10)));
 //extern FN_MEDIUM_WRITESECTORS _DLDI_writeSectors_ptr;
 
-#define _DLDI_readSectors_ptr ((FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10))))
+//#define _DLDI_readSectors_ptr ((FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10))))
 
-#define vram_cd		((vram_cd_t*)0x06820000)
+#define vram_cd		((vram_cd_t*)0x06840000)
 
 extern "C" uint16_t *arm9_memcpy16(uint16_t *_dst, uint16_t *_src, size_t _count);
 
@@ -29,10 +42,43 @@ PUT_IN_VRAM __attribute__ ((noinline)) static void MI_WriteByte(void *address, u
     }
 }
 
+extern "C" void dc_invalidate_range(void* start, uint32_t length);
+extern "C" void dc_flush_range(void* start, uint32_t length);
+extern "C" void dc_flush_all();
+extern "C" void dc_invalidate_all();
+extern "C" void dc_wait_write_buffer_empty();
+
 //extern "C" bool read_sd_sectors_safe(sec_t sector, sec_t numSectors, void* buffer);
 
 //after all it seems like that irq thing is not needed
-#define read_sd_sectors_safe	_DLDI_readSectors_ptr
+//#define read_sd_sectors_safe	_DLDI_readSectors_ptr
+
+PUT_IN_VRAM __attribute__ ((noinline)) static void read_sd_sectors_safe(sec_t sector, sec_t numSectors, void* buffer)
+{
+	//remote procedure call on arm7
+	//assume buffer is in the vram cd block
+	uint32_t arm7_address = ((uint32_t)buffer) - ((uint32_t)vram_cd) + 0x06000000;
+	//dc_wait_write_buffer_empty();
+	//dc_invalidate_all();
+	//dc_flush_range(vram_cd, 256 * 1024);
+	//dc_flush_all();
+	//map cd to arm7
+	//REG_VRAMCNT_CD = VRAM_CD_ARM7;
+	REG_VRAMCNT_C = VRAM_C_ARM7;
+	REG_SEND_FIFO = 0xAA5500DF;
+	REG_SEND_FIFO = sector;
+	REG_SEND_FIFO = numSectors;
+	REG_SEND_FIFO = arm7_address;
+	//wait for response
+	do
+	{
+		while(*((vu32*)0x04000184) & (1 << 8));
+	} while(REG_RECV_FIFO != 0x55AAAA55);
+	REG_VRAMCNT_C = VRAM_C_ARM9;
+	//REG_VRAMCNT_CD = VRAM_CD_ARM9;
+	//invalidate
+	dc_invalidate_range(buffer, numSectors * 512);
+}
 
 //sd_info_t gSDInfo;
 
@@ -42,7 +88,7 @@ PUT_IN_VRAM static uint32_t get_cluster_fat_value_simple(uint32_t cluster)
 	uint32_t fat_offset = cluster * 4;
 	uint32_t fat_sector = vram_cd->sd_info.first_fat_sector + (fat_offset >> 9); //sector_size);
 	uint32_t ent_offset = fat_offset & 0x1FF;//% sector_size;
-	void* tmp_buf = (void*)0x06820000;
+	void* tmp_buf = (void*)vram_cd;
 	read_sd_sectors_safe(fat_sector, 1, tmp_buf);//_DLDI_readSectors_ptr(fat_sector, 1, tmp_buf);
 	return *((uint32_t*)(((uint8_t*)tmp_buf) + ent_offset)) & 0x0FFFFFFF;
 }
@@ -82,7 +128,7 @@ PUT_IN_VRAM void initialize_cache()
 
 PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 {
-	void* tmp_buf = (void*)0x06820000;
+	void* tmp_buf = (void*)vram_cd;
 	uint32_t root_dir_sector = get_sector_from_cluster(vram_cd->sd_info.root_directory_cluster);
 	read_sd_sectors_safe(root_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(root_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	bool name_found = false;
@@ -90,6 +136,7 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 	dir_entry_t* gba_file_entry = 0;
 	uint32_t cur_cluster = vram_cd->sd_info.root_directory_cluster;
 	*((vu32*)0x06202000) = 0x54524545;
+	int name_idx = 0;
 	while(true)
 	{
 		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);
@@ -126,6 +173,14 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 			}
 			else
 			{
+				if(name_idx < 23)
+				{
+					uint32_t name_a = cur_dir_entry->regular_entry.short_name[0] | (cur_dir_entry->regular_entry.short_name[1] << 8) | (cur_dir_entry->regular_entry.short_name[2] << 16) | (cur_dir_entry->regular_entry.short_name[3] << 24);
+					uint32_t name_b = cur_dir_entry->regular_entry.short_name[4] | (cur_dir_entry->regular_entry.short_name[5] << 8) | (cur_dir_entry->regular_entry.short_name[6] << 16) | (cur_dir_entry->regular_entry.short_name[7] << 24);
+					((vu32*)0x06202000)[8 + name_idx * 8] = name_a;
+					((vu32*)0x06202000)[8 + name_idx * 8 + 1] = name_b;
+					name_idx++;
+				}
 				if(name_found)
 				{
 					*((vu32*)0x06202000) = 0x444E4946;
@@ -180,7 +235,8 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > 16 * 1024) ? 16 * 1024 / 512 : vram_cd->sd_info.nr_sectors_per_cluster;
 	while(cur_cluster < 0x0FFFFFF8 && (data_read + toread * 512) <= data_max)
 	{
-		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toread, (void*)(bios_dst + data_read));//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(bios_dst + data_read));
+		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toread, tmp_buf);//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(bios_dst + data_read));
+		arm9_memcpy16((uint16_t*)(bios_dst + data_read), (uint16_t*)tmp_buf, toread * 512 / 2);
 		data_read += toread * 512;
 		cur_cluster = *cluster_table++;
 	}
@@ -189,7 +245,7 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 //to be called after dldi has been initialized (with the appropriate init function)
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
-	void* tmp_buf = (void*)0x06820000;//vram block d, mapped to the arm 7
+	void* tmp_buf = (void*)vram_cd;//vram block d, mapped to the arm 7
 	read_sd_sectors_safe(0, 1, tmp_buf);//_DLDI_readSectors_ptr(0, 1, tmp_buf);//read mbr
 	mbr_t* mbr = (mbr_t*)tmp_buf;
 	if(mbr->signature != 0xAA55)
@@ -321,7 +377,8 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	*((vu32*)0x06202000) = 0x59504F43;
 	while(cur_cluster < 0x0FFFFFF8 && (data_read + vram_cd->sd_info.nr_sectors_per_cluster * 512) <= data_max)
 	{
-		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(0x02040000 + data_read));//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(0x02040000 + data_read));//tmp_buf + 512);
+		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf);//(void*)(0x02040000 + data_read));//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(0x02040000 + data_read));//tmp_buf + 512);
+		arm9_memcpy16((uint16_t*)(0x02040000 + data_read), (uint16_t*)tmp_buf, vram_cd->sd_info.nr_sectors_per_cluster * 512 / 2);
 		data_read += vram_cd->sd_info.nr_sectors_per_cluster * 512;
 		cur_cluster = *cluster_table++;//get_cluster_fat_value_simple(cur_cluster);
 	}
@@ -430,7 +487,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread32_uncached(uint32_t address)
 	return *((uint32_t*)(cluster_data + cluster_offset));
 }
 
-extern "C" PUT_IN_VRAM uint32_t sdread16(uint32_t address)
+extern "C" PUT_IN_VRAM uint16_t sdread16(uint32_t address)
 {
 	if(address >= vram_cd->sd_info.gba_rom_size)
 		return 0;
@@ -440,7 +497,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread16(uint32_t address)
 	return *((uint16_t*)(cluster_data + cluster_offset));
 }
 
-extern "C" PUT_IN_VRAM uint32_t sdread16_uncached(uint32_t address)
+extern "C" PUT_IN_VRAM uint16_t sdread16_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();
@@ -456,7 +513,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread16_uncached(uint32_t address)
 	return *((uint16_t*)(cluster_data + cluster_offset));
 }
 
-extern "C" PUT_IN_VRAM uint32_t sdread8(uint32_t address)
+extern "C" PUT_IN_VRAM uint8_t sdread8(uint32_t address)
 {
 	if(address >= vram_cd->sd_info.gba_rom_size)
 		return 0;
@@ -466,7 +523,7 @@ extern "C" PUT_IN_VRAM uint32_t sdread8(uint32_t address)
 	return *((uint8_t*)(cluster_data + cluster_offset));
 }
 
-extern "C" PUT_IN_VRAM uint32_t sdread8_uncached(uint32_t address)
+extern "C" PUT_IN_VRAM uint8_t sdread8_uncached(uint32_t address)
 {
 	uint32_t cluster_index = address >> vram_cd->sd_info.cluster_shift;
 	int block = get_new_cache_block();

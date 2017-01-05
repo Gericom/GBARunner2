@@ -16,8 +16,8 @@ gba_setup:
 	//map the gba cartridge to the arm7 and nds card too
 	ldr r0,= 0x4000204
 	ldrh r1, [r0]
-	bic r1, #0x80
-	bic r1, #0x800 //card to arm9
+	orr r1, #0x80
+	orr r1, #0x800 //card to arm7
 	bic r1, #0x8000	//set memory priority to arm9
 	strh r1, [r0]
 
@@ -119,6 +119,7 @@ vram_setup_copyloop:
 	mov r0, #(1 << 5)
 	orr r0, #(1 << 6)
 	mcr p15, 0, r0, c2, c0, 0	//data cache
+	//orr r0, #(1 << 6)
 	//orr r1, #(1 << 6)
 	//orr r1, #(1 << 7)
 	mcr p15, 0, r0, c2, c0, 1	//instruction cache
@@ -224,12 +225,12 @@ gba_setup_fill_sub_loop:
 	//str r1, [r0]
 
 	//send setup command to arm7
-	//ldr r2,= _dldi_start
+	ldr r2,= _dldi_start
 	ldr r0,= 0x04000188
 	ldr r1,= 0xAA5555AA
 	//ldr r3,= bios_tmp
 	str r1, [r0]
-	//str r2, [r0]
+	str r2, [r0]
 	//str r3, [r0]
 
 	//wait for the arm7 sync command
@@ -249,11 +250,11 @@ fifo_loop_1:
 	ldr sp,= 0x10000000 + (16 * 1024)
 
 	//setup dldi
-	ldr r0,= (_io_dldi + 8)
-	ldr r0, [r0]
-	blx r0
-	cmp r0, #0
-	beq .
+	//ldr r0,= (_io_dldi + 8)
+	//ldr r0, [r0]
+	//blx r0
+	//cmp r0, #0
+	//beq .
 
 	ldr r0,= _dldi_start + 16
 	ldr r1,= 0x06202000

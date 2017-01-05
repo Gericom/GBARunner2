@@ -1,8 +1,8 @@
-.section .vram
+.section .text
 @---------------------------------------------------------------------------------
 	.align	4
 	.arm
-	.global _io_dldi
+	//.global _io_dldi
 @---------------------------------------------------------------------------------
 .equ FEATURE_MEDIUM_CANREAD,		0x00000001
 .equ FEATURE_MEDIUM_CANWRITE,		0x00000002
@@ -34,8 +34,8 @@ _dldi_start:
 @---------------------------------------------------------------------------------
 @ Offsets to important sections within the data	-- 32 bytes
 	.align	6
-	.word   _dldi_start		@ data start
-	.word   _dldi_end		@ data end
+	.word   0x03805000 //_dldi_start		@ data start
+	.word   0x0380D000 //_dldi_end		@ data end
 	.word	0x00000000		@ Interworking glue start	-- Needs address fixing
 	.word	0x00000000		@ Interworking glue end
 	.word   0x00000000		@ GOT start					-- Needs address fixing
