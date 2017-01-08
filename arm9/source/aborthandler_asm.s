@@ -1,9 +1,9 @@
 .section .itcm
 .altmacro
 
-//#define DEBUG_ABORT_ADDRESS
+.include "consts.s"
 
-reg_table = 0x10000000
+//#define DEBUG_ABORT_ADDRESS
 
 //when r15 is used as destination, problems will arise, as it's currently not supported
 
@@ -12,6 +12,8 @@ reg_table = 0x10000000
 
 .global data_abort_handler
 data_abort_handler:
+	ldr sp,= 0x33333333
+	mcr p15, 0, sp, c5, c0, 2
 	mrs sp, spsr
 	tst sp, #0x20 //thumb bit
 	bne data_abort_handler_thumb
@@ -67,11 +69,12 @@ data_abort_handler_cont:
 #endif
 
 	ldr r11,= reg_table
-	add r6, r5, #4	//pc+12
-	str r6, [r11, #(4 * 15)]
+	//add r6, r5, #4	//pc+12
+	//pc + 8
+	str r5, [r11, #(4 * 15)]
 
-	ldr r6,= 0x33333333
-	mcr p15, 0, r6, c5, c0, 2
+	//ldr r6,= 0x33333333
+	//mcr p15, 0, r6, c5, c0, 2
 
 	//mrc p15, 0, r6, c1, c0, 0
 	//bic r2, r6, #1
@@ -137,7 +140,7 @@ data_abort_handler_cont:
 data_abort_handler_cont_finish:
 	msr cpsr_c, #0x97
 
-	ldr r6,= 0x33660003
+	ldr r6,= pu_data_permissions
 	mcr p15, 0, r6, c5, c0, 2
 
 	//mcr p15, 0, r6, c1, c0, 0
@@ -226,8 +229,8 @@ data_abort_handler_thumb:
 
 #endif
 
-	ldr sp,= 0x33333333
-	mcr p15, 0, sp, c5, c0, 2
+	//ldr sp,= 0x33333333
+	//mcr p15, 0, sp, c5, c0, 2
 
 	//mrc p15, 0, sp, c1, c0, 0
 	//bic sp, #1
@@ -279,10 +282,10 @@ data_abort_handler_thumb:
 	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
+	.word thumb6_address_calc
+	.word thumb6_address_calc
+	.word thumb6_address_calc
+	.word thumb6_address_calc
 	.word thumb7_address_calc_00
 	.word thumb8_address_calc_00
 	.word thumb7_address_calc_01
@@ -347,14 +350,14 @@ data_abort_handler_thumb:
 	.word thumb15_address_calc_1
 	.word thumb15_address_calc_1
 	.word thumb15_address_calc_1
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_1
-	.word thumb15_address_calc_1
-	.word thumb15_address_calc_1
-	.word thumb15_address_calc_1
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown
@@ -376,4 +379,37 @@ address_calc_unknown:
 	ldr r0,= 0x06202000
 	ldr r1,= 0x4B4E5541
 	str r1, [r0]
+
+	mov r0, r10
+	ldr r1,= nibble_to_char
+	ldr r12,= (0x06202000 + 32 * 10)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r12], #2
+
 	b .

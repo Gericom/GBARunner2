@@ -1,17 +1,32 @@
 .section .itcm
 .altmacro
 
-reg_table = 0x10000000
+.include "consts.s"
 
 .macro finish_handler_skip_op_self_modifying
 	msr cpsr_c, #0x97
 	//orr sp, #1
 	//mcr p15, 0, sp, c1, c0, 0
-	ldr sp,= 0x33660003
+	ldr sp,= pu_data_permissions
 	mcr p15, 0, sp, c5, c0, 2
 
 	subs pc, lr, #6
 .endm
+
+.global thumb6_address_calc
+thumb6_address_calc:
+	and r13, r10, #(7 << 8)
+	mov r13, r13, lsr #4
+	strb r13, (1f + 1)
+	ldr r9, [r11, #(8 << 2)]
+	sub r9, #4
+	bic r9, #3
+	and r12, r10, #0xFF
+	add r9, r9, r12, lsl #2
+	bl read_address_from_handler_32bit
+1:
+	mov r0, r10
+	finish_handler_skip_op_self_modifying
 
 .macro create_thumb7_variant l, bw
 .global thumb7_address_calc_\l\bw
@@ -91,8 +106,11 @@ thumb8_address_calc_\x\y:
 	.else
 		bl read_address_from_handler_16bit
 		.if \x && \y //ldrsh
+			tst r9, #1
+			movne r10, r10, lsl #8
 			mov r10, r10, lsl #16
 			mov r10, r10, asr #16
+			movne r10, r10, asr #8
 		.endif
 	.endif
 2:
@@ -288,22 +306,19 @@ thumb15_address_calc_1:
 	mov r9, r8, lsr #8
 	strb r9, 1f
 
-	mov r8, #1
-	tst r10, r8, lsl r9
-
-	moveq r9, r9, lsl #4
-	orreq r9, #1
-	streqb r9, (2f + 1)
+	mov r9, r9, lsl #4
+	orr r9, #1
+	strb r9, (2f + 1)
 	b 1f
 1:
 	mov r9, r0
 	bic r9, r9, #3
 
 	and r8, r10, #0xFF
-	ldreq r12,= 0x10000040
-	ldreqb r13, [r12, r8]
+	ldr r12,= 0x10000040
+	ldrb r13, [r12, r8]
 2:
-	addeq r0, r9, r13, lsl #2
+	add r0, r9, r13, lsl #2
 
 	tst r8, #1
 	beq 3f

@@ -94,7 +94,7 @@ PUT_IN_VRAM static uint32_t get_cluster_fat_value_simple(uint32_t cluster)
 	return *((uint32_t*)(((uint8_t*)tmp_buf) + ent_offset)) & 0x0FFFFFFF;
 }
 
-PUT_IN_VRAM static inline uint32_t get_sector_from_cluster(uint32_t cluster)
+ITCM_CODE static inline uint32_t get_sector_from_cluster(uint32_t cluster)
 {
 	return vram_cd->sd_info.first_cluster_sector + (cluster - 2) * vram_cd->sd_info.nr_sectors_per_cluster;
 }
