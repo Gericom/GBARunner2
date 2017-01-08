@@ -4,36 +4,54 @@
 address_read_table_32bit:
 //0x04000000
 .word read_address_dispcontrol
-//0x04000004-0x0400005C
-.rept 23
+//0x04000004 TODO: VCOUNT fix for 32 bit read!
 .word read_address_nomod_32
+//0x04000008
+.word read_address_nomod_32
+//0x0400000C
+.word read_address_nomod_32
+//0x04000010-0x04000044
+.rept 14
+.word read_address_undefined_memory_32
 .endr
+//0x04000048
+.word read_address_nomod_32
+//0x0400004C
+.word read_address_undefined_memory_32
+//0x04000050
+.word read_address_nomod_32
+//0x04000054
+.word read_address_undefined_memory_32
+//0x04000058
+.word read_address_undefined_memory_32
+//0x0400005C
+.word read_address_undefined_memory_32
 //0x04000060-0x040000AC
 .rept 20
 .word read_address_ignore
 .endr
 //0x040000B0
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000B4
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000B8
 .word read_address_nomod_32
 //0x040000BC
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000C0
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000C4
 .word read_address_nomod_32
 //0x040000C8
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000CC
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000D0
 .word read_address_nomod_32
 //0x040000D4
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000D8
-.word read_address_ignore
+.word read_address_undefined_memory_32
 //0x040000DC
 .word read_address_nomod_32
 //0x040000E0-0x040000FC
@@ -50,7 +68,7 @@ address_read_table_32bit:
 .word read_address_timer
 //0x04000110-0x0400012C
 .rept 8
-.word read_address_ignore
+.word read_address_undefined_memory_32
 .endr
 //0x04000130
 .word read_address_nomod_32
@@ -75,65 +93,97 @@ address_read_table_16bit:
 .word read_address_nomod_16
 //0x04000006
 .word read_address_vcount
-//0x04000008-0x0400005E
-.rept 44
+//0x04000008
 .word read_address_nomod_16
+//0x0400000A
+.word read_address_nomod_16
+//0x0400000C
+.word read_address_nomod_16
+//0x0400000E
+.word read_address_nomod_16
+//0x04000010-0x04000046
+.rept 28
+.word read_address_undefined_memory_16
 .endr
+//0x04000048
+.word read_address_nomod_16
+//0x0400004A
+.word read_address_nomod_16
+//0x0400004C
+.word read_address_undefined_memory_16
+//0x0400004E
+.word read_address_undefined_memory_16
+//0x04000050
+.word read_address_nomod_16
+//0x04000052
+.word read_address_nomod_16
+//0x04000054
+.word read_address_undefined_memory_16
+//0x04000056
+.word read_address_undefined_memory_16
+//0x04000058
+.word read_address_undefined_memory_16
+//0x0400005A
+.word read_address_undefined_memory_16
+//0x0400005C
+.word read_address_undefined_memory_16
+//0x0400005E
+.word read_address_undefined_memory_16
 //0x04000060-0x040000AE
 .rept 40
 .word read_address_ignore
 .endr
 //0x040000B0
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000B2
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000B4
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000B6
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000B8
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000BA
 .word read_address_nomod_16
 //0x040000BC
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000BE
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000C0
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000C2
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000C4
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000C6
 .word read_address_nomod_16
 //0x040000C8
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000CA
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000CC
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000CE
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000D0
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000D2
 .word read_address_nomod_16
 //0x040000D4
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000D6
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000D8
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000DA
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000DC
-.word read_address_ignore
+.word read_address_undefined_memory_16
 //0x040000DE
 .word read_address_nomod_16
 //0x040000E0-0x040000FE
 .rept 16
-.word read_address_ignore
+.word read_address_undefined_memory_16
 .endr
 //0x04000100
 .word read_address_timer_counter
@@ -209,7 +259,7 @@ address_read_table_8bit:
 .endr
 //0x040000E0-0x040000FF
 .rept 32
-.word read_address_ignore
+.word read_address_undefined_memory_8
 .endr
 //shouldn't timer access be implemented for 8 bit access aswell? This probably leads to bugs!
 //0x04000100-0x0400010F

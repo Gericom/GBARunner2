@@ -1,6 +1,8 @@
 .section .itcm
 .altmacro
 
+.include "consts.s"
+
 .macro create_ldrh_strh_variant p, u, i, w, l
 .global ldrh_strh_address_calc_\p\u\i\w\l
 ldrh_strh_address_calc_\p\u\i\w\l:
@@ -54,6 +56,9 @@ ldrh_strh_address_calc_cont_011:
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
 	beq 2f
+	tst r9, #1
+	cmpne r4, #(1 << 5)
+	bne 2f
 	bl read_address_from_handler_16bit
 	cmp r4, #(1 << 5)
 	movne r10, r10, lsl #16
@@ -93,6 +98,9 @@ ldrh_strh_address_calc_cont_101:
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
 	beq 2f
+	tst r9, #1
+	cmpne r4, #(1 << 5)
+	bne 2f
 	bl read_address_from_handler_16bit
 	cmp r4, #(1 << 5)
 	movne r10, r10, lsl #16
@@ -209,18 +217,26 @@ ldm_stm_address_calc_\p\u\s\w\l:
 	ldrb r13, [r12, r13, lsr #16]
 	ldrb r12, [r12, r1, lsr #24]
 	add r12, r12, r13
-.if w
-	.ifeq u
+.if \w
+	.ifeq \u
 		sub r13, r9, r12, lsl #2
 	.else
 		add r13, r9, r12, lsl #2
 	.endif
+
+	//mov r2, #1
+	//mov r3, r8, lsr #16
+	//mov r2, r2, lsl r3
+	//tst r10, r2
+	//subne r2, #1
+	//tstne r10, r2
+
 	str r13, [r11, r8, lsr #14]
 .endif
-.ifeq u
+.ifeq \u
 	sub r9, r9, r12, lsl #2
 .endif
-.if p == u
+.if \p == \u
 	add r9, r9, #4
 .endif
 	mov r4, r11
@@ -228,7 +244,7 @@ ldm_stm_address_calc_\p\u\s\w\l:
 1:
 	tst r1, #1
 	beq 2f
-.if l
+.if \l
 	bl read_address_from_handler_32bit
 	str r10, [r4]
 .else

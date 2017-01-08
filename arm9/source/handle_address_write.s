@@ -18,6 +18,9 @@ write_address_from_handler_32bit:
 write_address_from_handler_sprites_32bit:
 	cmp r9, #0x0E000000
 	bge write_address_from_handler_sram_32bit
+	ldr r12,= 0x06018000
+	cmp r9, r12
+	bxge lr
 	add r10, r9, #0x3F0000
 	str r11, [r10]
 	bx lr
@@ -48,6 +51,9 @@ write_address_from_handler_16bit:
 write_address_from_handler_sprites_16bit:
 	cmp r9, #0x0E000000
 	bge write_address_from_handler_sram_16bit
+	ldr r12,= 0x06018000
+	cmp r9, r12
+	bxge lr
 	add r10, r9, #0x3F0000
 	strh r11, [r10]
 	bx lr
@@ -368,6 +374,11 @@ write_address_dma_control:
 
 	tst r11, #0x8000
 	beq write_address_dma_control_cont2
+	ldr r13, [r9, #-0x6]
+	cmp r13, #0x02000000
+	biclt r11, #0x8000
+	blt write_address_dma_control_cont2
+
 	ldr r12,= 0x023F0000
 	ldr r13, [r9, #-0xA]
 	cmp r13, r12
@@ -519,6 +530,11 @@ write_address_dma_size_control_cont:
 	orr r11, r11, r13, lsl #27
 	tst r11, #0x80000000
 	beq write_address_dma_size_control_cont3
+	ldr r13, [r9, #-0x4]
+	cmp r13, #0x02000000
+	biclt r11, #0x80000000
+	blt write_address_dma_size_control_cont3
+
 	ldr r12,= 0x023F0000
 	ldr r13, [r9, #-0x8]
 	cmp r13, r12

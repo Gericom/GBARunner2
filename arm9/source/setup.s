@@ -1,5 +1,7 @@
 //#define DEBUG_ENABLED
 
+.include "consts.s"
+
 .global gba_setup
 gba_setup:
 	push {r4-r11,r14}
@@ -84,7 +86,10 @@ vram_setup_copyloop:
 	//ldr r0,= (1 | (13 << 1) | 0x00000000)
 	//ldr r0,= (1 | (23 << 1) | 0x00000000)
 	//mcr p15, 0, r0, c6, c4, 0
-	ldr r0,= (1 | (24 << 1) | 0x00000000)
+	//ldr r0,= (1 | (24 << 1) | 0x00000000)
+	//this does not protect the whole itcm, because we don't want reading and writing to bios to work,
+	//but itcm should be able to read itself!
+	ldr r0,= (1 | (23 << 1) | 0x00000000)
 	mcr p15, 0, r0, c6, c4, 0
 
 	//main memory
@@ -107,12 +112,13 @@ vram_setup_copyloop:
 	//mcr p15, 0, r0, c6, c6, 0
 	//mcr p15, 0, r0, c6, c7, 0
 
-	ldr r0,= 0x33660003
+	ldr r0,= pu_data_permissions
 	//mov r0, #3
 	//orr r0, r0, #(0x6 << (4 * 4))
 	//orr r0, r0, #(0x36 << (4 * 5))
 	//orr r0, r0, #(0x3 << (4 * 7))
 	mcr p15, 0, r0, c5, c0, 2
+	ldr r0,= 0x33660003
 	mcr p15, 0, r0, c5, c0, 3
 
 	//only instruction and data cache for (fake) cartridge
