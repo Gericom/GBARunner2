@@ -5,8 +5,7 @@
 
 .macro finish_handler_skip_op_self_modifying
 	msr cpsr_c, #0x97
-	//orr sp, #1
-	//mcr p15, 0, sp, c1, c0, 0
+
 	ldr sp,= pu_data_permissions
 	mcr p15, 0, sp, c5, c0, 2
 

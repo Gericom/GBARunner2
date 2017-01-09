@@ -2,8 +2,10 @@
 
 .include "consts.s"
 
-bios_op = 0xE3A02004
-//bios_op = 0xE55EC002
+//bios_op = 0xE129F000 //[00DCh+8] after startup and softreset //before this address 0x27C is read
+//bios_op = 0xE25EF004 //[0134h+8] during irq execution
+//bios_op = 0xE55EC002 //[013Ch+8] after irq execution
+bios_op = 0xE3A02004 //[0188h+8] after swi execution; reads between 0x1C8 and 0x274
 
 .global read_address_from_handler_32bit
 read_address_from_handler_32bit:
