@@ -78,7 +78,7 @@ read_address_from_handler_rom_32bit:
 	bx lr
 
 read_address_from_handler_rom_32bit_not_cached:
-	ldr sp,= 0x10000000 + (16 * 1024)
+	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	mov r0, r10
 	ldr r1,= sdread32_uncached
@@ -94,6 +94,8 @@ read_address_from_handler_eeprom_32bit:
 	bx lr
 
 read_address_from_handler_sram_32bit:
+	cmp r9, #0x0F000000
+	bge read_address_undefined_memory_32
 	ldr r11,= 0x01FF8000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
@@ -211,7 +213,7 @@ read_address_from_handler_rom_16bit:
 	bx lr
 
 read_address_from_handler_rom_16bit_not_cached:
-	ldr sp,= 0x10000000 + (16 * 1024)
+	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	mov r0, r10
 	ldr r1,= sdread16_uncached
@@ -229,6 +231,8 @@ read_address_from_handler_eeprom_16bit:
 	bx lr
 
 read_address_from_handler_sram_16bit:
+	cmp r9, #0x0F000000
+	bge read_address_undefined_memory_16
 	ldr r11,= 0x01FF8000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
@@ -343,7 +347,7 @@ read_address_from_handler_rom_8bit:
 	bx lr
 
 read_address_from_handler_rom_8bit_not_cached:
-	ldr sp,= 0x10000000 + (16 * 1024)
+	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	mov r0, r10
 	ldr r1,= sdread8_uncached
@@ -359,6 +363,8 @@ read_address_from_handler_eeprom_8bit:
 	bx lr
 
 read_address_from_handler_sram_8bit:
+	cmp r9, #0x0F000000
+	bge read_address_undefined_memory_8
 	ldr r11,= 0x01FF8000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
@@ -565,8 +571,9 @@ read_address_vcount:
 .global read_address_timer_counter
 read_address_timer_counter:
 	ldrh r10, [r9]
-	mov r10, r10, lsl #17
-	mov r10, r10, lsr #16
+	mov r10, r10, lsr #1
+	//mov r10, r10, lsl #17
+	//mov r10, r10, lsr #16
 	bx lr
 
 .global read_address_timer
@@ -574,8 +581,8 @@ read_address_timer:
 	ldr r10, [r9]
 	mov r12, r10, lsr #16
 	mov r12, r12, lsl #16
-	mov r13, r10, lsl #17
-	orr r10, r12, r13, lsr #16
+	mov r13, r10, lsl #16
+	orr r10, r12, r13, lsr #17
 	bx lr
 
 .global read_address_ie

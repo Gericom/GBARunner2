@@ -26,6 +26,8 @@ write_address_from_handler_sprites_32bit:
 	bx lr
 
 write_address_from_handler_sram_32bit:
+	cmp r9, #0x0F000000
+	bxge lr
 	ldr r12,= 0x01FF8000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
@@ -59,6 +61,8 @@ write_address_from_handler_sprites_16bit:
 	bx lr
 
 write_address_from_handler_sram_16bit:
+	cmp r9, #0x0F000000
+	bxge lr
 	ldr r12,= 0x01FF8000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
@@ -89,6 +93,8 @@ write_address_from_handler_sprites_8bit:
 	bx lr
 
 write_address_from_handler_sram_8bit:
+	cmp r9, #0x0F000000
+	bxge lr
 	ldr r12,= 0x01FF8000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
@@ -394,7 +400,7 @@ write_address_dma_control_cont2:
 	bx lr
 
 write_address_dma_control_rom_src:
-	ldr sp,= 0x10000000 + (16 * 1024)
+	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	ldr r0, [r9, #-0xA]
 	sub r0, #0x02040000
@@ -551,7 +557,7 @@ write_address_dma_size_control_cont3:
 
 
 write_address_dma_size_control_rom_src:
-	ldr sp,= 0x10000000 + (16 * 1024)
+	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	ldr r0, [r9, #-0x8]
 	sub r0, #0x02040000

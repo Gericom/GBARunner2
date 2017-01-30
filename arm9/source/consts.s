@@ -1,13 +1,17 @@
 
-reg_table = 0x10000000
+address_dtcm = 0x04F00000 @0x01800000
 
-address_read_table_32bit_dtcm = 0x1000086C
-address_read_table_16bit_dtcm = 0x10000974
-address_read_table_8bit_dtcm = 0x10000B80
+reg_table = address_dtcm
 
-address_write_table_32bit_dtcm = 0x10000140
-address_write_table_16bit_dtcm = 0x10000248
-address_write_table_8bit_dtcm = 0x10000454
+address_count_bit_table = (address_dtcm + 0x40)
+
+address_read_table_32bit_dtcm = (address_dtcm + 0x86C) @0x1000086C
+address_read_table_16bit_dtcm = (address_dtcm + 0x974) @0x10000974
+address_read_table_8bit_dtcm = (address_dtcm + 0xB80) @0x10000B80
+
+address_write_table_32bit_dtcm = (address_dtcm + 0x140) @0x10000140
+address_write_table_16bit_dtcm = (address_dtcm + 0x248) @0x10000248
+address_write_table_8bit_dtcm = (address_dtcm + 0x454) @0x10000454
 
 sd_cluster_cache = 0x06820000
 

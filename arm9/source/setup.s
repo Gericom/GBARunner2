@@ -67,7 +67,9 @@ vram_setup_copyloop:
 	//-region 6 exclusion region for i-cache	0x02000000-0x0203FFFF	r/w/x
 
 	//region 0	bg region		0x00000000-0xFFFFFFFF	2 << 31		r/w/x
-	ldr r0,= (1 | (31 << 1) | 0)
+	//ldr r0,= (1 | (31 << 1) | 0)
+	//mcr p15, 0, r0, c6, c0, 0
+	ldr r0,= (1 | (26 << 1) | 0)
 	mcr p15, 0, r0, c6, c0, 0
 
 	//region 1	io region		0x04000000-0x04FFFFFF	2 << 23		-/-/-
@@ -75,7 +77,9 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c6, c1, 0
 
 	//region 2 card				0x08000000-0x0FFFFFFF	2 << 26		-/-/-
-	ldr r0,= (1 | (26 << 1) | 0x08000000)
+	//ldr r0,= (1 | (26 << 1) | 0x08000000)
+	//mcr p15, 0, r0, c6, c2, 0
+	mov r0, #0
 	mcr p15, 0, r0, c6, c2, 0
 
 	//region 3	oam vram region	0x06010000-0x06017FFF	2 << 14		-/-/-
@@ -89,7 +93,9 @@ vram_setup_copyloop:
 	//ldr r0,= (1 | (24 << 1) | 0x00000000)
 	//this does not protect the whole itcm, because we don't want reading and writing to bios to work,
 	//but itcm should be able to read itself!
-	ldr r0,= (1 | (23 << 1) | 0x00000000)
+	//ldr r0,= (1 | (23 << 1) | 0x00000000)
+	//mcr p15, 0, r0, c6, c4, 0
+	ldr r0,= (1 | (24 << 1) | 0x00000000)
 	mcr p15, 0, r0, c6, c4, 0
 
 	//main memory
@@ -204,7 +210,8 @@ gba_setup_fill_sub_loop:
 	strh r1, [r0]
 
 	//put the dtcm at 10000000 for the abort mode stack
-	ldr r0,= 0x1000000A
+	//ldr r0,= 0x1000000A
+	ldr r0,= (address_dtcm + 0xA)
 	mcr p15, 0, r0, c9, c1, 0
 
 	ldr r0,= address_write_table_32bit_dtcm_setup
@@ -252,7 +259,7 @@ fifo_loop_1:
 	strne r1, [r2]
 	bne fifo_loop_1
 
-	ldr sp,= 0x10000000 + (16 * 1024)
+	ldr sp,= address_dtcm + (16 * 1024)
 
 	//setup dldi
 	ldr r0,= (_io_dldi + 8)
@@ -494,7 +501,7 @@ gba_start_bkpt:
 	and r0, r0, #0xE0
 	orr r1, r0, #0x17
 	msr cpsr_c, r1
-	ldr sp,= 0x10004000
+	ldr sp,= (address_dtcm + 0x4000) //0x10004000
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
 
@@ -594,8 +601,159 @@ instruction_abort_handler_error_2:
 
 .align 4
 
+//undef_inst_handler:
+//	ldr pc,= undef_inst_handler_vram
+
+.global nibble_to_char
+nibble_to_char:
+	.byte	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46
+
+.align 4
+
+.global undef_inst_handler
 undef_inst_handler:
-	ldr pc,= undef_inst_handler_vram
+	mrc p15, 0, r0, c1, c0, 0
+	bic r0, #(1 | (1 << 2))	//disable pu and data cache
+	bic r0, #(1 << 12) //and cache
+	mcr p15, 0, r0, c1, c0, 0
+
+	ldr r0,= 0x06202000
+	ldr r1,= 0x46444E55
+	str r1, [r0]
+
+	mov r0, lr
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 8)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	b .
+
+/*	ldr r0, [lr]
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 9)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	mrs r0, spsr
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 10)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	msr cpsr_c, #0x9F
+	mov r0, lr
+	msr cpsr_c, #0x9B
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 11)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	b .*/
 
 //inbetween to catch the current running function in usermode
 irq_handler:

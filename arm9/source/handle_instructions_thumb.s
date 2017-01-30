@@ -46,6 +46,10 @@ thumb7_address_calc_\l\bw:
 	b 1f
 1:
 	.word 0
+//align if 32 bit write
+.if !\bw && !\l
+	bic r9, r9, #3
+.endif
 .ifeq \l //write
 2:
 	mov r11, r0
@@ -145,6 +149,10 @@ thumb9_address_calc_\bw\l:
 .else
 	add r9, lr, r12, lsr #6
 .endif
+//align if 32 bit write
+.if !\bw && !\l
+	bic r9, r9, #3
+.endif
 .ifeq \l //write
 2:
 	mov r11, r0
@@ -217,6 +225,7 @@ thumb15_address_calc_0:
 	subne r8, #1
 	tstne r10, r8
 
+	//I think this piece is broken, the rb in rlist edge case
 	moveq r9, r9, lsl #4
 	orreq r9, #1
 	streqb r9, (2f + 1)
@@ -226,7 +235,7 @@ thumb15_address_calc_0:
 	bic r9, r9, #3
 
 	andeq r8, r10, #0xFF
-	ldreq r12,= 0x10000040
+	ldreq r12,= address_count_bit_table
 	ldreqb r13, [r12, r8]
 	mov r8, r10
 2:
@@ -314,7 +323,7 @@ thumb15_address_calc_1:
 	bic r9, r9, #3
 
 	and r8, r10, #0xFF
-	ldr r12,= 0x10000040
+	ldr r12,= address_count_bit_table
 	ldrb r13, [r12, r8]
 2:
 	add r0, r9, r13, lsl #2

@@ -12,7 +12,12 @@
 
 .global data_abort_handler
 data_abort_handler:
-	ldr sp,= 0x33333333
+	//ldr sp,= 0x33333333
+
+	mov sp, #0x33
+	orr sp, sp, lsl #8
+	orr sp, sp, lsl #16
+
 	mcr p15, 0, sp, c5, c0, 2
 	mrs sp, spsr
 	tst sp, #0x20 //thumb bit
@@ -140,8 +145,8 @@ data_abort_handler_cont:
 data_abort_handler_cont_finish:
 	msr cpsr_c, #0x97
 
-	ldr r6,= pu_data_permissions
-	mcr p15, 0, r6, c5, c0, 2
+	//ldr r6,= pu_data_permissions
+	//mcr p15, 0, r6, c5, c0, 2
 
 	//mcr p15, 0, r6, c1, c0, 0
 
@@ -168,6 +173,9 @@ data_abort_handler_cont2:
 	//bne data_abort_handler_r15_dst
 	//pop {lr}
 
+	ldr sp,= pu_data_permissions
+	mcr p15, 0, sp, c5, c0, 2
+
 	subs pc, lr, #4
 
 data_abort_handler_cont3:
@@ -180,7 +188,11 @@ data_abort_handler_cont3:
 	//cmp lr, #0
 	//bne data_abort_handler_r15_dst
 	//pop {lr}
-	nop
+	//nop
+
+	ldr sp,= pu_data_permissions
+	mcr p15, 0, sp, c5, c0, 2
+
 	subs pc, lr, #4
 
 //data_abort_handler_r15_dst:
