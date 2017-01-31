@@ -172,7 +172,8 @@ typedef struct
 typedef struct
 {
 	uint32_t counter	: 24;
-	uint32_t reserved	: 7;
+	//uint32_t reserved	: 7;
+	uint32_t counter2	: 7;
 	uint32_t in_use		: 1;
 	uint32_t cluster_index;
 } cluster_cache_block_info_t;

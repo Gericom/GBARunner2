@@ -2,6 +2,8 @@
 #include <string.h>
 #include <sd_access.h>
 
+#include "consts.s"
+
 #define PUT_IN_VRAM	__attribute__((section(".vram")))
 
 extern uint8_t _io_dldi;
@@ -349,6 +351,8 @@ ITCM_CODE int get_new_cache_block()
 	vram_cd->cluster_cache_info.cache_block_info[oldest].in_use = 0;
 	vram_cd->cluster_cache_info.cache_block_info[oldest].counter = 0;
 	*/
+	int block;
+#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_FIFO
 	int least_used = -1;
 	int least_used_val = 0x7FFFFFFF;
 	for(int i = 0; i < vram_cd->cluster_cache_info.total_nr_cacheblocks; i++)
@@ -361,11 +365,59 @@ ITCM_CODE int get_new_cache_block()
 			least_used_val = vram_cd->cluster_cache_info.cache_block_info[i].counter;
 		}
 	}
+	block = least_used;
+#endif
+#ifdef CACHE_STRATEGY_LFU
+	int least_used = -1;
+	int least_used_val = 0x7FFFFFFF;
+	for(int i = 0; i < vram_cd->cluster_cache_info.total_nr_cacheblocks; i++)
+	{
+		if(!vram_cd->cluster_cache_info.cache_block_info[i].in_use)
+			return i;
+
+		if((vram_cd->sd_info.access_counter - vram_cd->cluster_cache_info.cache_block_info[i].counter) > 2500)
+		{
+			least_used = i;
+			break;
+		}
+
+		if(vram_cd->cluster_cache_info.cache_block_info[i].counter2 < least_used_val)
+		{
+			least_used = i;
+			least_used_val = vram_cd->cluster_cache_info.cache_block_info[i].counter2;
+		}
+	}
+	block = least_used;
+#endif
+#ifdef CACHE_STRATEGY_MRU
+	int most_used = -1;
+	int most_used_val = -1;
+	for(int i = 0; i < vram_cd->cluster_cache_info.total_nr_cacheblocks; i++)
+	{
+		if(!vram_cd->cluster_cache_info.cache_block_info[i].in_use)
+			return i;
+		if(vram_cd->cluster_cache_info.cache_block_info[i].counter > most_used_val)
+		{
+			most_used = i;
+			most_used_val = vram_cd->cluster_cache_info.cache_block_info[i].counter;
+		}
+	}
+	block = most_used;
+#endif
+#ifdef CACHE_STRATEGY_RANDOM
+	block = vram_cd->sd_info.access_counter;
+	vram_cd->sd_info.access_counter++;
+	if(vram_cd->sd_info.access_counter >= vram_cd->cluster_cache_info.total_nr_cacheblocks)
+		vram_cd->sd_info.access_counter = 0;
+	if(!vram_cd->cluster_cache_info.cache_block_info[block].in_use)
+		return block;
+#endif
 	//wipe this old block
-	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[vram_cd->cluster_cache_info.cache_block_info[least_used].cluster_index], 0xFF);
-	vram_cd->cluster_cache_info.cache_block_info[least_used].in_use = 0;
-	vram_cd->cluster_cache_info.cache_block_info[least_used].counter = 0;
-	return least_used;
+	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[vram_cd->cluster_cache_info.cache_block_info[block].cluster_index], 0xFF);
+	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 0;
+	vram_cd->cluster_cache_info.cache_block_info[block].counter = 0;
+	vram_cd->cluster_cache_info.cache_block_info[block].counter2 = 0;
+	return block;
 }
 
 ITCM_CODE int ensure_cluster_cached(uint32_t cluster_index)
@@ -378,7 +430,12 @@ ITCM_CODE int ensure_cluster_cached(uint32_t cluster_index)
 		MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 		vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 		vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
+#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
 		vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
+#endif
+#ifdef CACHE_STRATEGY_LFU
+		vram_cd->cluster_cache_info.cache_block_info[block].counter2 = 0;
+#endif
 		read_sd_sectors_safe(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);//_DLDI_readSectors_ptr(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);
 	}
 	//it is in cache now
@@ -397,8 +454,16 @@ ITCM_CODE void* get_cluster_data(uint32_t cluster_index)
 {
 	int block = ensure_cluster_cached(cluster_index);
 	//int block = vram_cd->gba_rom_is_cluster_cached_table[cluster_index];
+#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
+#endif
+#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
 	vram_cd->sd_info.access_counter++;
+#endif
+#ifdef CACHE_STRATEGY_LFU
+	if(vram_cd->cluster_cache_info.cache_block_info[block].counter2 < 0x7F)
+		vram_cd->cluster_cache_info.cache_block_info[block].counter2++;
+#endif
 	//increase_cluster_cache_counters();
 	//vram_cd->cluster_cache_info.cache_block_info[block].counter = 0;
 	return (void*)&vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift];
@@ -410,11 +475,15 @@ extern "C" ITCM_CODE uint32_t sdread32_uncached(uint32_t address)
 	int block = get_new_cache_block();
 	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
-	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
-	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
+	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;	
 	read_sd_sectors_safe(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);//_DLDI_readSectors_ptr(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);
+#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	vram_cd->sd_info.access_counter++;
+#endif
+#ifdef CACHE_STRATEGY_LFU
+	vram_cd->cluster_cache_info.cache_block_info[block].counter2 = 1;
+#endif
 	uint32_t cluster_offset = address & vram_cd->sd_info.cluster_mask;
 	void* cluster_data = (void*)&vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift];
 	return *((uint32_t*)(cluster_data + cluster_offset));
@@ -427,10 +496,14 @@ extern "C" ITCM_CODE uint16_t sdread16_uncached(uint32_t address)
 	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
-	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	read_sd_sectors_safe(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);//_DLDI_readSectors_ptr(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);
+#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	vram_cd->sd_info.access_counter++;
+#endif
+#ifdef CACHE_STRATEGY_LFU
+	vram_cd->cluster_cache_info.cache_block_info[block].counter2 = 1;
+#endif
 	uint32_t cluster_offset = address & vram_cd->sd_info.cluster_mask;
 	void* cluster_data = (void*)&vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift];
 	return *((uint16_t*)(cluster_data + cluster_offset));
@@ -443,10 +516,14 @@ extern "C" ITCM_CODE uint8_t sdread8_uncached(uint32_t address)
 	MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
-	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	read_sd_sectors_safe(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);//_DLDI_readSectors_ptr(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);
+#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	vram_cd->sd_info.access_counter++;
+#endif
+#ifdef CACHE_STRATEGY_LFU
+	vram_cd->cluster_cache_info.cache_block_info[block].counter2 = 1;
+#endif
 	uint32_t cluster_offset = address & vram_cd->sd_info.cluster_mask;
 	void* cluster_data = (void*)&vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift];
 	return *((uint8_t*)(cluster_data + cluster_offset));

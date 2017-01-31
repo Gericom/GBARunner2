@@ -1,4 +1,5 @@
 
+#ifdef __ASSEMBLER__
 address_dtcm = 0x04F00000 @0x01800000
 
 reg_table = address_dtcm
@@ -22,3 +23,14 @@ sd_sd_info = (sd_cluster_cache_info + (256 * 8 + 4)) @0x0685C404
 
 
 pu_data_permissions = 0x33600003 @0x33660003
+#endif
+
+/*#define CACHE_STRATEGY_LRU*/
+/*this strategy is very bad aswell*/
+/*#define CACHE_STRATEGY_MRU*/
+/*this strategy works very bad, because blocks that are frequently used for a short period*/
+/*will be locked in the cache forever*/
+/*#define CACHE_STRATEGY_LFU*/
+#define CACHE_STRATEGY_RANDOM
+/*this strategy is shit too*/
+/*#define CACHE_STRATEGY_FIFO*/
