@@ -233,8 +233,13 @@ gba_setup_fill_sub_loop:
 	ldr r1,= (0x8000 | (1 << 3))
 	str r1, [r0, #4]
 
-	//mov r1, #(1 << 14)
-	//str r1, [r0]
+	//enable arm7 irq
+	mov r1, #(1 << 14)
+	str r1, [r0]
+
+	ldr r0,= 0x04000210
+	mov r1, #(1 << 16)
+	str r1, [r0]
 
 	//send setup command to arm7
 	//ldr r2,= _dldi_start
@@ -485,7 +490,7 @@ gba_start_bkpt:
 	mov r0, #0x4
 	str r1, [r0]
 
-#ifdef DEBUG_ENABLED
+//#ifdef DEBUG_ENABLED
 	//for debugging
 	ldr r0,= irq_handler
 	sub r0, #0x18	//relative to source address
@@ -494,7 +499,7 @@ gba_start_bkpt:
 	orr r1, r0, lsr #2
 	mov r0, #0x18
 	str r1, [r0]
-#endif
+//#endif
 
 	//set the abort mode stack
 	mrs r0, cpsr
@@ -759,6 +764,20 @@ undef_inst_handler:
 irq_handler:
 	STMFD   SP!, {R0-R3,R12,LR}
 
+	//check for arm7 interrupt
+	mov r0, #0x33
+	orr r0, r0, lsl #8
+	orr r0, r0, lsl #16
+	mcr p15, 0, r0, c5, c0, 2
+
+	mov r0, #0x04000000
+	ldr r1, [r0, #0x214]
+	tst r1, #(1 << 16)
+	bne irq_handler_arm7_irq
+	ldr r1,= pu_data_permissions
+	mcr p15, 0, r1, c5, c0, 2
+
+#ifdef DEBUG_ENABLED
 	ldr r1,= nibble_to_char
 	ldr r12,= (0x06202000 + 32 * 11)
 	//print address to bottom screen
@@ -857,13 +876,57 @@ irq_handler:
 	mov r0, r0, lsl #4
 	orr r2, r2, r3, lsl #8
 	strh r2, [r12], #2
+#endif
 
-	MOV     R0, #0x4000000
+	//MOV     R0, #0x4000000
 	ADR     LR, loc_138
 	LDR     PC, [R0,#-4]
 loc_138:
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
+
+irq_handler_arm7_irq:
+	//do stuff
+	mov r12, #0x04000000
+1:
+	ldr r1, [r12, #0x184]
+	tst r1, #(1 << 8)
+	bne 1b
+2:
+	mov r0, #0x04100000
+	ldr r1, [r0]	//read word from fifo
+
+	ldr r0,= 0xAA5500F9
+	str r0, [r12, #0x188]
+
+	ldmia r1!, {r0, r2, r3, lr}
+	
+	str r0, [r12, #0x188]
+	str r2, [r12, #0x188]
+	str r3, [r12, #0x188]
+	str lr, [r12, #0x188]
+
+	//ldmia r1!, {r0, r2, r3, lr}
+	
+	//str r0, [r12]
+	//str r2, [r12]
+	//str r3, [r12]
+	//str lr, [r12]
+
+	ldr r1, [r12, #0x184]
+	tst r1, #(1 << 8)
+	beq 2b
+
+	//acknowledge
+	MOV     R0, #0x4000000
+	mov r1, #(1 << 16)
+	str r1, [r0, #0x214]
+
+	ldr r1,= pu_data_permissions
+	mcr p15, 0, r1, c5, c0, 2
+	LDMFD   SP!, {R0-R3,R12,LR}
+	SUBS    PC, LR, #4
+
 
 .global thumb_string
 thumb_string:

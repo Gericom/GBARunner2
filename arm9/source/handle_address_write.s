@@ -424,6 +424,15 @@ write_address_dma_control_cont:
 	bicne r11, r11, #0x8000
 	strneh r11, [r9]
 	bxne lr
+
+	ldr r13,= 0x040000BC
+	ldr r13, [r13]
+
+	ldr r10,= 0x04000188
+	ldr r12,= 0xAA5500F8
+	str r12, [r10]
+	str r13, [r10]
+
 	//cmp r10, r13
 	//beq write_address_dma_control_cont_snd2
 	//ldr r13,= cur_snd_buffer
@@ -444,17 +453,17 @@ write_address_dma_control_cont:
 	//str r10, [r13]
 	//ldr r13,= 0x23F8000
 	//add r12, r13, r12
-	ldr r12,= 0x23F8000
-	ldr r13,= 0x40000C0
-	str r12, [r13]
-	bic r11, r11, #0x3B00
+@	ldr r12,= 0x23F8000
+@	ldr r13,= 0x40000C0
+@	str r12, [r13]
+@	bic r11, r11, #0x3B00
 	//bic r11, r11, #0x00E0
 	//orr r11, r11, #(3 << 5)
 	//bic r11, r11, #0x1F
-	bic r11, r11, #0x00FF
-	mov r12, #1024 //#(396 * 4)
-	strh r12, [r9, #-2]
-	strh r11, [r9]
+@	bic r11, r11, #0x00FF
+@	mov r12, #1024 //#(396 * 4)
+@	strh r12, [r9, #-2]
+@	strh r11, [r9]
 
 //	nop
 //	nop
@@ -483,12 +492,12 @@ write_address_dma_control_cont:
 	//mov r12, #1
 	//str r12, [r13, #4]
 
-	ldr r10,= 0x04000188
+@	ldr r10,= 0x04000188
 	//ldr r11,= 0xAA5500C5
-	ldr r13,= 0xAA5500C4
+@	ldr r13,= 0xAA5500C4
 	//mov r12, #0
 	//str r11, [r10]
-	str r13, [r10]
+@	str r13, [r10]
 	//str r12, [r10]
 
 	bx lr
@@ -580,6 +589,14 @@ write_address_dma_size_control_cont2:
 	bicne r11, #0x80000000
 	strne r11, [r9]
 	bxne lr
+
+	ldr r13,= 0x040000BC
+	ldr r13, [r13]
+
+	ldr r10,= 0x04000188
+	ldr r12,= 0xAA5500F8
+	str r12, [r10]
+	str r13, [r10]
 	//cmp r10, r13
 	//beq write_address_dma_size_control_cont2_snd2
 	//ldr r13,= 0x40000C0
@@ -593,8 +610,8 @@ write_address_dma_size_control_cont2:
 	//str r12, [r13]
 	//ldreq r12,= (0x02400000 - (1584 * 2))
 	//ldrne r12,= (0x02400000 - 1584)
-	ldr r13,= 0x40000C0
-	ldr r12,= 0x23F8000 //(0x02400000 - (1584 * 2))
+@	ldr r13,= 0x40000C0
+@	ldr r12,= 0x23F8000 //(0x02400000 - (1584 * 2))
 	//ldr r13,= cur_snd_buffer
 	//ldr r10, [r13]
 	//mov r12, #1584
@@ -606,14 +623,14 @@ write_address_dma_size_control_cont2:
 	//ldr r13,= 0x23F8000
 	//add r12, r13, r12
 	//ldr r13,= 0x40000C0
-	str r12, [r13]
+@	str r12, [r13]
 	//bic r11, r11, #0x3B000000
 	//bic r11, r11, #0x00E00000
 	//orr r11, r11, #(3 << (5 + 16))
-	ldr r13,= 0x3BFFFFFF
-	bic r11, r13
-	orr r11, r11, #1024 //(396 * 2)
-	str r11, [r9]
+@	ldr r13,= 0x3BFFFFFF
+@	bic r11, r13
+@	orr r11, r11, #1024 //(396 * 2)
+@	str r11, [r9]
 	
 //	nop
 //	nop
@@ -632,12 +649,12 @@ write_address_dma_size_control_cont2:
 	//mov r12, #1
 	//str r12, [r13, #4]
 	
-	ldr r10,= 0x04000188
+@	ldr r10,= 0x04000188
 	//ldr r11,= 0xAA5500C5
-	ldr r13,= 0xAA5500C4
+@	ldr r13,= 0xAA5500C4
 	//mov r12, #1
 	//str r11, [r10]
-	str r13, [r10]
+@	str r13, [r10]
 	//str r12, [r10]
 
 	bx lr
@@ -755,7 +772,8 @@ write_address_ie_if:
 	//tst r11, #1
 	//orrne r11, #(1 << 16)
 	//orr r11, #0x3E0000
-	orr r11, #0x3F0000
+	//orr r11, #0x3F0000
+	orr r11, #0x3E0000
 	str r11, [r13, #4]
 	bx lr
 

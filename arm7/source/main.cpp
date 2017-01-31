@@ -1,11 +1,9 @@
 #include <nds.h>
 #include "timer.h"
 #include "sound.h"
+#include "fifo.h"
 
-#define SOUND_CHANNEL_0_SETTINGS	(REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) | REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(64) | REG_SOUNDXCNT_VOLUME(0x7F))	//0x0840007F;
-
-#define REG_SEND_FIFO	(*((vu32*)0x04000188))
-#define REG_RECV_FIFO	(*((vu32*)0x04100000))
+//#define SOUND_CHANNEL_0_SETTINGS	(REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) | REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(64) | REG_SOUNDXCNT_VOLUME(0x7F))	//0x0840007F;
 
 //#define CENTER_AND_MASK_ENABLED
 
@@ -83,6 +81,8 @@ static void vblank_handler()
 
 }
 
+extern "C" void my_irq_handler();
+
 int main()
 {
 	//dmaFillWords(0, (void*)0x04000400, 0x100);
@@ -91,10 +91,15 @@ int main()
 	//writePowerManagement(PM_CONTROL_REG, ( readPowerManagement(PM_CONTROL_REG) & ~PM_SOUND_MUTE ) | PM_SOUND_AMP );
 	//powerOn(POWER_SOUND);
 
-	//REG_IE = 0;
-	//REG_IF = ~0;
+	REG_IME = 0;
+	REG_IE = 0;
+	REG_IF = ~0;
 
-	irqInit();
+	*((vu32*)0x0380FFFC) = (vu32)&my_irq_handler;
+
+	REG_IME = 1;
+
+	//irqInit();
 
 	//REG_IE = 0;
 	//REG_IF = ~0;
@@ -213,6 +218,14 @@ int main()
 		}
 #else
 		while(*((vu32*)0x04000184) & (1 << 8));
+		{
+			if(!(*((vu32*)0x04000136) & 1))
+				gba_sound_resync();
+		}
+		//{
+		//	if(!(*((vu32*)0x04000136) & 1))
+		//		*((vu32*)0x04000180) |= (1 << 13);
+		//}
 #endif
 		//{
 			/*if(frameState == 0 && *((vu16*)0x04000006) == 0)//*((vu16*)0x04000006) == 15)
@@ -267,12 +280,37 @@ int main()
 		u32 cmd = REG_RECV_FIFO;
 		//if((cmd >> 16) != 0xAA55)
 		//	continue;
+		uint32_t vals[4];
 		u32 val;
 		switch(cmd)
 		{
 		case 0xAA5500C4://fifo_start_sound_command
 			//REG_SOUND[0].CNT |= REG_SOUNDXCNT_E;
 			gba_sound_notify_reset();
+			break;
+		case 0xAA5500F8:
+			while(*((vu32*)0x04000184) & (1 << 8));
+			val = REG_RECV_FIFO;
+			gba_sound_set_src(val);
+			break;
+		case 0xAA5500F9:
+			while(*((vu32*)0x04000184) & (1 << 8));
+				vals[0] = REG_RECV_FIFO;
+			while(*((vu32*)0x04000184) & (1 << 8));
+				vals[1] = REG_RECV_FIFO;
+			while(*((vu32*)0x04000184) & (1 << 8));
+				vals[2] = REG_RECV_FIFO;
+			while(*((vu32*)0x04000184) & (1 << 8));
+				vals[3] = REG_RECV_FIFO;
+			/*while(*((vu32*)0x04000184) & (1 << 8));
+				vals[4] = REG_RECV_FIFO;
+			while(*((vu32*)0x04000184) & (1 << 8));
+				vals[5] = REG_RECV_FIFO;
+			while(*((vu32*)0x04000184) & (1 << 8));
+				vals[6] = REG_RECV_FIFO;
+			while(*((vu32*)0x04000184) & (1 << 8));
+				vals[7] = REG_RECV_FIFO;*/
+			gba_sound_fifo_write16((uint8_t*)&vals[0]);
 			break;
 		case 0x040000A0:
 			while(*((vu32*)0x04000184) & (1 << 8));
