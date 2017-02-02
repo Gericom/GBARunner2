@@ -26,11 +26,8 @@ pu_data_permissions = 0x33600003 @0x33660003
 #endif
 
 /*#define CACHE_STRATEGY_LRU*/
-/*this strategy is very bad aswell*/
+/*this strategy is very bad as well*/
 /*#define CACHE_STRATEGY_MRU*/
-/*this strategy works very bad, because blocks that are frequently used for a short period*/
-/*will be locked in the cache forever*/
+/*this strategy isn't the best either*/
 /*#define CACHE_STRATEGY_LFU*/
-#define CACHE_STRATEGY_RANDOM
-/*this strategy is shit too*/
-/*#define CACHE_STRATEGY_FIFO*/
+#define CACHE_STRATEGY_ROUND_ROBIN

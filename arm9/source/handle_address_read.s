@@ -58,7 +58,7 @@ read_address_from_handler_rom_32bit:
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_MRU
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_MRU)
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 	ldr r12, [r12, #0x810]//access counter
@@ -67,11 +67,6 @@ read_address_from_handler_rom_32bit:
 	ldr r12,= sd_cluster_cache_info
 	str r11, [r12, r13, lsl #3]
 	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-#ifdef CACHE_STRATEGY_FIFO
 	ldr r11, [r12, #0x810]
 	add r11, #1
 	str r11, [r12, #0x810]
@@ -129,7 +124,9 @@ read_address_from_handler_sram_32bit:
 	//sub r10, r10, #0x0B800000
 	//sub r10, r10, #0x00008C00
 	//sub r10, r10, #0x00000060
-	ldr r10, [r10]
+	ldrb r10, [r10]
+	orr r10, r10, lsl #8
+	orr r10, r10, lsl #16
 	bx lr
 
 read_address_from_handler_rom_in_mem_32bit:
@@ -217,7 +214,7 @@ read_address_from_handler_rom_16bit:
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_MRU
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_MRU)
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 	ldr r12, [r12, #0x810]//access counter
@@ -226,11 +223,6 @@ read_address_from_handler_rom_16bit:
 	ldr r12,= sd_cluster_cache_info
 	str r11, [r12, r13, lsl #3]
 	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-#ifdef CACHE_STRATEGY_FIFO
 	ldr r11, [r12, #0x810]
 	add r11, #1
 	str r11, [r12, #0x810]
@@ -292,7 +284,10 @@ read_address_from_handler_sram_16bit:
 	//sub r10, r10, #0x0B800000
 	//sub r10, r10, #0x00008C00
 	//sub r10, r10, #0x00000060
-	ldrh r10, [r10]
+	ldrb r10, [r10]
+	orr r10, r10, lsl #8
+	tst r9, #1
+	movne r10, r10, ror #8
 	bx lr
 
 read_address_from_handler_rom_in_mem_16bit:
@@ -377,7 +372,7 @@ read_address_from_handler_rom_8bit:
 	beq read_address_from_handler_rom_8bit_not_cached
 	ldr r12,= sd_cluster_cache_info
 
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_MRU
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_MRU)
 	ldr r11, [r12, r13, lsl #3]
 	bic r11, #0xFFFFFF
 	ldr r12, [r12, #0x810]//access counter
@@ -386,11 +381,6 @@ read_address_from_handler_rom_8bit:
 	ldr r12,= sd_cluster_cache_info
 	str r11, [r12, r13, lsl #3]
 	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-#ifdef CACHE_STRATEGY_FIFO
 	ldr r11, [r12, #0x810]
 	add r11, #1
 	str r11, [r12, #0x810]

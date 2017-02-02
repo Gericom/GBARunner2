@@ -352,7 +352,7 @@ ITCM_CODE int get_new_cache_block()
 	vram_cd->cluster_cache_info.cache_block_info[oldest].counter = 0;
 	*/
 	int block;
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_FIFO
+#if defined(CACHE_STRATEGY_LRU)
 	int least_used = -1;
 	int least_used_val = 0x7FFFFFFF;
 	for(int i = 0; i < vram_cd->cluster_cache_info.total_nr_cacheblocks; i++)
@@ -368,20 +368,25 @@ ITCM_CODE int get_new_cache_block()
 	block = least_used;
 #endif
 #ifdef CACHE_STRATEGY_LFU
-	int least_used = -1;
+	int least_used = vram_cd->cluster_cache_info.total_nr_cacheblocks - 1;//-1;
 	int least_used_val = 0x7FFFFFFF;
 	for(int i = 0; i < vram_cd->cluster_cache_info.total_nr_cacheblocks; i++)
 	{
 		if(!vram_cd->cluster_cache_info.cache_block_info[i].in_use)
 			return i;
 
-		if((vram_cd->sd_info.access_counter - vram_cd->cluster_cache_info.cache_block_info[i].counter) > 2500)
+		if((vram_cd->sd_info.access_counter - vram_cd->cluster_cache_info.cache_block_info[i].counter) > 750)//2500)
 		{
 			least_used = i;
 			break;
 		}
 
-		if(vram_cd->cluster_cache_info.cache_block_info[i].counter2 < least_used_val)
+		//if(vram_cd->cluster_cache_info.cache_block_info[i].counter2 < least_used_val)
+		//{
+		//	least_used = i;
+		//	least_used_val = vram_cd->cluster_cache_info.cache_block_info[i].counter2;
+		//}
+		if((vram_cd->sd_info.access_counter + 10 * vram_cd->cluster_cache_info.cache_block_info[i].counter2) < least_used_val)
 		{
 			least_used = i;
 			least_used_val = vram_cd->cluster_cache_info.cache_block_info[i].counter2;
@@ -404,7 +409,7 @@ ITCM_CODE int get_new_cache_block()
 	}
 	block = most_used;
 #endif
-#ifdef CACHE_STRATEGY_RANDOM
+#ifdef CACHE_STRATEGY_ROUND_ROBIN
 	block = vram_cd->sd_info.access_counter;
 	vram_cd->sd_info.access_counter++;
 	if(vram_cd->sd_info.access_counter >= vram_cd->cluster_cache_info.total_nr_cacheblocks)
@@ -430,7 +435,7 @@ ITCM_CODE int ensure_cluster_cached(uint32_t cluster_index)
 		MI_WriteByte(&vram_cd->gba_rom_is_cluster_cached_table[cluster_index], block);
 		vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 		vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_LFU) || defined(CACHE_STRATEGY_MRU)
 		vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 #endif
 #ifdef CACHE_STRATEGY_LFU
@@ -454,10 +459,10 @@ ITCM_CODE void* get_cluster_data(uint32_t cluster_index)
 {
 	int block = ensure_cluster_cached(cluster_index);
 	//int block = vram_cd->gba_rom_is_cluster_cached_table[cluster_index];
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_LFU) || defined(CACHE_STRATEGY_MRU)
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 #endif
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_LFU) || defined(CACHE_STRATEGY_MRU)
 	vram_cd->sd_info.access_counter++;
 #endif
 #ifdef CACHE_STRATEGY_LFU
@@ -477,7 +482,7 @@ extern "C" ITCM_CODE uint32_t sdread32_uncached(uint32_t address)
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;	
 	read_sd_sectors_safe(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);//_DLDI_readSectors_ptr(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_LFU) || defined(CACHE_STRATEGY_MRU)
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	vram_cd->sd_info.access_counter++;
 #endif
@@ -497,7 +502,7 @@ extern "C" ITCM_CODE uint16_t sdread16_uncached(uint32_t address)
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
 	read_sd_sectors_safe(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);//_DLDI_readSectors_ptr(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_LFU) || defined(CACHE_STRATEGY_MRU)
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	vram_cd->sd_info.access_counter++;
 #endif
@@ -517,7 +522,7 @@ extern "C" ITCM_CODE uint8_t sdread8_uncached(uint32_t address)
 	vram_cd->cluster_cache_info.cache_block_info[block].in_use = 1;
 	vram_cd->cluster_cache_info.cache_block_info[block].cluster_index = cluster_index;
 	read_sd_sectors_safe(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);//_DLDI_readSectors_ptr(get_sector_from_cluster(vram_cd->gba_rom_cluster_table[cluster_index]), vram_cd->sd_info.nr_sectors_per_cluster, &vram_cd->cluster_cache[block << vram_cd->sd_info.cluster_shift]);
-#ifdef CACHE_STRATEGY_LRU || CACHE_STRATEGY_LFU || CACHE_STRATEGY_MRU || CACHE_STRATEGY_FIFO
+#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_LFU) || defined(CACHE_STRATEGY_MRU)
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
 	vram_cd->sd_info.access_counter++;
 #endif

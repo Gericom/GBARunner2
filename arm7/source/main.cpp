@@ -76,6 +76,46 @@ static void hblank_handler()
 	}
 }*/
 
+static int vcount_state;
+
+/*extern "C" void hblank_irq()
+{
+	if(vcount_state == 0 && *((vu16*)0x04000006) >= 159 && *((vu16*)0x04000006) < 192)
+	{
+		REG_SEND_FIFO = 0xA5;
+		//invoke an irq on arm9
+		*((vu32*)0x04000180) |= (1 << 13);
+		vcount_state = 1;
+	}
+	else if(vcount_state == 1 && *((vu16*)0x04000006) >= 192)
+	{
+		REG_SEND_FIFO = 0xA6;
+		//invoke an irq on arm9
+		*((vu32*)0x04000180) |= (1 << 13);
+		vcount_state = 0;
+	}
+}*/
+
+/*extern "C" void vcount_irq()
+{
+	if(vcount_state == 0)
+	{
+		REG_SEND_FIFO = 0xA5;
+		//invoke an irq on arm9
+		*((vu32*)0x04000180) |= (1 << 13);
+		vcount_state = 1;
+		*((vu16*)0x04000004) = 0x20 | (192 << 8);
+	}
+	else
+	{
+		REG_SEND_FIFO = 0xA6;
+		//invoke an irq on arm9
+		*((vu32*)0x04000180) |= (1 << 13);
+		vcount_state = 0;
+		*((vu16*)0x04000004) = 0x20 | (160 << 8);
+	}
+}*/
+
 static void vblank_handler()
 {
 
@@ -98,6 +138,9 @@ int main()
 	*((vu32*)0x0380FFFC) = (vu32)&my_irq_handler;
 
 	REG_IME = 1;
+
+	//*((vu16*)0x04000004) = 0x20 | (160 << 8);
+	//*((vu16*)0x04000004) = 0x10;
 
 	//irqInit();
 
@@ -145,6 +188,10 @@ int main()
 	while(*((vu16*)0x04000006) != 0);
 	REG_TM[2].CNT_H = REG_TMXCNT_H_E;
 #endif
+
+	vcount_state = 0;
+	//REG_IE |= 1 << 2; //enable vcount interrupt
+	//REG_IE |= 1 << 1; //enable hblank interrupt
 
 	//REG_TM[2].CNT_H = 0;
 	//irqDisable(IRQ_TIMER2);

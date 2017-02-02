@@ -770,124 +770,21 @@ irq_handler:
 	orr r0, r0, lsl #16
 	mcr p15, 0, r0, c5, c0, 2
 
-	mov r0, #0x04000000
-	ldr r1, [r0, #0x214]
+	mov r12, #0x04000000
+	ldr r1, [r12, #0x214]
 	tst r1, #(1 << 16)
 	bne irq_handler_arm7_irq
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 
-#ifdef DEBUG_ENABLED
-	ldr r1,= nibble_to_char
-	ldr r12,= (0x06202000 + 32 * 11)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	sub r0, lr, #4
-	ldr r1,= nibble_to_char
-	ldr r12,= (0x06202000 + 32 * 10)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	mrs r0, cpsr
-	msr cpsr_c, #0x93
-	ldr r1, [sp, #(7<<2)]
-	msr cpsr_c, r0
-	mov r0, r1
-	ldr r1,= nibble_to_char
-	ldr r12,= (0x06202000 + 32 * 12)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-#endif
-
-	//MOV     R0, #0x4000000
 	ADR     LR, loc_138
-	LDR     PC, [R0,#-4]
+	LDR     PC, [R12,#-4]
 loc_138:
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
 	//do stuff
-	mov r12, #0x04000000
 1:
 	ldr r1, [r12, #0x184]
 	tst r1, #(1 << 8)
@@ -895,6 +792,17 @@ irq_handler_arm7_irq:
 2:
 	mov r0, #0x04100000
 	ldr r1, [r0]	//read word from fifo
+
+	//cmp r1, #0x000000A5
+	//beq irq_handler_arm7_irq_masterbright
+	//cmp r1, #0x000000A6
+	//beq irq_handler_arm7_irq_masterbright2
+
+	//wait for fifo empty to prevent overflow
+3:
+	ldr r0, [r12, #0x184]
+	tst r0, #1
+	beq 3b
 
 	ldr r0,= 0xAA5500F9
 	str r0, [r12, #0x188]
@@ -906,26 +814,29 @@ irq_handler_arm7_irq:
 	str r3, [r12, #0x188]
 	str lr, [r12, #0x188]
 
-	//ldmia r1!, {r0, r2, r3, lr}
-	
-	//str r0, [r12]
-	//str r2, [r12]
-	//str r3, [r12]
-	//str lr, [r12]
-
+4:
 	ldr r1, [r12, #0x184]
 	tst r1, #(1 << 8)
 	beq 2b
 
 	//acknowledge
-	MOV     R0, #0x4000000
 	mov r1, #(1 << 16)
-	str r1, [r0, #0x214]
+	str r1, [r12, #0x214]
 
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
+
+//irq_handler_arm7_irq_masterbright:
+//	ldr r1,= 0x8010
+//	str r1, [r12, #0x6C]
+//	b 4b
+
+//irq_handler_arm7_irq_masterbright2:
+//	mov r1, #0
+//	str r1, [r12, #0x6C]
+//	b 4b
 
 
 .global thumb_string

@@ -35,7 +35,11 @@ write_address_from_handler_sram_32bit:
 	//sub r10, r10, #0x0B800000
 	//sub r10, r10, #0x00008C00
 	//sub r10, r10, #0x00000060
-	str r11, [r10]
+	//str r11, [r10]
+	and r12, r9, #3
+	mov r12, r12, lsl #3
+	mov r11, r11, ror r12
+	strb r11, [r10]
 	bx lr
 
 .global write_address_from_handler_16bit
@@ -70,7 +74,10 @@ write_address_from_handler_sram_16bit:
 	//sub r10, r10, #0x0B800000
 	//sub r10, r10, #0x00008C00
 	//sub r10, r10, #0x00000060
-	strh r11, [r10]
+	//strh r11, [r10]
+	tst r9, #1
+	movne r11, r11, ror #8
+	strb r11, [r10]
 	bx lr
 
 .global write_address_from_handler_8bit
@@ -421,8 +428,10 @@ write_address_dma_control_cont:
 	cmp r9, r13
 	//ldr r13,= 0x40000D2
 	//cmpne r10, r13
-	bicne r11, r11, #0x8000
-	strneh r11, [r9]
+	//bicne r11, r11, #0x8000
+	//strneh r11, [r9]
+	bic r11, r11, #0x8000
+	strh r11, [r9]
 	bxne lr
 
 	ldr r13,= 0x040000BC
@@ -586,8 +595,10 @@ write_address_dma_size_control_cont2:
 	cmp r9, r13
 	//ldr r13,= 0x040000D0
 	//cmpne r10, r13
-	bicne r11, #0x80000000
-	strne r11, [r9]
+	//bicne r11, #0x80000000
+	//strne r11, [r9]
+	bic r11, #0x80000000
+	str r11, [r9]
 	bxne lr
 
 	ldr r13,= 0x040000BC

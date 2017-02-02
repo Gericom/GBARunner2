@@ -8,11 +8,33 @@ my_irq_handler:
 
 	mov r0, #0x04000000
 	ldr r1, [r0, #0x214]
-	ands r1, r1, #(1 << 6)
-	beq my_irq_handler_end
-	str r1, [r0, #0x214]
-	bl timer3_overflow_irq
 
-my_irq_handler_end:
+	//ands r2, r1, #(1 << 1)
+	//bne my_irq_handler_hblank
+
+	//ands r2, r1, #(1 << 2)
+	//bne my_irq_handler_vcount
+
+	ands r2, r1, #(1 << 6)
+	bne my_irq_handler_timer3
+
+	pop {lr}
+	bx lr
+
+//my_irq_handler_hblank:
+//	str r2, [r0, #0x214]
+//	bl hblank_irq
+//	pop {lr}
+//	bx lr
+
+//my_irq_handler_vcount:
+//	str r2, [r0, #0x214]
+//	bl vcount_irq
+//	pop {lr}
+//	bx lr
+
+my_irq_handler_timer3:
+	str r2, [r0, #0x214]
+	bl timer3_overflow_irq
 	pop {lr}
 	bx lr
