@@ -746,8 +746,8 @@ write_address_if:
 	ldr r13,= 0x4000214
 	//tst r11, #1
 	//orrne r11, #(1 << 16)
-	//orr r11, #0x3E0000
-	orr r11, #0x3F0000
+	orr r11, #0x3E0000
+	//orr r11, #0x3F0000
 	str r11, [r13]
 	bx lr
 
@@ -756,15 +756,16 @@ write_address_if_bottom8:
 	ldr r13,= 0x4000214
 	//tst r11, #1
 	//orrne r11, #(1 << 16)
-	//orr r11, #0x3E0000
-	orr r11, #0x3F0000
+	orr r11, #0x3E0000
+	//orr r11, #0x3F0000
 	str r11, [r13]
 	bx lr
 
 .global write_address_if_top8
 write_address_if_top8:
 	ldr r13,= 0x4000214
-	orr r11, #0x3F00
+	//orr r11, #0x3F00
+	orr r11, #0x3E00
 	mov r11, r11, lsl #8
 	str r11, [r13]
 	bx lr

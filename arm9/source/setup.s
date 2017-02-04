@@ -814,7 +814,7 @@ irq_handler_arm7_irq:
 	str r3, [r12, #0x188]
 	str lr, [r12, #0x188]
 
-4:
+//4:
 	ldr r1, [r12, #0x184]
 	tst r1, #(1 << 8)
 	beq 2b

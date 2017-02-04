@@ -137,14 +137,14 @@ void gba_sound_vblank()
 
 }
 
-//static int sampcnter = 0;
+static int sampcnter = 0;
 
 extern "C" void timer3_overflow_irq()
 {
 	if(srcAddress == 0)
 		return;
-	//if(sampcnter == (FIFO_BLOCK_SIZE - 1))
-	//{
+	if(sampcnter == 0)//(FIFO_BLOCK_SIZE - 1))
+	{
 		if(!(*((vu32*)0x04000184) & 2))
 		{
 			REG_SEND_FIFO = srcAddress;
@@ -161,10 +161,10 @@ extern "C" void timer3_overflow_irq()
 			gba_sound_update_ds_channels();
 		}
 		srcAddress += FIFO_BLOCK_SIZE;//16;
-	//}
-	//sampcnter++;
-	//if(sampcnter == FIFO_BLOCK_SIZE)
-	//	sampcnter = 0;
+	}
+	sampcnter++;
+	if(sampcnter == FIFO_BLOCK_SIZE)
+		sampcnter = 0;
 }
 
 void gba_sound_timer_updated(uint16_t reloadVal)
@@ -200,8 +200,9 @@ void gba_sound_set_src(uint32_t address)
 {
 	srcAddress = address;
 	REG_TM[3].CNT_H = 0;
-	timer3_overflow_irq();
-	REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq) * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
+	sampcnter = 0;
+	//timer3_overflow_irq();
+	REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq);// * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
 	REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;// | REG_TMXCNT_H_PS_64;
 	REG_IE |= (1 << 6);
 }
