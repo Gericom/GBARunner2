@@ -1,8 +1,16 @@
 #include <nds.h>
-#include <string.h>
+#include <vector>
+#include <string>
+#include <algorithm>
 #include <sd_access.h>
 
 #include "consts.s"
+
+#define SCREEN_COLS 32
+#define SCREEN_ROWS 24
+#define ENTRIES_START_ROW 2
+#define ENTRIES_PER_SCREEN (SCREEN_ROWS - ENTRIES_START_ROW)
+#define SKIP_ENTRIES (ENTRIES_PER_SCREEN/2 - 1)
 
 #define PUT_IN_VRAM	__attribute__((section(".vram")))
 
@@ -188,6 +196,431 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst)
 	}
 }
 
+uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
+{
+	uint32_t first_cluster = dir_entry->regular_entry.cluster_nr_bottom | (dir_entry->regular_entry.cluster_nr_top << 16);
+	
+	if(first_cluster == 0)
+	{
+		return vram_cd->sd_info.root_directory_cluster;
+	}	
+	return first_cluster;
+}
+
+void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position)
+{	
+		buffer[position + 0] = cur_dir_entry->long_name_entry.name_part_one[0];
+		buffer[position + 1] = cur_dir_entry->long_name_entry.name_part_one[1];
+		buffer[position + 2] = cur_dir_entry->long_name_entry.name_part_one[2];
+		buffer[position + 3] = cur_dir_entry->long_name_entry.name_part_one[3];
+		
+	if(position != 26)
+	{
+		buffer[position + 4] = cur_dir_entry->long_name_entry.name_part_one[4];		
+		buffer[position + 5] = cur_dir_entry->long_name_entry.name_part_two[0];
+		buffer[position + 6] = cur_dir_entry->long_name_entry.name_part_two[1];
+		buffer[position + 7] = cur_dir_entry->long_name_entry.name_part_two[2];
+		buffer[position + 8] = cur_dir_entry->long_name_entry.name_part_two[3];
+		buffer[position + 9] = cur_dir_entry->long_name_entry.name_part_two[4];
+		buffer[position + 10] = cur_dir_entry->long_name_entry.name_part_two[5];		
+		buffer[position + 11] = cur_dir_entry->long_name_entry.name_part_three[0];
+		buffer[position + 12] = cur_dir_entry->long_name_entry.name_part_three[1];
+	}
+}
+
+void clear_rows(int from_row, int to_row)
+{	
+	for(int i=from_row; i<=to_row; i++)
+	{		
+		*((vu64*)0x06202000 + 4*i + 0) = 0x2020202020202020;
+		*((vu64*)0x06202000 + 4*i + 1) = 0x2020202020202020;
+		*((vu64*)0x06202000 + 4*i + 2) = 0x2020202020202020;
+		*((vu64*)0x06202000 + 4*i + 3) = 0x2020202020202020;
+	}
+}
+
+bool comp_dir_entries(const entry_names_t& dir1, const entry_names_t& dir2)
+{
+	if(dir1.is_folder != dir2.is_folder)
+	{
+		return dir1.is_folder;
+	}
+	return strcasecmp(dir1.long_name.c_str(), dir2.long_name.c_str()) < 0;
+}
+	
+inline std::string trim(const std::string& str)
+{
+	return str.substr(0,str.find_last_not_of(" ") + 1);
+}
+
+dir_entry_t get_dir_entry(uint32_t cur_dir_cluster, std::string given_short_name)
+{	
+	void* tmp_buf = (void*)0x06820000;
+	uint32_t cur_dir_sector = get_sector_from_cluster(cur_dir_cluster);
+	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	bool last_entry = false;
+	
+	while(true)
+	{
+		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);
+		for(int i = 0; i < vram_cd->sd_info.nr_sectors_per_cluster * 512 / 32; i++)
+		{
+			dir_entry_t* cur_dir_entry = &dir_entries[i];
+			
+			if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
+			{
+				//skip long name entries
+			}
+			else if((cur_dir_entry->attrib & DIR_ATTRIB_VOLUME_ID) == DIR_ATTRIB_VOLUME_ID)
+			{
+				//skip VOLUME_ID entry
+			}
+			else if(cur_dir_entry->regular_entry.record_type == 0)
+			{
+				*((vu32*)0x06202000) = 0x4E464E44; //DNFN Directory not found
+				last_entry = true;
+				break;
+			}
+			else if(cur_dir_entry->regular_entry.record_type == 0xE5)
+			{
+				//erased
+			}
+			else
+			{
+				if( cur_dir_entry->regular_entry.short_name[0] == given_short_name[0] &&
+					cur_dir_entry->regular_entry.short_name[1] == given_short_name[1] &&
+					cur_dir_entry->regular_entry.short_name[2] == given_short_name[2] &&
+					cur_dir_entry->regular_entry.short_name[3] == given_short_name[3] &&
+					cur_dir_entry->regular_entry.short_name[4] == given_short_name[4] &&
+					cur_dir_entry->regular_entry.short_name[5] == given_short_name[5] &&
+					cur_dir_entry->regular_entry.short_name[6] == given_short_name[6] &&
+					cur_dir_entry->regular_entry.short_name[7] == given_short_name[7] &&
+					cur_dir_entry->regular_entry.short_name[8] == given_short_name[8] &&
+					cur_dir_entry->regular_entry.short_name[9] == given_short_name[9] &&
+					cur_dir_entry->regular_entry.short_name[10] == given_short_name[10])
+				{
+					return *cur_dir_entry;
+				}	
+			}
+		}
+		if(last_entry) break;
+		//follow the chain
+		uint32_t next = get_cluster_fat_value_simple(cur_dir_cluster);
+		if(next >= 0x0FFFFFF8)
+		{
+			*((vu32*)0x06202000) = 0x5453414C; //LAST
+			//while(1);//last
+			break;
+		}
+		cur_dir_cluster = next;
+		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	}
+	
+	//return entry with root_dir_cluster
+	dir_entry_t not_found_dir_entry;
+	not_found_dir_entry.regular_entry.short_name[0] = 0x00;
+	not_found_dir_entry.regular_entry.cluster_nr_bottom  = 0x0000;
+	not_found_dir_entry.regular_entry.cluster_nr_top = 0x0000;
+	return not_found_dir_entry;
+}
+
+void print_folder_contents(std::vector<entry_names_t>& entries_names, int startRow)
+{
+	//print a line on second row
+	*((vu64*)0x06202000 + 4 + 0) = 0xC4C4C4C4C4C4C4C4;
+	*((vu64*)0x06202000 + 4 + 1) = 0xC4C4C4C4C4C4C4C4;
+	*((vu64*)0x06202000 + 4 + 2) = 0xC4C4C4C4C4C4C4C4;
+	*((vu64*)0x06202000 + 4 + 3) = 0xC4C4C4C4C4C4C4C4;
+	
+	clear_rows(2, 23);
+	
+	for(int i=0; i<((int)entries_names.size() - startRow) && i < ENTRIES_PER_SCREEN; i++)
+	{
+		for(int j=0; j<15 && j<entries_names.at(i + startRow).long_name.size()/2; j++)
+		{
+			*((vu16*)0x06202000 + 16 * (i+ENTRIES_START_ROW) + j + 1) = *(uint16_t*)(entries_names.at(i + startRow).long_name.c_str() + j*2);
+		}
+	}
+}
+
+void get_folder_contents(std::vector<entry_names_t>& entries_names, uint32_t cur_dir_cluster) 
+{	
+	entries_names.clear();
+
+	void* tmp_buf = (void*)0x06820000;
+	uint32_t cur_dir_sector = get_sector_from_cluster(cur_dir_cluster);
+	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+
+	bool found_long_name = false;
+	uint8_t name_buffer[31] = {0};	
+	
+	while(true)
+	{
+		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);
+		for(int i = 0; i < vram_cd->sd_info.nr_sectors_per_cluster * 512 / 32; i++)
+		{
+			dir_entry_t* cur_dir_entry = &dir_entries[i];
+			
+			if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
+			{
+				//construct name
+				if((cur_dir_entry->long_name_entry.order & ~0x40) == 3)
+				{					
+					store_long_name_part(name_buffer, cur_dir_entry, 26);
+				} 
+				else if((cur_dir_entry->long_name_entry.order & ~0x40) == 2)
+				{			
+					store_long_name_part(name_buffer, cur_dir_entry, 13);
+				} 
+				else if((cur_dir_entry->long_name_entry.order & ~0x40) == 1)
+				{		
+					store_long_name_part(name_buffer, cur_dir_entry, 0);					
+					found_long_name = true;
+				}
+			}
+			else if(cur_dir_entry->attrib & (DIR_ATTRIB_VOLUME_ID | 
+											 DIR_ATTRIB_HIDDEN | 
+											 DIR_ATTRIB_SYSTEM))
+			{
+				//skip VOLUME_ID, HIDDEN or SYSTEM entry
+				for(int j = 0; j < 15; j++)
+				{
+					*(uint16_t*)(name_buffer + j*2) = 0x2020;
+				}
+				name_buffer[30] = 0x00;
+				continue;
+			}
+			else if(cur_dir_entry->regular_entry.record_type == 0)
+			{
+				sort(entries_names.begin(), entries_names.end(), comp_dir_entries);
+				if(entries_names.front().short_name == ".          ")
+				{
+					entries_names.erase(entries_names.begin());
+				}
+				
+				for(int j = 0; j<entries_names.size(); j++ )
+				{
+					if(entries_names.at(j).is_folder)
+					{
+						entries_names.at(j).long_name.insert(0, "\\");
+						entries_names.at(j).long_name.push_back('\\');
+					}
+					
+					if(entries_names.at(j).long_name.size() & 1)
+					{						
+						entries_names.at(j).long_name.push_back(' ');
+					}
+				}
+				return;
+			}
+			else if(cur_dir_entry->regular_entry.record_type == 0xE5)
+			{
+				//erased
+			}
+			else
+			{				
+				entry_names_t file;
+				
+				if(!found_long_name)
+				{
+					for(int j = 0; j < 8; j++)
+					{
+						name_buffer[j] = cur_dir_entry->regular_entry.short_name[j];
+					}
+					name_buffer[8] = 0x00;
+					
+					file.long_name = trim(std::string((char*)name_buffer));
+					if(cur_dir_entry->regular_entry.short_name[8] != ' ')
+					{
+						file.long_name.push_back('.');
+						file.long_name.push_back(cur_dir_entry->regular_entry.short_name[8]);
+						file.long_name.push_back(cur_dir_entry->regular_entry.short_name[9]);
+						file.long_name.push_back(cur_dir_entry->regular_entry.short_name[10]);
+						file.long_name = trim(file.long_name);
+					}
+				}
+				else
+				{
+					for(int j = 0; j < 30; j++)
+					{
+						name_buffer[j] = (name_buffer[j]<0x20||name_buffer[j]==0xFF)?0x20:name_buffer[j];
+					}
+					name_buffer[30] = 0x00;
+									
+					file.long_name = trim(std::string((char*)name_buffer));
+				}
+				
+				for(int j = 0; j < 11; j++)
+				{
+					file.short_name.push_back(cur_dir_entry->regular_entry.short_name[j]);
+				}
+							
+				if((cur_dir_entry->attrib & DIR_ATTRIB_DIRECTORY) == DIR_ATTRIB_DIRECTORY)
+				{
+					file.is_folder = true;
+				}
+				else
+				{
+					file.is_folder = false;
+				}
+				
+				entries_names.push_back(file);							
+				
+				for(int j = 0; j < 15; j++)
+				{
+					*(uint16_t*)(name_buffer + j*2) = 0x2020;
+				}
+				name_buffer[30] = 0x00;
+				
+				found_long_name = false;					
+			}
+		}		
+		//follow the chain
+		uint32_t next = get_cluster_fat_value_simple(cur_dir_cluster);
+		if(next >= 0x0FFFFFF8)
+		{
+			*((vu32*)0x06202000) = 0x5453414C; //LAST
+			while(1);//last
+		}
+		cur_dir_cluster = next;
+		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	}
+}
+
+dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
+{	
+	int keys = 0;
+	int start_at_position = 0;
+	int cursor_position = 0;
+	std::vector<entry_names_t> entries_names;
+	
+	get_folder_contents(entries_names, cur_dir_cluster);
+	print_folder_contents(entries_names, start_at_position);
+	
+	while(1) {
+		//show cursor
+		*((vu16*)0x06202000 + 16*(cursor_position - start_at_position + ENTRIES_START_ROW)) = 0x1A20;
+		
+		do {
+			scanKeys();
+			keys = keysDown();//keysDownRepeat();
+		} while (!keys);
+		
+		//hide cursor
+		if(keys & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT))
+		{			
+			*((vu16*)0x06202000 + 16*(cursor_position - start_at_position + ENTRIES_START_ROW)) = 0x2020;
+		}
+
+		if(keys & KEY_UP)
+		{
+			cursor_position--;
+			if(cursor_position < 0)
+			{
+				cursor_position = entries_names.size() - 1;
+			}
+		}
+		else if(keys & KEY_DOWN)
+		{
+			cursor_position++;
+			if(cursor_position > (entries_names.size() - 1))
+			{
+				cursor_position = 0;
+			}
+		}
+		else if(keys & KEY_LEFT)
+		{
+			if((cursor_position - SKIP_ENTRIES) < 0)
+			{
+				if(cursor_position != 0)
+				{
+					cursor_position = 0;
+				}
+				else
+				{
+					cursor_position = entries_names.size() - 1;
+				}			
+			}
+			else
+			{				
+				cursor_position = cursor_position - SKIP_ENTRIES;
+			}
+		}
+		else if(keys & KEY_RIGHT)
+		{
+			if(cursor_position + SKIP_ENTRIES > (entries_names.size() - 1))
+			{
+				if(cursor_position != (entries_names.size() - 1))
+				{
+					cursor_position = entries_names.size() - 1;
+				}
+				else
+				{					
+					cursor_position = 0;
+				}
+			}
+			else
+			{				
+				cursor_position = cursor_position + SKIP_ENTRIES;
+			}
+		}		
+		else if (keys & KEY_A)
+		{
+			*((vu32*)0x06202000) = 0x44414f4c; //LOAD
+			
+			entry_names_t* file = &entries_names.at(cursor_position);
+			if(file->is_folder)
+			{
+				dir_entry_t sel_dir_entry;
+				sel_dir_entry = get_dir_entry(cur_dir_cluster, file->short_name);
+				cur_dir_cluster = get_entrys_first_cluster(&sel_dir_entry);
+				
+				start_at_position = 0;
+				cursor_position = 0;
+				get_folder_contents (entries_names, cur_dir_cluster);
+				print_folder_contents (entries_names, start_at_position);
+				*((vu32*)0x06202000) = 0x20202020;
+				continue;
+			}
+			else
+			{				
+				dir_entry_t sel_dir_entry;
+				sel_dir_entry = get_dir_entry(cur_dir_cluster, file->short_name);
+				clear_rows(2, 23);
+				return sel_dir_entry;
+			}
+		}		
+		else if(keys & KEY_B)
+		{			
+			*((vu32*)0x06202000) = 0x44414f4c; //LOAD		
+			dir_entry_t prev_dir_entry;
+			prev_dir_entry = get_dir_entry(cur_dir_cluster, "..         ");
+			if(prev_dir_entry.regular_entry.short_name[0] == 0x00)
+			{
+				*((vu32*)0x06202000) = 0x544f4f52; //DNFN Directory not found
+			}
+			cur_dir_cluster = get_entrys_first_cluster(&prev_dir_entry);
+			
+			start_at_position = 0;
+			cursor_position = 0;
+			get_folder_contents (entries_names, cur_dir_cluster);
+			print_folder_contents (entries_names, start_at_position);
+			*((vu32*)0x06202000) = 0x20202020;	
+			continue;
+		}
+		
+		if(cursor_position < start_at_position)
+		{
+			start_at_position = cursor_position;
+		}
+		else if(cursor_position > start_at_position + ENTRIES_PER_SCREEN - 1)
+		{
+			start_at_position = cursor_position - ENTRIES_PER_SCREEN + 1;
+		}
+		print_folder_contents(entries_names, start_at_position);
+	}
+}
+
 //to be called after dldi has been initialized (with the appropriate init function)
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
@@ -219,95 +652,23 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	vram_cd->sd_info.cluster_shift = 31 - __builtin_clz(bootsect->nr_sector_per_cluster * 512);
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 
-	copy_bios(bios_dst);
-
-	//we'll search for runner.gba
-	uint32_t root_dir_sector = get_sector_from_cluster(vram_cd->sd_info.root_directory_cluster);
-	read_sd_sectors_safe(root_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(root_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
-	bool name_found = false;
-	bool found = false;
-	dir_entry_t* gba_file_entry = 0;
+		
+	dir_entry_t gba_file_entry;
 	uint32_t cur_cluster = vram_cd->sd_info.root_directory_cluster;
-	*((vu32*)0x06202000) = 0x54524545;
-	while(true)
-	{
-		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);
-		for(int i = 0; i < vram_cd->sd_info.nr_sectors_per_cluster * 512 / 32; i++)
-		{
-			dir_entry_t* cur_dir_entry = &dir_entries[i];
-			if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
-			{
-				//construct name
-				if((cur_dir_entry->long_name_entry.order & ~0x40) == 1)
-				{
-					if(READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[0]) == (uint16_t)'r' &&
-						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[1]) == (uint16_t)'u' &&
-						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[2]) == (uint16_t)'n' &&
-						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[3]) == (uint16_t)'n' &&
-						READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[4]) == (uint16_t)'e' &&
-						cur_dir_entry->long_name_entry.name_part_two[0] == (uint16_t)'r' &&
-						cur_dir_entry->long_name_entry.name_part_two[1] == (uint16_t)'.' &&
-						cur_dir_entry->long_name_entry.name_part_two[2] == (uint16_t)'g' &&
-						cur_dir_entry->long_name_entry.name_part_two[3] == (uint16_t)'b' &&
-						cur_dir_entry->long_name_entry.name_part_two[4] == (uint16_t)'a')
-					{
-						name_found = true;
-					}
-				}
-			}
-			else if(cur_dir_entry->regular_entry.record_type == 0)
-			{
-				*((vu32*)0x06202000) = 0x5453414C;
-				//last entry
-				while(1);//not found
-			}
-			else if(cur_dir_entry->regular_entry.record_type == 0xE5)
-			{
-				//erased
-			}
-			else
-			{
-				if(name_found)
-				{
-					*((vu32*)0x06202000) = 0x444E4946;
-					gba_file_entry = cur_dir_entry;
-					found = true;
-					break;
-				}
-				else if(cur_dir_entry->regular_entry.short_name[0] == 'R' &&
-					cur_dir_entry->regular_entry.short_name[1] == 'U' &&
-					cur_dir_entry->regular_entry.short_name[2] == 'N' &&
-					cur_dir_entry->regular_entry.short_name[3] == 'N' &&
-					cur_dir_entry->regular_entry.short_name[4] == 'E' &&
-					cur_dir_entry->regular_entry.short_name[5] == 'R' &&
-					cur_dir_entry->regular_entry.short_name[6] == ' ' &&
-					cur_dir_entry->regular_entry.short_name[7] == ' ' &&
-					cur_dir_entry->regular_entry.short_name[8] == 'G' &&
-					cur_dir_entry->regular_entry.short_name[9] == 'B' &&
-					cur_dir_entry->regular_entry.short_name[10] == 'A')
-				{
-					*((vu32*)0x06202000) = 0x444E4946;
-					gba_file_entry = cur_dir_entry;
-					found = true;
-					break;
-				}
-			}
-		}
-		if(found) break;
-		//follow the chain
-		uint32_t next = get_cluster_fat_value_simple(cur_cluster);
-		if(next >= 0x0FFFFFF8)
-		{
-			*((vu32*)0x06202000) = 0x5453414C;
-			while(1);//last
-		}
-		cur_cluster = next;
-		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
-	}
-	vram_cd->sd_info.gba_rom_size = gba_file_entry->regular_entry.file_size;
+	
+	//cd /GBA/
+	dir_entry_t cur_dir_entry;
+	cur_dir_entry = get_dir_entry(cur_cluster, "GBA        ");
+	cur_cluster = get_entrys_first_cluster(&cur_dir_entry);
+	
+	copy_bios(bios_dst);
+		
+	gba_file_entry = get_game_first_cluster(cur_cluster);
+	
+	vram_cd->sd_info.gba_rom_size = gba_file_entry.regular_entry.file_size;
 	//build the cluster table
 	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
-	cur_cluster = gba_file_entry->regular_entry.cluster_nr_bottom | (gba_file_entry->regular_entry.cluster_nr_top << 16);
+	cur_cluster = gba_file_entry.regular_entry.cluster_nr_bottom | (gba_file_entry.regular_entry.cluster_nr_top << 16);
 	while(cur_cluster < 0x0FFFFFF8)
 	{
 		*cluster_table = cur_cluster;
@@ -317,10 +678,10 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	*cluster_table = cur_cluster;
 	//copy data to main memory
 	cluster_table = &vram_cd->gba_rom_cluster_table[0];
-	cur_cluster = *cluster_table++;//gba_file_entry->regular_entry.cluster_nr_bottom | (gba_file_entry->regular_entry.cluster_nr_top << 16);
+	cur_cluster = *cluster_table++;//gba_file_entry.regular_entry.cluster_nr_bottom | (gba_file_entry.regular_entry.cluster_nr_top << 16);
 	uint32_t data_max = 0x3B0000;
 	uint32_t data_read = 0;
-	*((vu32*)0x06202000) = 0x59504F43;
+	*((vu32*)0x06202000) = 0x59504F43; //COPY
 	while(cur_cluster < 0x0FFFFFF8 && (data_read + vram_cd->sd_info.nr_sectors_per_cluster * 512) <= data_max)
 	{
 		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(0x02040000 + data_read));//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(0x02040000 + data_read));//tmp_buf + 512);
