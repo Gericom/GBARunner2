@@ -4,6 +4,13 @@
 #define READ_U16_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8))
 #define READ_U32_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8) | (((uint8_t*)(addr))[2] << 16) | (((uint8_t*)(addr))[3] << 24))
 
+typedef struct
+{
+	std::string long_name;
+	std::string short_name;
+	bool is_folder;
+} entry_names_t;
+
 typedef uint32_t sec_t;
 
 typedef bool (* FN_MEDIUM_STARTUP)(void) ;
