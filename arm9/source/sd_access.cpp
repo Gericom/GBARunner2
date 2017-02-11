@@ -90,7 +90,7 @@ PUT_IN_VRAM void initialize_cache()
 		vram_cd->cluster_cache_info.total_nr_cacheblocks = 255;
 }
 
-uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
+PUT_IN_VRAM uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
 {
 	uint32_t first_cluster = dir_entry->regular_entry.cluster_nr_bottom | (dir_entry->regular_entry.cluster_nr_top << 16);
 	
@@ -101,7 +101,7 @@ uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
 	return first_cluster;
 }
 
-void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position)
+PUT_IN_VRAM void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position)
 {	
 		buffer[position + 0] = cur_dir_entry->long_name_entry.name_part_one[0];
 		buffer[position + 1] = cur_dir_entry->long_name_entry.name_part_one[1];
@@ -122,7 +122,7 @@ void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int posit
 	}
 }
 
-void clear_rows(int from_row, int to_row)
+PUT_IN_VRAM void clear_rows(int from_row, int to_row)
 {	
 	for(int i=from_row; i<=to_row; i++)
 	{		
@@ -133,7 +133,7 @@ void clear_rows(int from_row, int to_row)
 	}
 }
 
-bool comp_dir_entries(const entry_names_t& dir1, const entry_names_t& dir2)
+PUT_IN_VRAM bool comp_dir_entries(const entry_names_t& dir1, const entry_names_t& dir2)
 {
 	if(dir1.is_folder != dir2.is_folder)
 	{
@@ -142,12 +142,12 @@ bool comp_dir_entries(const entry_names_t& dir1, const entry_names_t& dir2)
 	return strcasecmp(dir1.long_name.c_str(), dir2.long_name.c_str()) < 0;
 }
 	
-inline std::string trim(const std::string& str)
+PUT_IN_VRAM inline std::string trim(const std::string& str)
 {
 	return str.substr(0,str.find_last_not_of(" ") + 1);
 }
 
-dir_entry_t get_dir_entry(uint32_t cur_dir_cluster, std::string given_short_name)
+PUT_IN_VRAM dir_entry_t get_dir_entry(uint32_t cur_dir_cluster, std::string given_short_name)
 {	
 	void* tmp_buf = (void*)0x06820000;
 	uint32_t cur_dir_sector = get_sector_from_cluster(cur_dir_cluster);
@@ -218,7 +218,7 @@ dir_entry_t get_dir_entry(uint32_t cur_dir_cluster, std::string given_short_name
 	return not_found_dir_entry;
 }
 
-void print_folder_contents(std::vector<entry_names_t>& entries_names, int startRow)
+PUT_IN_VRAM void print_folder_contents(std::vector<entry_names_t>& entries_names, int startRow)
 {
 	//print a line on second row
 	*((vu64*)0x06202000 + 4 + 0) = 0xC4C4C4C4C4C4C4C4;
@@ -237,7 +237,7 @@ void print_folder_contents(std::vector<entry_names_t>& entries_names, int startR
 	}
 }
 
-void get_folder_contents(std::vector<entry_names_t>& entries_names, uint32_t cur_dir_cluster) 
+PUT_IN_VRAM void get_folder_contents(std::vector<entry_names_t>& entries_names, uint32_t cur_dir_cluster) 
 {	
 	entries_names.clear();
 
@@ -381,9 +381,10 @@ void get_folder_contents(std::vector<entry_names_t>& entries_names, uint32_t cur
 	}
 }
 
-dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
+PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 {	
-	int keys = 0;
+	uint16_t keys = 0;
+	uint16_t old_keys = 0;
 	int start_at_position = 0;
 	int cursor_position = 0;
 	std::vector<entry_names_t> entries_names;
@@ -396,9 +397,9 @@ dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 		*((vu16*)0x06202000 + 16*(cursor_position - start_at_position + ENTRIES_START_ROW)) = 0x1A20;
 		
 		do {
-			scanKeys();
-			keys = keysDown();//keysDownRepeat();
-		} while (!keys);
+			old_keys = keys;
+			keys = ~*((vu16*)0x04000130);
+		} while (keys == old_keys);
 		
 		//hide cursor
 		if(keys & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT))
