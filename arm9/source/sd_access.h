@@ -200,10 +200,12 @@ typedef struct
 		};
 	};*/
 	//vram d
-	uint32_t gba_rom_cluster_table[32 * 1024 / 4];//allows roms up to 32MB
-	uint8_t arm9_transfer_region[64 * 1024];//contains data requested by the arm9
+	uint32_t gba_rom_cluster_table[32 * 1024 / 4];//allows roms up to 32MB at 4kb clusters
+	//uint8_t arm9_transfer_region[64 * 1024];//contains data requested by the arm9
 	//uint8_t dldi_region[32 * 1024];//contains the dldi code
-	uint8_t gba_rom_is_cluster_cached_table[16 * 1024];	//allows roms up to 64MB
+	//uint8_t gba_rom_is_cluster_cached_table[16 * 1024];	//allows roms up to 64MB
+	uint8_t gba_rom_is_cluster_cached_table[64 * 1024];//allows roms up to 32MB
+	uint8_t reserved2[16 * 1024];
 	union
 	{
 		uint8_t reserved[16 * 1024];//will be used for memory management of the cached clusters
