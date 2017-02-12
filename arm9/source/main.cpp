@@ -68,3 +68,6 @@ extern "C" void __libnds_exit()
 {
 	while(1);
 }
+
+extern "C" void __aeabi_unwind_cpp_pr0(){}
+extern "C" void __aeabi_unwind_cpp_pr1(){}

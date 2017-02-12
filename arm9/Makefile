@@ -25,17 +25,18 @@ DATA		:=	data
 #---------------------------------------------------------------------------------
 ARCH	:=	-marm -mthumb-interwork#-mthumb
 
-CFLAGS	:=	-g -Wall -O2 -nostdlib \
- 			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
+CFLAGS	:=	-g -Wall -O2 -nostdlib -nodefaultlibs \
+ 			-march=armv5te -mtune=arm946e-s -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-tree-loop-distribute-patterns -fno-builtin -fomit-frame-pointer\
 			-ffast-math \
-			$(ARCH)
+			$(ARCH) 
 
 CFLAGS	+=	$(INCLUDE) -DARM9
-CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fnon-call-exceptions
 
 ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s $(INCLUDE)
 
-LDFLAGS	=	-specs=../ds_arm9_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=../ds_arm9_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -nodefaultlibs
+ 
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project

@@ -1,8 +1,9 @@
 #include <nds.h>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <sd_access.h>
+#include "vector.h"
+#include "vram.h"
+#include "vramheap.h"
+#include "qsort.h"
+#include "sd_access.h"
 
 #include "consts.s"
 
@@ -12,8 +13,6 @@
 #define ENTRIES_PER_SCREEN (SCREEN_ROWS - ENTRIES_START_ROW)
 #define SKIP_ENTRIES (ENTRIES_PER_SCREEN/2 - 1)
 
-#define PUT_IN_VRAM	__attribute__((section(".vram")))
-
 extern uint8_t _io_dldi;
 
 //FN_MEDIUM_READSECTORS _DLDI_readSectors_ptr = (FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10)));
@@ -22,8 +21,6 @@ extern uint8_t _io_dldi;
 #define _DLDI_readSectors_ptr ((FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10))))
 
 #define vram_cd		((vram_cd_t*)0x06820000)
-
-extern "C" uint16_t *arm9_memcpy16(uint16_t *_dst, uint16_t *_src, size_t _count);
 
 ITCM_CODE __attribute__ ((noinline)) static void MI_WriteByte(void *address, uint8_t value)
 {
@@ -39,12 +36,26 @@ ITCM_CODE __attribute__ ((noinline)) static void MI_WriteByte(void *address, uin
     }
 }
 
+PUT_IN_VRAM int strlen( char* str )
+{
+    char* ptr = str;
+    while ( *ptr != '\0' )
+        ++ptr;
+    return ptr - str;
+}
+
+PUT_IN_VRAM int strcmp(const char* one,const char* another )
+{
+    for ( ; *one == *another; ++one, ++another )
+        if ( *one == '\0' )
+            return 0;
+    return *one - *another;
+}
+
 //extern "C" bool read_sd_sectors_safe(sec_t sector, sec_t numSectors, void* buffer);
 
 //after all it seems like that irq thing is not needed
 #define read_sd_sectors_safe	_DLDI_readSectors_ptr
-
-//sd_info_t gSDInfo;
 
 //simple means without any caching and therefore slow, but that doesn't matter for the functions that use this
 PUT_IN_VRAM static uint32_t get_cluster_fat_value_simple(uint32_t cluster)
@@ -82,9 +93,6 @@ PUT_IN_VRAM void initialize_cache()
 	{
 		((uint32_t*)&vram_cd->cluster_cache_info)[i] = 0;
 	}
-	//memset(&vram_cd->cluster_cache, 0, sizeof(vram_cd->cluster_cache));
-	//memset(&vram_cd->gba_rom_is_cluster_cached_table, 0xFF, sizeof(vram_cd->gba_rom_is_cluster_cached_table));
-	//memset(&vram_cd->cluster_cache_info, 0, sizeof(vram_cd->cluster_cache_info));
 	vram_cd->cluster_cache_info.total_nr_cacheblocks = sizeof(vram_cd->cluster_cache) >> vram_cd->sd_info.cluster_shift;
 	if(vram_cd->cluster_cache_info.total_nr_cacheblocks >= 256)
 		vram_cd->cluster_cache_info.total_nr_cacheblocks = 255;
@@ -103,14 +111,14 @@ PUT_IN_VRAM uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
 
 PUT_IN_VRAM void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position)
 {	
-		buffer[position + 0] = cur_dir_entry->long_name_entry.name_part_one[0];
-		buffer[position + 1] = cur_dir_entry->long_name_entry.name_part_one[1];
-		buffer[position + 2] = cur_dir_entry->long_name_entry.name_part_one[2];
-		buffer[position + 3] = cur_dir_entry->long_name_entry.name_part_one[3];
+		buffer[position + 0] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[0]);
+		buffer[position + 1] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[1]);
+		buffer[position + 2] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[2]);
+		buffer[position + 3] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[3]);
 		
 	if(position != 26)
 	{
-		buffer[position + 4] = cur_dir_entry->long_name_entry.name_part_one[4];		
+		buffer[position + 4] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[4]);		
 		buffer[position + 5] = cur_dir_entry->long_name_entry.name_part_two[0];
 		buffer[position + 6] = cur_dir_entry->long_name_entry.name_part_two[1];
 		buffer[position + 7] = cur_dir_entry->long_name_entry.name_part_two[2];
@@ -133,25 +141,24 @@ PUT_IN_VRAM void clear_rows(int from_row, int to_row)
 	}
 }
 
-PUT_IN_VRAM bool comp_dir_entries(const entry_names_t& dir1, const entry_names_t& dir2)
+PUT_IN_VRAM int comp_dir_entries(const entry_names_t* &dir1, const entry_names_t* &dir2)
 {
-	if(dir1.is_folder != dir2.is_folder)
+	if(dir1->is_folder && !dir2->is_folder)
 	{
-		return dir1.is_folder;
+		return -1;
 	}
-	return strcasecmp(dir1.long_name.c_str(), dir2.long_name.c_str()) < 0;
-}
-	
-PUT_IN_VRAM inline std::string trim(const std::string& str)
-{
-	return str.substr(0,str.find_last_not_of(" ") + 1);
+	if(!dir1->is_folder && dir2->is_folder)
+	{
+		return 1;
+	}
+	return strcmp(dir1->long_name, dir2->long_name);
 }
 
-PUT_IN_VRAM dir_entry_t get_dir_entry(uint32_t cur_dir_cluster, std::string given_short_name)
+PUT_IN_VRAM void get_dir_entry(uint32_t cur_dir_cluster, const char* given_short_name, dir_entry_t* result)
 {	
 	void* tmp_buf = (void*)0x06820000;
 	uint32_t cur_dir_sector = get_sector_from_cluster(cur_dir_cluster);
-	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	bool last_entry = false;
 	
 	while(true)
@@ -193,7 +200,8 @@ PUT_IN_VRAM dir_entry_t get_dir_entry(uint32_t cur_dir_cluster, std::string give
 					cur_dir_entry->regular_entry.short_name[9] == given_short_name[9] &&
 					cur_dir_entry->regular_entry.short_name[10] == given_short_name[10])
 				{
-					return *cur_dir_entry;
+					arm9_memcpy16((uint16_t*)result, (uint16_t*)cur_dir_entry, sizeof(dir_entry_t) / 2);
+					return;
 				}	
 			}
 		}
@@ -207,18 +215,16 @@ PUT_IN_VRAM dir_entry_t get_dir_entry(uint32_t cur_dir_cluster, std::string give
 			break;
 		}
 		cur_dir_cluster = next;
-		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	}
 	
 	//return entry with root_dir_cluster
-	dir_entry_t not_found_dir_entry;
-	not_found_dir_entry.regular_entry.short_name[0] = 0x00;
-	not_found_dir_entry.regular_entry.cluster_nr_bottom  = 0x0000;
-	not_found_dir_entry.regular_entry.cluster_nr_top = 0x0000;
-	return not_found_dir_entry;
+	result->regular_entry.short_name[0] = 0x00;
+	result->regular_entry.cluster_nr_bottom  = 0x0000;
+	result->regular_entry.cluster_nr_top = 0x0000;
 }
 
-PUT_IN_VRAM void print_folder_contents(std::vector<entry_names_t>& entries_names, int startRow)
+PUT_IN_VRAM void print_folder_contents(/*std::vector<entry_names_t>*/vector& entries_names, int startRow)
 {
 	//print a line on second row
 	*((vu64*)0x06202000 + 4 + 0) = 0xC4C4C4C4C4C4C4C4;
@@ -228,22 +234,25 @@ PUT_IN_VRAM void print_folder_contents(std::vector<entry_names_t>& entries_names
 	
 	clear_rows(2, 23);
 	
-	for(int i=0; i<((int)entries_names.size() - startRow) && i < ENTRIES_PER_SCREEN; i++)
+	for(int i=0; i<(vector_count(&entries_names) - startRow) && i < ENTRIES_PER_SCREEN; i++)
 	{
-		for(int j=0; j<15 && j<entries_names.at(i + startRow).long_name.size()/2; j++)
+		int len = strlen(((entry_names_t*)entries_names[i + startRow])->long_name);
+		for(int j=0; j<15 && j<len/2; j++)
 		{
-			*((vu16*)0x06202000 + 16 * (i+ENTRIES_START_ROW) + j + 1) = *(uint16_t*)(entries_names.at(i + startRow).long_name.c_str() + j*2);
+			*((vu16*)0x06202000 + 16 * (i+ENTRIES_START_ROW) + j + 1) = *(uint16_t*)(((entry_names_t*)entries_names[i + startRow])->long_name + j*2);
 		}
 	}
 }
 
-PUT_IN_VRAM void get_folder_contents(std::vector<entry_names_t>& entries_names, uint32_t cur_dir_cluster) 
+PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_cluster) 
 {	
-	entries_names.clear();
+	for(int i = 0; i < vector_count(&entries_names); i++)
+		vramheap_free(entries_names[i]);
+	vector_free(&entries_names);
 
 	void* tmp_buf = (void*)0x06820000;
 	uint32_t cur_dir_sector = get_sector_from_cluster(cur_dir_cluster);
-	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 
 	bool found_long_name = false;
 	uint8_t name_buffer[31] = {0};	
@@ -286,23 +295,32 @@ PUT_IN_VRAM void get_folder_contents(std::vector<entry_names_t>& entries_names, 
 			}
 			else if(cur_dir_entry->regular_entry.record_type == 0)
 			{
-				sort(entries_names.begin(), entries_names.end(), comp_dir_entries);
-				if(entries_names.front().short_name == ".          ")
+				qsort(entries_names.data, entries_names.count, sizeof(entry_names_t*), (int (*)(const void*, const void*))comp_dir_entries);
+
+				if(!strcmp(((entry_names_t*)entries_names[0])->short_name, ".          "))
 				{
-					entries_names.erase(entries_names.begin());
+					vramheap_free(entries_names[0]);
+					vector_delete(&entries_names, 0);
 				}
 				
-				for(int j = 0; j<entries_names.size(); j++ )
+				for(int j = 0; j<vector_count(&entries_names); j++ )
 				{
-					if(entries_names.at(j).is_folder)
+					if(((entry_names_t*)entries_names[j])->is_folder)
 					{
-						entries_names.at(j).long_name.insert(0, "\\");
-						entries_names.at(j).long_name.push_back('\\');
+						int len = strlen(((entry_names_t*)entries_names[j])->long_name);
+						for(int i = len - 1; i >= 0; i--)
+						{
+							MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[i + 1], ((entry_names_t*)entries_names[j])->long_name[i]);
+						}
+						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[0], '\\');
+						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\\');
+						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 2], '\0');
 					}
-					
-					if(entries_names.at(j).long_name.size() & 1)
-					{						
-						entries_names.at(j).long_name.push_back(' ');
+					int len = strlen(((entry_names_t*)entries_names[j])->long_name);
+					if(len & 1)
+					{
+						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len], ' ');
+						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\0');
 					}
 				}
 				return;
@@ -313,25 +331,39 @@ PUT_IN_VRAM void get_folder_contents(std::vector<entry_names_t>& entries_names, 
 			}
 			else
 			{				
-				entry_names_t file;
+				entry_names_t* file = (entry_names_t*)vramheap_alloc(sizeof(entry_names_t));
 				
 				if(!found_long_name)
 				{
+					int len = 0;
 					for(int j = 0; j < 8; j++)
 					{
 						name_buffer[j] = cur_dir_entry->regular_entry.short_name[j];
+						if(name_buffer[j] != ' ')
+							len = j + 1;
 					}
-					name_buffer[8] = 0x00;
-					
-					file.long_name = trim(std::string((char*)name_buffer));
 					if(cur_dir_entry->regular_entry.short_name[8] != ' ')
 					{
-						file.long_name.push_back('.');
-						file.long_name.push_back(cur_dir_entry->regular_entry.short_name[8]);
-						file.long_name.push_back(cur_dir_entry->regular_entry.short_name[9]);
-						file.long_name.push_back(cur_dir_entry->regular_entry.short_name[10]);
-						file.long_name = trim(file.long_name);
+						name_buffer[len++] = '.';
+						for(int j = 0; j < 3; j++)
+						{
+							if(cur_dir_entry->regular_entry.short_name[8 + j] == ' ')
+								break;
+							name_buffer[len++] = cur_dir_entry->regular_entry.short_name[8 + j];
+						}
 					}
+					name_buffer[len] = 0x00;
+					len = 0;
+					for(int i = 0; i < 30 / 2; i++)
+					{
+						((uint16_t*)file->long_name)[i] = ((uint16_t*)name_buffer)[i];
+					}
+					for(int i = 0; i < 30; i++)
+					{
+						if(name_buffer[i] != ' ')
+							len = i + 1;
+					}
+					MI_WriteByte(&file->long_name[len], 0);
 				}
 				else
 				{
@@ -340,25 +372,36 @@ PUT_IN_VRAM void get_folder_contents(std::vector<entry_names_t>& entries_names, 
 						name_buffer[j] = (name_buffer[j]<0x20||name_buffer[j]==0xFF)?0x20:name_buffer[j];
 					}
 					name_buffer[30] = 0x00;
-									
-					file.long_name = trim(std::string((char*)name_buffer));
+							
+					int len = 0;
+					for(int i = 0; i < 30 / 2; i++)
+					{
+						((uint16_t*)file->long_name)[i] = ((uint16_t*)name_buffer)[i];
+					}
+					for(int i = 0; i < 30; i++)
+					{
+						if(name_buffer[i] != ' ')
+							len = i + 1;
+					}
+					MI_WriteByte(&file->long_name[len], 0);
 				}
 				
-				for(int j = 0; j < 11; j++)
+				for(int j = 0; j < 10 / 2; j++)
 				{
-					file.short_name.push_back(cur_dir_entry->regular_entry.short_name[j]);
+					((uint16_t*)file->short_name)[j] = ((uint16_t*)cur_dir_entry->regular_entry.short_name)[j];
 				}
+				((uint16_t*)file->short_name)[5] = cur_dir_entry->regular_entry.short_name[10];
 							
 				if((cur_dir_entry->attrib & DIR_ATTRIB_DIRECTORY) == DIR_ATTRIB_DIRECTORY)
 				{
-					file.is_folder = true;
+					file->is_folder = true;
 				}
 				else
 				{
-					file.is_folder = false;
+					file->is_folder = false;
 				}
 				
-				entries_names.push_back(file);							
+				vector_add(&entries_names, file);
 				
 				for(int j = 0; j < 15; j++)
 				{
@@ -377,17 +420,18 @@ PUT_IN_VRAM void get_folder_contents(std::vector<entry_names_t>& entries_names, 
 			while(1);//last
 		}
 		cur_dir_cluster = next;
-		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	}
 }
 
-PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
+PUT_IN_VRAM void get_game_first_cluster(uint32_t cur_dir_cluster, dir_entry_t* result)
 {	
 	uint16_t keys = 0;
 	uint16_t old_keys = 0;
 	int start_at_position = 0;
 	int cursor_position = 0;
-	std::vector<entry_names_t> entries_names;
+	vector entries_names;
+	vector_init(&entries_names);
 	
 	get_folder_contents(entries_names, cur_dir_cluster);
 	print_folder_contents(entries_names, start_at_position);
@@ -412,13 +456,13 @@ PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 			cursor_position--;
 			if(cursor_position < 0)
 			{
-				cursor_position = entries_names.size() - 1;
+				cursor_position = vector_count(&entries_names) - 1;
 			}
 		}
 		else if(keys & KEY_DOWN)
 		{
 			cursor_position++;
-			if(cursor_position > (entries_names.size() - 1))
+			if(cursor_position > (vector_count(&entries_names) - 1))
 			{
 				cursor_position = 0;
 			}
@@ -433,7 +477,7 @@ PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 				}
 				else
 				{
-					cursor_position = entries_names.size() - 1;
+					cursor_position = vector_count(&entries_names) - 1;
 				}			
 			}
 			else
@@ -443,11 +487,11 @@ PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 		}
 		else if(keys & KEY_RIGHT)
 		{
-			if(cursor_position + SKIP_ENTRIES > (entries_names.size() - 1))
+			if(cursor_position + SKIP_ENTRIES > (vector_count(&entries_names) - 1))
 			{
-				if(cursor_position != (entries_names.size() - 1))
+				if(cursor_position != (vector_count(&entries_names) - 1))
 				{
-					cursor_position = entries_names.size() - 1;
+					cursor_position = vector_count(&entries_names) - 1;
 				}
 				else
 				{					
@@ -463,11 +507,11 @@ PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 		{
 			*((vu32*)0x06202000) = 0x44414f4c; //LOAD
 			
-			entry_names_t* file = &entries_names.at(cursor_position);
+			entry_names_t* file = (entry_names_t*)entries_names[cursor_position];
 			if(file->is_folder)
 			{
 				dir_entry_t sel_dir_entry;
-				sel_dir_entry = get_dir_entry(cur_dir_cluster, file->short_name);
+				get_dir_entry(cur_dir_cluster, file->short_name, &sel_dir_entry);
 				cur_dir_cluster = get_entrys_first_cluster(&sel_dir_entry);
 				
 				start_at_position = 0;
@@ -480,16 +524,17 @@ PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 			else
 			{				
 				dir_entry_t sel_dir_entry;
-				sel_dir_entry = get_dir_entry(cur_dir_cluster, file->short_name);
+				get_dir_entry(cur_dir_cluster, file->short_name, &sel_dir_entry);
 				clear_rows(2, 23);
-				return sel_dir_entry;
+				arm9_memcpy16((uint16_t*)result, (uint16_t*)&sel_dir_entry, sizeof(dir_entry_t) / 2);
+				return;
 			}
 		}		
 		else if(keys & KEY_B)
 		{			
 			*((vu32*)0x06202000) = 0x44414f4c; //LOAD		
 			dir_entry_t prev_dir_entry;
-			prev_dir_entry = get_dir_entry(cur_dir_cluster, "..         ");
+			get_dir_entry(cur_dir_cluster, "..         ", &prev_dir_entry);
 			if(prev_dir_entry.regular_entry.short_name[0] == 0x00)
 			{
 				*((vu32*)0x06202000) = 0x544f4f52; //DNFN Directory not found
@@ -503,7 +548,7 @@ PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 			*((vu32*)0x06202000) = 0x20202020;	
 			continue;
 		}
-		
+
 		if(cursor_position < start_at_position)
 		{
 			start_at_position = cursor_position;
@@ -519,13 +564,13 @@ PUT_IN_VRAM dir_entry_t get_game_first_cluster(uint32_t cur_dir_cluster)
 PUT_IN_VRAM void copy_bios(uint8_t* bios_dst, uint32_t cur_cluster)
 {	
 	dir_entry_t bios_dir_entry;
-	bios_dir_entry = get_dir_entry(cur_cluster, "BIOS    BIN");
+	get_dir_entry(cur_cluster, "BIOS    BIN", &bios_dir_entry);
 	cur_cluster = get_entrys_first_cluster(&bios_dir_entry);
 	
 	if(bios_dir_entry.regular_entry.short_name[0] == 0x00)
 	{
 		//look for bios in root
-		bios_dir_entry = get_dir_entry(cur_cluster, "BIOS    BIN");
+		get_dir_entry(cur_cluster, "BIOS    BIN", &bios_dir_entry);
 		cur_cluster = get_entrys_first_cluster(&bios_dir_entry);
 		
 		if(bios_dir_entry.regular_entry.short_name[0] == 0x00)
@@ -562,8 +607,9 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst, uint32_t cur_cluster)
 //to be called after dldi has been initialized (with the appropriate init function)
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
+	vramheap_init();
 	void* tmp_buf = (void*)0x06820000;//vram block d, mapped to the arm 7
-	read_sd_sectors_safe(0, 1, tmp_buf);//_DLDI_readSectors_ptr(0, 1, tmp_buf);//read mbr
+	read_sd_sectors_safe(0, 1, tmp_buf);//read mbr
 	mbr_t* mbr = (mbr_t*)tmp_buf;
 	if(mbr->signature != 0xAA55)
 	{
@@ -578,7 +624,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 			while(1);
 		}
 		boot_sect = mbr->partitions[0].lba_partition_start;
-		read_sd_sectors_safe(boot_sect, 1, tmp_buf);//_DLDI_readSectors_ptr(boot_sect, 1, tmp_buf);//read boot sector
+		read_sd_sectors_safe(boot_sect, 1, tmp_buf);//read boot sector
 	}
 	bootsect_t* bootsect = (bootsect_t*)tmp_buf;
 	//we need to calculate some stuff and save that for later use
@@ -596,13 +642,13 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	
 	//cd /GBA/
 	dir_entry_t cur_dir_entry;
-	cur_dir_entry = get_dir_entry(cur_cluster, "GBA        ");
+	get_dir_entry(cur_cluster, "GBA        ", &cur_dir_entry);
 	cur_cluster = get_entrys_first_cluster(&cur_dir_entry);
 	
 	copy_bios(bios_dst, cur_cluster);
+				
+	get_game_first_cluster(cur_cluster, &gba_file_entry);
 		
-	gba_file_entry = get_game_first_cluster(cur_cluster);
-	
 	vram_cd->sd_info.gba_rom_size = gba_file_entry.regular_entry.file_size;
 	//build the cluster table
 	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];

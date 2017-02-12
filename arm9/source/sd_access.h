@@ -6,9 +6,11 @@
 
 typedef struct
 {
-	std::string long_name;
-	std::string short_name;
-	bool is_folder;
+	//std::string long_name;
+	char long_name[31];
+	//std::string short_name;
+	char short_name[12] __attribute__ ((aligned (4)));
+	int is_folder;
 } entry_names_t;
 
 typedef uint32_t sec_t;
@@ -223,5 +225,7 @@ typedef struct
 } vram_cd_t;
 
 //extern sd_info_t gSDInfo;
+
+extern "C" uint16_t *arm9_memcpy16(uint16_t *_dst, uint16_t *_src, size_t _count);
 
 #endif
