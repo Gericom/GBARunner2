@@ -255,7 +255,9 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 
 	bool found_long_name = false;
-	uint8_t name_buffer[31] = {0};	
+	uint8_t name_buffer[31];
+	for(int i = 0; i < 31; i++)
+		name_buffer[i] = 0;
 	
 	while(true)
 	{
