@@ -6,9 +6,7 @@
 
 typedef struct
 {
-	//std::string long_name;
-	char long_name[31];
-	//std::string short_name;
+	char long_name[33];
 	char short_name[12] __attribute__ ((aligned (4)));
 	int is_folder;
 } entry_names_t;
