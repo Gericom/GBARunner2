@@ -338,7 +338,7 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 				//erased
 			}
 			else
-			{				
+			{
 				entry_names_t* file = (entry_names_t*)vramheap_alloc(sizeof(entry_names_t));				
 				int len = 0;
 				
@@ -388,7 +388,9 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 					file->is_folder = false;
 				}
 				
-				vector_add(&entries_names, file);
+				if(file->is_folder || !strcmp(file->short_name + 8, "GBA"))
+					vector_add(&entries_names, file);
+				
 				
 				for(int j = 0; j < 16; j++)
 				{
