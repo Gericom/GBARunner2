@@ -44,6 +44,19 @@ PUT_IN_VRAM int strlen( char* str )
     return ptr - str;
 }
 
+PUT_IN_VRAM inline int to_lower(const char* c)
+{
+	return (*c >= 'A' && *c <= 'Z')?(*c +'a'-'A'):*c;
+}
+
+PUT_IN_VRAM int strcasecmp(const char* one,const char* another )
+{
+    for ( ; to_lower(one) == to_lower(another); ++one, ++another )
+        if ( *one == '\0' )
+            return 0;
+    return to_lower(one) - to_lower(another);
+}
+
 PUT_IN_VRAM int strcmp(const char* one,const char* another )
 {
     for ( ; *one == *another; ++one, ++another )
@@ -111,14 +124,14 @@ PUT_IN_VRAM uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
 
 PUT_IN_VRAM void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position)
 {	
-		buffer[position + 0] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[0]);
-		buffer[position + 1] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[1]);
-		buffer[position + 2] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[2]);
-		buffer[position + 3] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[3]);
+	buffer[position + 0] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[0]);
+	buffer[position + 1] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[1]);
+	buffer[position + 2] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[2]);
+	buffer[position + 3] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[3]);
+	buffer[position + 4] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[4]);
 		
-	if(position != 26)
+	if(position < 26)
 	{
-		buffer[position + 4] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[4]);		
 		buffer[position + 5] = cur_dir_entry->long_name_entry.name_part_two[0];
 		buffer[position + 6] = cur_dir_entry->long_name_entry.name_part_two[1];
 		buffer[position + 7] = cur_dir_entry->long_name_entry.name_part_two[2];
@@ -151,7 +164,7 @@ PUT_IN_VRAM int comp_dir_entries(const entry_names_t* &dir1, const entry_names_t
 	{
 		return 1;
 	}
-	return strcmp(dir1->long_name, dir2->long_name);
+	return strcasecmp(dir1->long_name, dir2->long_name);
 }
 
 PUT_IN_VRAM void get_dir_entry(uint32_t cur_dir_cluster, const char* given_short_name, dir_entry_t* result)
@@ -237,9 +250,12 @@ PUT_IN_VRAM void print_folder_contents(/*std::vector<entry_names_t>*/vector& ent
 	for(int i=0; i<(vector_count(&entries_names) - startRow) && i < ENTRIES_PER_SCREEN; i++)
 	{
 		int len = strlen(((entry_names_t*)entries_names[i + startRow])->long_name);
-		for(int j=0; j<15 && j<len/2; j++)
+			
+		MI_WriteByte((void*)0x06202000 + 32 * (i+ENTRIES_START_ROW) + 1, ((entry_names_t*)entries_names[i + startRow])->long_name[0]);
+		
+		for(int j=0; j<31 && j<len; j++)
 		{
-			*((vu16*)0x06202000 + 16 * (i+ENTRIES_START_ROW) + j + 1) = *(uint16_t*)(((entry_names_t*)entries_names[i + startRow])->long_name + j*2);
+			MI_WriteByte((void*)0x06202000 + 32 * (i+ENTRIES_START_ROW) + j + 1, ((entry_names_t*)entries_names[i + startRow])->long_name[j]);
 		}
 	}
 }
@@ -255,8 +271,8 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 
 	bool found_long_name = false;
-	uint8_t name_buffer[31];
-	for(int i = 0; i < 31; i++)
+	uint8_t name_buffer[32];
+	for(int i = 0; i < 32; i++)
 		name_buffer[i] = 0;
 	
 	while(true)
@@ -268,19 +284,15 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 			
 			if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
 			{
-				//construct name
-				if((cur_dir_entry->long_name_entry.order & ~0x40) == 3)
+				//construct name				
+				int name_part_order = cur_dir_entry->long_name_entry.order & ~0x40;
+				if(name_part_order > 0 && name_part_order < 4)
 				{					
-					store_long_name_part(name_buffer, cur_dir_entry, 26);
-				} 
-				else if((cur_dir_entry->long_name_entry.order & ~0x40) == 2)
-				{			
-					store_long_name_part(name_buffer, cur_dir_entry, 13);
-				} 
-				else if((cur_dir_entry->long_name_entry.order & ~0x40) == 1)
-				{		
-					store_long_name_part(name_buffer, cur_dir_entry, 0);					
-					found_long_name = true;
+					store_long_name_part(name_buffer, cur_dir_entry, (name_part_order - 1) * 13);
+					if(name_part_order == 1)
+					{
+						found_long_name = true;
+					}
 				}
 			}
 			else if(cur_dir_entry->attrib & (DIR_ATTRIB_VOLUME_ID | 
@@ -288,11 +300,10 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 											 DIR_ATTRIB_SYSTEM))
 			{
 				//skip VOLUME_ID, HIDDEN or SYSTEM entry
-				for(int j = 0; j < 15; j++)
+				for(int j = 0; j < 16; j++)
 				{
 					*(uint16_t*)(name_buffer + j*2) = 0x2020;
 				}
-				name_buffer[30] = 0x00;
 				continue;
 			}
 			else if(cur_dir_entry->regular_entry.record_type == 0)
@@ -304,12 +315,12 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 				//erased
 			}
 			else
-			{				
-				entry_names_t* file = (entry_names_t*)vramheap_alloc(sizeof(entry_names_t));
+			{
+				entry_names_t* file = (entry_names_t*)vramheap_alloc(sizeof(entry_names_t));				
+				int len = 0;
 				
 				if(!found_long_name)
 				{
-					int len = 0;
 					for(int j = 0; j < 8; j++)
 					{
 						name_buffer[j] = cur_dir_entry->regular_entry.short_name[j];
@@ -326,39 +337,18 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 							name_buffer[len++] = cur_dir_entry->regular_entry.short_name[8 + j];
 						}
 					}
-					name_buffer[len] = 0x00;
-					len = 0;
-					for(int i = 0; i < 30 / 2; i++)
-					{
-						((uint16_t*)file->long_name)[i] = ((uint16_t*)name_buffer)[i];
-					}
-					for(int i = 0; i < 30; i++)
-					{
-						if(name_buffer[i] != ' ')
-							len = i + 1;
-					}
-					MI_WriteByte(&file->long_name[len], 0);
 				}
-				else
+				len = 0;
+				for(int i = 0; i < 32 / 2; i++)
 				{
-					for(int j = 0; j < 30; j++)
-					{
-						name_buffer[j] = (name_buffer[j]<0x20||name_buffer[j]==0xFF)?0x20:name_buffer[j];
-					}
-					name_buffer[30] = 0x00;
-							
-					int len = 0;
-					for(int i = 0; i < 30 / 2; i++)
-					{
-						((uint16_t*)file->long_name)[i] = ((uint16_t*)name_buffer)[i];
-					}
-					for(int i = 0; i < 30; i++)
-					{
-						if(name_buffer[i] != ' ')
-							len = i + 1;
-					}
-					MI_WriteByte(&file->long_name[len], 0);
+					((uint16_t*)file->long_name)[i] = ((uint16_t*)name_buffer)[i];
 				}
+				for(int i = 0; i < 31; i++)
+				{
+					if(name_buffer[i] != ' ')
+						len = i + 1;
+				}
+				MI_WriteByte(&file->long_name[len], 0);
 				
 				for(int j = 0; j < 10 / 2; j++)
 				{
@@ -375,13 +365,14 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 					file->is_folder = false;
 				}
 				
-				vector_add(&entries_names, file);
+				if(file->is_folder || !strcmp(file->short_name + 8, "GBA"))
+					vector_add(&entries_names, file);
 				
-				for(int j = 0; j < 15; j++)
+				
+				for(int j = 0; j < 16; j++)
 				{
 					*(uint16_t*)(name_buffer + j*2) = 0x2020;
 				}
-				name_buffer[30] = 0x00;
 				
 				found_long_name = false;					
 			}
@@ -397,34 +388,29 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 		cur_dir_cluster = next;
 		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	}
-	qsort(entries_names.data, entries_names.count, sizeof(entry_names_t*), (int (*)(const void*, const void*))comp_dir_entries);
+  qsort(entries_names.data, entries_names.count, sizeof(entry_names_t*), (int (*)(const void*, const void*))comp_dir_entries);
 
-	if(!strcmp(((entry_names_t*)entries_names[0])->short_name, ".          "))
-	{
-		vramheap_free(entries_names[0]);
-		vector_delete(&entries_names, 0);
-	}
-				
-	for(int j = 0; j<vector_count(&entries_names); j++ )
-	{
-		if(((entry_names_t*)entries_names[j])->is_folder)
-		{
-			int len = strlen(((entry_names_t*)entries_names[j])->long_name);
-			for(int i = len - 1; i >= 0; i--)
-			{
-				MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[i + 1], ((entry_names_t*)entries_names[j])->long_name[i]);
-			}
-			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[0], '\\');
-			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\\');
-			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 2], '\0');
-		}
-		int len = strlen(((entry_names_t*)entries_names[j])->long_name);
-		if(len & 1)
-		{
-			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len], ' ');
-			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\0');
-		}
-	}
+  if(!strcmp(((entry_names_t*)entries_names[0])->short_name, ".          "))
+  {
+    vramheap_free(entries_names[0]);
+    vector_delete(&entries_names, 0);
+  }
+
+  for(int j = 0; j<vector_count(&entries_names); j++ )
+  {
+    if(((entry_names_t*)entries_names[j])->is_folder)
+    {
+      int len = strlen(((entry_names_t*)entries_names[j])->long_name);
+      for(int i = len - 1; i >= 0; i--)
+      {
+        MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[i + 1], ((entry_names_t*)entries_names[j])->long_name[i]);
+      }
+      MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[0], '\\');
+      MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\\');
+      MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 2], '\0');
+    }
+    int len = strlen(((entry_names_t*)entries_names[j])->long_name);
+  }
 }
 
 PUT_IN_VRAM void get_game_first_cluster(uint32_t cur_dir_cluster, dir_entry_t* result)
@@ -441,7 +427,7 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t cur_dir_cluster, dir_entry_t* r
 	
 	while(1) {
 		//show cursor
-		*((vu16*)0x06202000 + 16*(cursor_position - start_at_position + ENTRIES_START_ROW)) = 0x1A20;
+		MI_WriteByte((void*)0x06202000 + 32*(cursor_position - start_at_position + ENTRIES_START_ROW), 0x1A);
 		
 		do {
 			old_keys = keys;
@@ -450,8 +436,8 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t cur_dir_cluster, dir_entry_t* r
 		
 		//hide cursor
 		if(keys & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT))
-		{			
-			*((vu16*)0x06202000 + 16*(cursor_position - start_at_position + ENTRIES_START_ROW)) = 0x2020;
+		{
+			MI_WriteByte((void*)0x06202000 + 32*(cursor_position - start_at_position + ENTRIES_START_ROW), ' ');
 		}
 
 		if(keys & KEY_UP)
@@ -559,6 +545,10 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t cur_dir_cluster, dir_entry_t* r
 		else if(cursor_position > start_at_position + ENTRIES_PER_SCREEN - 1)
 		{
 			start_at_position = cursor_position - ENTRIES_PER_SCREEN + 1;
+		}
+		else
+		{
+			continue;
 		}
 		print_folder_contents(entries_names, start_at_position);
 	}
