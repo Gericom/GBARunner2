@@ -4,5 +4,5 @@
 %(old_link) -T ../ds_arm7_gbarunner.ld%s
 
 *startfile:
-ds_arm7_crt0%O%s crti%O%s crtbegin%O%s
+../crt0/ds_gbarunner_arm7_crt0%O%s crti%O%s crtbegin%O%s
 
