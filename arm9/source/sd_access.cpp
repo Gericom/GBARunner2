@@ -297,35 +297,7 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 			}
 			else if(cur_dir_entry->regular_entry.record_type == 0)
 			{
-				qsort(entries_names.data, entries_names.count, sizeof(entry_names_t*), (int (*)(const void*, const void*))comp_dir_entries);
-
-				if(!strcmp(((entry_names_t*)entries_names[0])->short_name, ".          "))
-				{
-					vramheap_free(entries_names[0]);
-					vector_delete(&entries_names, 0);
-				}
-				
-				for(int j = 0; j<vector_count(&entries_names); j++ )
-				{
-					if(((entry_names_t*)entries_names[j])->is_folder)
-					{
-						int len = strlen(((entry_names_t*)entries_names[j])->long_name);
-						for(int i = len - 1; i >= 0; i--)
-						{
-							MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[i + 1], ((entry_names_t*)entries_names[j])->long_name[i]);
-						}
-						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[0], '\\');
-						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\\');
-						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 2], '\0');
-					}
-					int len = strlen(((entry_names_t*)entries_names[j])->long_name);
-					if(len & 1)
-					{
-						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len], ' ');
-						MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\0');
-					}
-				}
-				return;
+				break;
 			}
 			else if(cur_dir_entry->regular_entry.record_type == 0xE5)
 			{
@@ -419,10 +391,39 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 		if(next >= 0x0FFFFFF8)
 		{
 			*((vu32*)0x06202000) = 0x5453414C; //LAST
+			break;
 			while(1);//last
 		}
 		cur_dir_cluster = next;
 		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
+	}
+	qsort(entries_names.data, entries_names.count, sizeof(entry_names_t*), (int (*)(const void*, const void*))comp_dir_entries);
+
+	if(!strcmp(((entry_names_t*)entries_names[0])->short_name, ".          "))
+	{
+		vramheap_free(entries_names[0]);
+		vector_delete(&entries_names, 0);
+	}
+				
+	for(int j = 0; j<vector_count(&entries_names); j++ )
+	{
+		if(((entry_names_t*)entries_names[j])->is_folder)
+		{
+			int len = strlen(((entry_names_t*)entries_names[j])->long_name);
+			for(int i = len - 1; i >= 0; i--)
+			{
+				MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[i + 1], ((entry_names_t*)entries_names[j])->long_name[i]);
+			}
+			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[0], '\\');
+			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\\');
+			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 2], '\0');
+		}
+		int len = strlen(((entry_names_t*)entries_names[j])->long_name);
+		if(len & 1)
+		{
+			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len], ' ');
+			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\0');
+		}
 	}
 }
 
