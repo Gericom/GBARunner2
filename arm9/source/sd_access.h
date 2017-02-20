@@ -4,12 +4,27 @@
 #define READ_U16_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8))
 #define READ_U32_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8) | (((uint8_t*)(addr))[2] << 16) | (((uint8_t*)(addr))[3] << 24))
 
-typedef struct
-{
-	char long_name[34];
-	char short_name[12] __attribute__ ((aligned (4)));
-	int is_folder;
-} entry_names_t;
+#define vram_cd		((vram_cd_t*)0x06820000)
+
+#define SCREEN_COLS 32
+#define SCREEN_ROWS 24
+#define ENTRIES_START_ROW 2
+#define ENTRIES_PER_SCREEN (SCREEN_ROWS - ENTRIES_START_ROW)
+#define SKIP_ENTRIES (ENTRIES_PER_SCREEN/2 - 1)
+
+extern uint8_t _io_dldi;
+
+//FN_MEDIUM_READSECTORS _DLDI_readSectors_ptr = (FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10)));
+//extern FN_MEDIUM_WRITESECTORS _DLDI_writeSectors_ptr;
+
+#define _DLDI_readSectors_ptr ((FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10))))
+
+//extern "C" bool read_sd_sectors_safe(sec_t sector, sec_t numSectors, void* buffer);
+
+//after all it seems like that irq thing is not needed
+#define read_sd_sectors_safe	_DLDI_readSectors_ptr
+
+#define write_sd_sectors_safe	((FN_MEDIUM_WRITESECTORS)(*((uint32_t*)(&_io_dldi + 0x14))))
 
 typedef uint32_t sec_t;
 
