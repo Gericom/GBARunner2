@@ -8,6 +8,8 @@
 
 #include "consts.s"
 
+#define DONT_CREATE_SAVE_FILES
+
 ITCM_CODE __attribute__ ((noinline)) static void MI_WriteByte(void *address, uint8_t value)
 {
     uint16_t     val = *(uint16_t *)((uint32_t)address & ~1);
@@ -111,8 +113,8 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 
 	bool last_entry = false;
 	bool found_long_name = false;
-	uint8_t name_buffer[32];
-	for(int i = 0; i < 32; i++)
+	uint8_t name_buffer[256];
+	for(int i = 0; i < 256; i++)
 		name_buffer[i] = 0;
 	
 	while(true)
@@ -122,12 +124,16 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 		{
 			dir_entry_t* cur_dir_entry = &dir_entries[i];
 			
-			if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
+			if(cur_dir_entry->regular_entry.record_type == 0xE5)
+			{
+				//erased
+			}
+			else if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
 			{
 				//construct name				
 				int name_part_order = cur_dir_entry->long_name_entry.order & ~0x40;
-				if(name_part_order > 0 && name_part_order < 4)
-				{					
+				if(name_part_order > 0 && name_part_order <= 20)
+				{
 					store_long_name_part(name_buffer, cur_dir_entry, (name_part_order - 1) * 13);
 					if(name_part_order == 1)
 					{
@@ -140,7 +146,7 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 											 DIR_ATTRIB_SYSTEM))
 			{
 				//skip VOLUME_ID, HIDDEN or SYSTEM entry
-				for(int j = 0; j < 16; j++)
+				for(int j = 0; j < 256/2; j++)
 				{
 					*(uint16_t*)(name_buffer + j*2) = 0x2020;
 				}
@@ -151,13 +157,8 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 				last_entry = true;
 				break;
 			}
-			else if(cur_dir_entry->regular_entry.record_type == 0xE5)
-			{
-				//erased
-			}
 			else
 			{
-				entry_names_t* file = (entry_names_t*)vramheap_alloc(sizeof(entry_names_t));				
 				int len = 0;
 				
 				if(!found_long_name)
@@ -178,37 +179,44 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 							name_buffer[len++] = cur_dir_entry->regular_entry.short_name[8 + j];
 						}
 					}
+					name_buffer[len] = '\0';
 				}
-				len = 0;
-				for(int i = 0; i < 32 / 2; i++)
-				{
-					((uint16_t*)file->long_name)[i] = ((uint16_t*)name_buffer)[i];
-				}
-				for(int i = 0; i < 31; i++)
-				{
-					if(name_buffer[i] != ' ')
-						len = i + 1;
-				}
-				MI_WriteByte(&file->long_name[len], 0);
+				name_buffer[255] = 0;
 				
-				for(int j = 0; j < 10 / 2; j++)
+				uint8_t* point_ptr = (uint8_t*)strrchr((char*)name_buffer, '.');
+				if((point_ptr && !strcasecmp((char*)point_ptr, ".gba")) || ((cur_dir_entry->attrib & DIR_ATTRIB_DIRECTORY) == DIR_ATTRIB_DIRECTORY))
 				{
-					((uint16_t*)file->short_name)[j] = ((uint16_t*)cur_dir_entry->regular_entry.short_name)[j];
-				}
-				((uint16_t*)file->short_name)[5] = cur_dir_entry->regular_entry.short_name[10];
-							
-				if((cur_dir_entry->attrib & DIR_ATTRIB_DIRECTORY) == DIR_ATTRIB_DIRECTORY)
-				{
-					file->is_folder = true;
-				}
-				else
-				{
-					file->is_folder = false;
-				}
-				
-				if(file->is_folder || !strcmp(file->short_name + 8, "GBA"))
+					entry_names_t* file = (entry_names_t*)vramheap_alloc(sizeof(entry_names_t));
+					
+					len = 0;
+					for(int i = 0; i < 32 / 2; i++)
+					{
+						((uint16_t*)file->long_name)[i] = ((uint16_t*)name_buffer)[i];
+					}
+					for(int i = 0; i < 31; i++)
+					{
+						if(name_buffer[i] != ' ')
+							len = i + 1;
+					}
+					MI_WriteByte(&file->long_name[len], 0);
+					
+					for(int j = 0; j < 10 / 2; j++)
+					{
+						((uint16_t*)file->short_name)[j] = ((uint16_t*)cur_dir_entry->regular_entry.short_name)[j];
+					}
+					((uint16_t*)file->short_name)[5] = cur_dir_entry->regular_entry.short_name[10];
+								
+					if((cur_dir_entry->attrib & DIR_ATTRIB_DIRECTORY) == DIR_ATTRIB_DIRECTORY)
+					{
+						file->is_folder = true;
+					}
+					else
+					{
+						file->is_folder = false;
+					}
+					
 					vector_add(&entries_names, file);
-				
+				}
 				
 				for(int j = 0; j < 16; j++)
 				{
@@ -250,7 +258,6 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 1], '\\');
 			MI_WriteByte(&((entry_names_t*)entries_names[j])->long_name[len + 2], '\0');
 		}
-		int len = strlen(((entry_names_t*)entries_names[j])->long_name);
 	}
 }
 
@@ -460,9 +467,9 @@ PUT_IN_VRAM void get_save(uint32_t cur_cluster, char* gba_short_name)
 	}
 	
 	long_name_ptr = (uint8_t*)strrchr((char*)long_name_buff, '.');
-	long_name_ptr[1] = 'S';
-	long_name_ptr[2] = 'A';
-	long_name_ptr[3] = 'V';
+	long_name_ptr[1] = 's';
+	long_name_ptr[2] = 'a';
+	long_name_ptr[3] = 'v';
 	long_name_ptr[4] = '\0';
 		
 	find_dir_entry(cur_cluster, (char*)long_name_buff, &save_file_entry, LONG_NAME);

@@ -90,35 +90,17 @@ PUT_IN_VRAM uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
 
 PUT_IN_VRAM void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position)
 {	
-	buffer[position + 0] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[0]);
-	buffer[position + 1] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[1]);
-	buffer[position + 2] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[2]);
-	buffer[position + 3] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[3]);
-	buffer[position + 4] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[4]);
-		
-	if(position < 26)
-	{
-		buffer[position + 5] = cur_dir_entry->long_name_entry.name_part_two[0];
-		buffer[position + 6] = cur_dir_entry->long_name_entry.name_part_two[1];
-		buffer[position + 7] = cur_dir_entry->long_name_entry.name_part_two[2];
-		buffer[position + 8] = cur_dir_entry->long_name_entry.name_part_two[3];
-		buffer[position + 9] = cur_dir_entry->long_name_entry.name_part_two[4];
-		buffer[position + 10] = cur_dir_entry->long_name_entry.name_part_two[5];		
-		buffer[position + 11] = cur_dir_entry->long_name_entry.name_part_three[0];
-		buffer[position + 12] = cur_dir_entry->long_name_entry.name_part_three[1];
-	}
-}
-
-PUT_IN_VRAM void store_full_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position)
-{	
 	for(int i=0; i<5; i++)
-		buffer[position + 0 + i] = READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[i]);
+		buffer[position + 0 + i] = (READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[i]) & 0xFF00)?
+			'_':READ_U16_SAFE(&cur_dir_entry->long_name_entry.name_part_one[i]);
 	
 	for(int i=0; i<6; i++)
-		buffer[position + 5 + i] = cur_dir_entry->long_name_entry.name_part_two[i];
+		buffer[position + 5 + i] = (cur_dir_entry->long_name_entry.name_part_two[i] & 0xFF00)?
+			'_':cur_dir_entry->long_name_entry.name_part_two[i];
 	
 	for(int i=0; i<2; i++)
-		buffer[position + 11 + i] = cur_dir_entry->long_name_entry.name_part_three[i];
+		buffer[position + 11 + i] = (cur_dir_entry->long_name_entry.name_part_three[i] & 0xFF00)?
+			'_':cur_dir_entry->long_name_entry.name_part_three[i];
 }
 
 PUT_IN_VRAM void find_dir_entry(uint32_t cur_dir_cluster, const char* given_name, dir_entry_t* result, SEARCH_TYPE type)
@@ -148,7 +130,7 @@ PUT_IN_VRAM void find_dir_entry(uint32_t cur_dir_cluster, const char* given_name
 					int name_part_order = cur_dir_entry->long_name_entry.order & ~0x40;
 					if(name_part_order >= 1 && name_part_order <= 20)
 					{					
-						store_full_long_name_part(name_buffer, cur_dir_entry, (name_part_order - 1) * 13);
+						store_long_name_part(name_buffer, cur_dir_entry, (name_part_order - 1) * 13);
 						if(name_part_order == 1)
 						{
 							found_long_name = true;
@@ -290,7 +272,7 @@ PUT_IN_VRAM void get_full_long_name(uint32_t cur_dir_cluster, const char* given_
 				int name_part_order = cur_dir_entry->long_name_entry.order & ~0x40;
 				if(name_part_order >= 1 && name_part_order <= 20)
 				{					
-					store_full_long_name_part(name_buffer, cur_dir_entry, (name_part_order - 1) * 13);
+					store_long_name_part(name_buffer, cur_dir_entry, (name_part_order - 1) * 13);
 					if(name_part_order == 1)
 					{
 						found_long_name = true;
@@ -456,11 +438,6 @@ PUT_IN_VRAM int gen_short_name(uint8_t* long_name, uint8_t* short_name, uint32_t
 			
 			char_to_insert = to_upper(*long_name_ptr);
 			
-			if(char_to_insert != *long_name_ptr)
-			{
-				lossy_convertion = 1;
-			}
-			
 			if ((char_to_insert >= 0x00 && char_to_insert < 0x20) ||
 				(char_to_insert >= 0x7F && char_to_insert <= 0xFF) ||
 				(strchr("\"*+,/:;<=>?\\[]| ", char_to_insert) != NULL))
@@ -609,8 +586,7 @@ PUT_IN_VRAM int write_entries_to_sd(const uint8_t* long_name, const uint8_t* sho
 						entries_inserted = true;
 					}
 					
-					for(int j=0; j<4; j++)
-						*(((uint64_t*)cur_dir_entry)+j) = *((uint64_t*)&cur_entry+j);
+					arm9_memcpy16((uint16_t*)cur_dir_entry, (uint16_t*)&cur_entry, sizeof(dir_entry_t) / 2);
 					
 					index--;
 				}
