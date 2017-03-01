@@ -501,6 +501,15 @@ gba_start_bkpt:
 	str r1, [r0]
 //#endif
 
+	//fiq handler for is-nitro
+	ldr r0,= fiq_hook
+	sub r0, #0x1C	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x1C
+	str r1, [r0]
+
 	//set the abort mode stack
 	mrs r0, cpsr
 	and r0, r0, #0xE0
@@ -509,6 +518,7 @@ gba_start_bkpt:
 	ldr sp,= (address_dtcm + 0x4000) //0x10004000
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
+	
 
 	ldr r0,= count_bits_initialize
 	blx r0
@@ -617,6 +627,8 @@ nibble_to_char:
 
 .global undef_inst_handler
 undef_inst_handler:
+	//TODO: if this is an is-nitro breakpoint (arm 0xE7FFFFFF; thumb 0xEFFF), pass control to the debugger
+
 	mrc p15, 0, r0, c1, c0, 0
 	bic r0, #(1 | (1 << 2))	//disable pu and data cache
 	bic r0, #(1 << 12) //and cache
@@ -838,6 +850,38 @@ irq_handler_arm7_irq:
 //	str r1, [r12, #0x6C]
 //	b 4b
 
+//for is-nitro
+fiq_hook:
+	mov sp, #0x33
+	orr sp, sp, lsl #8
+	orr sp, sp, lsl #16
+
+	mcr p15, 0, sp, c5, c0, 2
+
+	MRS     SP, CPSR
+	ORR     SP, SP, #0xC0
+	MSR     CPSR_cxsf, SP
+	LDR     SP, =0x27FFD9C
+	ADD     SP, SP, #1
+	STMFD   SP!, {R12,LR}
+	MRS     LR, SPSR
+	MRC     p15, 0, R12,c1,c0, 0
+	STMFD   SP!, {R12,LR}
+	BIC     R12, R12, #1
+	MCR     p15, 0, R12,c1,c0, 0
+	BIC     R12, SP, #1
+	LDR     R12, [R12,#0x10]
+	CMP     R12, #0
+	BLXNE   R12
+	LDMFD   SP!, {R12,LR}
+	MCR     p15, 0, R12,c1,c0, 0
+	MSR     SPSR_cxsf, LR
+	LDMFD   SP!, {R12,LR}
+
+	ldr sp,= pu_data_permissions
+	mcr p15, 0, sp, c5, c0, 2
+
+	SUBS    PC, LR, #4
 
 .global thumb_string
 thumb_string:
