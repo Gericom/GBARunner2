@@ -21,6 +21,8 @@ SECTIONS
 	.init	:
 	{
 		__text_start = . ;
+__secure_area__ = .;
+	. = . + 0x800;
 		KEEP (*(.init))
 		. = ALIGN(4);  /* REQUIRED. LD is flaky without it. */
 	} >ewram = 0xff
