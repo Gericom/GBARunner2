@@ -482,7 +482,7 @@ gba_start_bkpt:
 	mov r0, #0x10
 	str r1, [r0]
 
-	ldr r0,= undef_inst_handler
+	ldr r0,= fiq_hook //undef_inst_handler
 	sub r0, #0x4	//relative to source address
 	sub r0, #8	//pc + 8 compensation
 	mov r1, #0xEA000000
@@ -563,6 +563,16 @@ instruction_abort_handler_cont:
 	subs pc, lr, #4
 
 instruction_abort_handler_error:
+	mov sp, #0x06000000
+	orr sp, #0x00010000
+	cmp lr, sp
+	blt instruction_abort_handler_error_cont
+	orr sp, #0x00008000
+	cmp lr, sp
+	bge instruction_abort_handler_error_cont
+	add lr, #0x3F0000
+	subs pc, lr, #4
+instruction_abort_handler_error_cont:
 	add sp, lr, #0x5000000
 	add sp, #0x0FC0000
 	cmp sp, #0x08000000

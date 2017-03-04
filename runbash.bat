@@ -1,0 +1,1 @@
+start "" /w "%windir%\Sysnative\bash.exe" isnitro.sh %2

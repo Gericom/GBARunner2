@@ -1,0 +1,38 @@
+#---------------------------------------------------------------------------------
+.SUFFIXES:
+#---------------------------------------------------------------------------------
+ifeq ($(strip $(DEVKITARM)),)
+$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+endif
+
+include $(DEVKITARM)/ds_rules
+
+export TARGET		:=	$(shell basename $(CURDIR))
+export TOPDIR		:=	$(CURDIR)
+
+
+.PHONY: arm7/$(TARGET).elf arm9/$(TARGET).elf
+
+#---------------------------------------------------------------------------------
+# main targets
+#---------------------------------------------------------------------------------
+all: $(TARGET)_isnitro.nds
+
+#---------------------------------------------------------------------------------
+$(TARGET)_isnitro.nds	:	arm7/$(TARGET).elf arm9/$(TARGET).elf
+	cmd /c "runbash.bat isnitro.sh \"-c $(TARGET)_isnitro.nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf -d nitrofiles\""
+	dlditool FatInNitroFS.dldi $(TARGET)_isnitro.nds
+
+#---------------------------------------------------------------------------------
+arm7/$(TARGET).elf:
+	$(MAKE) -C arm7
+	
+#---------------------------------------------------------------------------------
+arm9/$(TARGET).elf:
+	$(MAKE) -C arm9
+
+#---------------------------------------------------------------------------------
+clean:
+	$(MAKE) -C arm9 clean
+	$(MAKE) -C arm7 clean
+	rm -f $(TARGET).nds $(TARGET).arm7 $(TARGET).arm9
