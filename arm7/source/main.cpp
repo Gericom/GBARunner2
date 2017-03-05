@@ -264,7 +264,7 @@ int main()
 			}
 		}
 #else
-		while(*((vu32*)0x04000184) & (1 << 8));
+		while(*((vu32*)0x04000184) & (1 << 8))
 		{
 			if(!(*((vu32*)0x04000136) & 1))
 				gba_sound_resync();
