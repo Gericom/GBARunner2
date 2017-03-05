@@ -895,7 +895,7 @@ extern "C" ITCM_CODE void read_gba_rom(uint32_t address, uint32_t size, uint8_t*
 	//uint16_t* pSrc = (uint16_t*)((uint8_t*)cluster_data + cluster_offset);
 	arm9_memcpy16((uint16_t*)dst, (uint16_t*)((uint8_t*)cluster_data + cluster_offset), left_in_this_cluster / 2);
 	size_left -= left_in_this_cluster;
-	if(size_left <= 0) return;
+	if(size_left = 0) return;
 	dst += left_in_this_cluster;
 	cluster++;
 	//read whole clusters
@@ -906,7 +906,7 @@ extern "C" ITCM_CODE void read_gba_rom(uint32_t address, uint32_t size, uint8_t*
 		size_left -= 1 << vram_cd->sd_info.cluster_shift;
 		dst += 1 << vram_cd->sd_info.cluster_shift;
 	}
-	if(size_left <= 0) return;
+	if(size_left = 0) return;
 	//read data that's left
 	cluster_data = get_cluster_data(cluster);
 	arm9_memcpy16((uint16_t*)dst, (uint16_t*)cluster_data, size_left / 2);
