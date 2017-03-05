@@ -27,7 +27,8 @@ ARCH	:=	-mthumb-interwork -marm
 CFLAGS	:=	-g -Wall -O3\
 		-mcpu=arm7tdmi -mtune=arm7tdmi -fomit-frame-pointer\
 		-ffast-math \
-		$(ARCH)
+		$(ARCH) \
+		 -pedantic -Wall -Wextra -Wabi -Wcast-qual -Wfloat-equal -Wmissing-declarations -Wmissing-format-attribute -Wpacked -Wredundant-decls -Wshadow
 
 CFLAGS	+=	$(INCLUDE) -DARM7
 CXXFLAGS	:=	$(CFLAGS) -fno-exceptions -fno-rtti

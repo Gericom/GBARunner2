@@ -25,10 +25,11 @@ DATA		:=	data
 #---------------------------------------------------------------------------------
 ARCH	:=	-marm -mthumb-interwork#-mthumb
 
-CFLAGS	:=	-g -Wall -O2 -nostdlib -nodefaultlibs \
+CFLAGS	:=	-g -O2 -nostdlib -nodefaultlibs \
  			-march=armv5te -mtune=arm946e-s -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-tree-loop-distribute-patterns -fno-builtin -fomit-frame-pointer\
 			-ffast-math \
-			$(ARCH) 
+			$(ARCH)  \
+		 -pedantic -Wall -Wextra -Wabi -Wcast-qual -Wfloat-equal -Wmissing-declarations -Wmissing-format-attribute -Wpacked -Wredundant-decls -Wshadow
 
 CFLAGS	+=	$(INCLUDE) -DARM9
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fnon-call-exceptions
