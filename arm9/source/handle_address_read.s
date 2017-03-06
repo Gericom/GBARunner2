@@ -141,11 +141,11 @@ read_address_from_handler_below_io_32bit:
 	bge read_address_undefined_memory_32
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	mrs sp, spsr
 	tst sp, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	moveq r10, r5
 	//thumb
@@ -304,11 +304,11 @@ read_address_from_handler_below_io_16bit:
 	bge read_address_undefined_memory_16
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	mrs sp, spsr
 	tst sp, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	moveq r10, r5
 	//thumb
@@ -453,11 +453,11 @@ read_address_from_handler_below_io_8bit:
 	bge read_address_undefined_memory_8
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	mrs sp, spsr
 	tst sp, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	moveq r10, r5
 	//thumb
@@ -531,11 +531,11 @@ read_address_ignore:
 .global read_address_undefined_memory_32
 read_address_undefined_memory_32:
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	mrs sp, spsr
 	tst sp, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	bne read_address_undefined_memory_32_thumb
 read_address_undefined_memory_32_arm:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
@@ -558,11 +558,11 @@ read_address_undefined_memory_32_thumb:
 .global read_address_undefined_memory_16
 read_address_undefined_memory_16:
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	mrs sp, spsr
 	tst sp, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	bne read_address_undefined_memory_16_thumb
 read_address_undefined_memory_16_arm:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
@@ -582,11 +582,11 @@ read_address_undefined_memory_16_thumb:
 .global read_address_undefined_memory_8
 read_address_undefined_memory_8:
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	mrs sp, spsr
 	tst sp, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	bne read_address_undefined_memory_8_thumb
 read_address_undefined_memory_8_arm:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
@@ -619,6 +619,17 @@ read_address_dispcontrol_bottom8:
 read_address_dispcontrol_top8:
 	ldr r10,= (DISPCNT_copy + 1)
 	ldrb r10, [r10]
+	bx lr
+
+.global read_address_dispstat
+read_address_dispstat:
+	ldrh r10, [r9]
+	bic r10, #0xFF00
+	bic r10, #0x0080
+	ldr r11,= shadow_dispstat
+	ldrh r11, [r11]
+	and r11, #0xFF00
+	orr r10, r10, r11
 	bx lr
 
 .global read_address_vcount
@@ -679,12 +690,16 @@ read_address_ie_top8:
 read_address_if:
 	ldr r13,= 0x4000214
 	ldrh r10, [r13]
+	ldrh r11, fake_irq_flags
+	orr r10, r10, r11
 	bx lr
 
 .global read_address_if_bottom8
 read_address_if_bottom8:
 	ldr r13,= 0x4000000
 	ldrb r10, [r13, #0x214]
+	ldrb r11, fake_irq_flags
+	orr r10, r10, r11
 	//ldrb r11, [r13, #0x216]
 	//bic r10, #1
 	//tst r11, #1
@@ -695,6 +710,8 @@ read_address_if_bottom8:
 read_address_if_top8:
 	ldr r13,= 0x4000000
 	ldrb r10, [r13, #0x215]
+	ldrb r11, (fake_irq_flags + 1)
+	orr r10, r10, r11
 	bx lr
 
 .global read_address_ie_if
@@ -706,6 +723,8 @@ read_address_ie_if:
 	//orrne r12, #1
 	//ldrb r11, [r13, #6]
 	ldrh r13, [r13, #4]
+	ldrh r11, fake_irq_flags
+	orr r13, r13, r11
 	orr r10, r12, r13, lsl #16
 	//bic r10, #(1 << 16)
 	//tst r11, #1
@@ -729,3 +748,7 @@ read_address_wait_control_top8:
 	ldr r13,= (WAITCNT_copy + 1)
 	ldrb r10, [r13]
 	bx lr
+
+.global fake_irq_flags
+fake_irq_flags:
+	.word 0

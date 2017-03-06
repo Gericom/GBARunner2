@@ -4,7 +4,7 @@
 .include "consts.s"
 
 .macro finish_handler_skip_op_self_modifying
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 
 	ldr sp,= pu_data_permissions
 	mcr p15, 0, sp, c5, c0, 2

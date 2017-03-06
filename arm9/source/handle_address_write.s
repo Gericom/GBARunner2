@@ -61,6 +61,9 @@ write_address_from_handler_sprites_16bit:
 	cmp r9, r12
 	bxge lr
 	add r10, r9, #0x3F0000
+
+	tst r9, #1
+	movne r11, r11, ror #8
 	strh r11, [r10]
 	bx lr
 
@@ -228,6 +231,28 @@ write_address_dispcontrol_top8:
 	//strb r11, [r10]
 	//bx lr
 
+.global shadow_dispstat
+shadow_dispstat:
+	.word 0
+
+.global write_address_dispstat
+write_address_dispstat:
+	strh r11, shadow_dispstat
+	mov r12, r11, lsr #8 //vcount
+	cmp r12, #160
+	blt write_address_dispstat_finish
+	add r12, #32
+	mov r12, r12, lsl #8
+	tst r12, #(1 << 16)
+	orrne r12, #(1 << 7)
+	bic r12, r12, #(1 << 16)
+	bic r11, #0xFF00
+	bic r11, #0x0080
+	orr r11, r11, r12
+write_address_dispstat_finish:
+	strh r11, [r9]
+	bx lr
+
 .global write_address_sound_cnt_top16
 write_address_sound_cnt_top16:
 	//ldr r10,= 0x04000188
@@ -364,12 +389,6 @@ write_address_dma_size:
 	strh r11, [r9]
 	bx lr
 
-cur_snd_buffer:
-.word 0
-
-already_playing:
-.word 0
-
 .global write_address_dma_control
 write_address_dma_control:
 	bic r11, r11, #0x1F
@@ -393,7 +412,17 @@ write_address_dma_control:
 	blt write_address_dma_control_cont2
 
 	ldr r12,= 0x023F0000
+
+	ldrh r10, [r9, #-0x2]
+	and r13, r11, #0x1F
+	orr r10, r13, lsl #16
+	tst r11, #(1 << 10)
+
 	ldr r13, [r9, #-0xA]
+
+	addeq r13, r13, r10, lsl #1
+	addne r13, r13, r10, lsl #2
+
 	cmp r13, r12
 	blt write_address_dma_control_cont2
 	cmp r13, #0x03000000
@@ -560,7 +589,16 @@ write_address_dma_size_control_cont:
 	blt write_address_dma_size_control_cont3
 
 	ldr r12,= 0x023F0000
+
+	ldr r13,= 0x1FFFFF
+	and r10, r11, r13
+	tst r11, #(1 << 26)
+
 	ldr r13, [r9, #-0x8]
+
+	addeq r13, r13, r10, lsl #1
+	addne r13, r13, r10, lsl #2
+	
 	cmp r13, r12
 	blt write_address_dma_size_control_cont3
 	cmp r13, #0x03000000
@@ -749,6 +787,10 @@ write_address_if:
 	orr r11, #0x3E0000
 	//orr r11, #0x3F0000
 	str r11, [r13]
+	ldr r13,= fake_irq_flags
+	ldr r12, [r13]
+	bic r12, r11
+	str r12, [r13]
 	bx lr
 
 .global write_address_if_bottom8
@@ -759,6 +801,10 @@ write_address_if_bottom8:
 	orr r11, #0x3E0000
 	//orr r11, #0x3F0000
 	str r11, [r13]
+	ldr r13,= fake_irq_flags
+	ldr r12, [r13]
+	bic r12, r11
+	str r12, [r13]
 	bx lr
 
 .global write_address_if_top8
@@ -768,6 +814,10 @@ write_address_if_top8:
 	orr r11, #0x3E00
 	mov r11, r11, lsl #8
 	str r11, [r13]
+	ldr r13,= fake_irq_flags
+	ldr r12, [r13]
+	bic r12, r11
+	str r12, [r13]
 	bx lr
 
 .global write_address_ie_if
@@ -787,6 +837,10 @@ write_address_ie_if:
 	//orr r11, #0x3F0000
 	orr r11, #0x3E0000
 	str r11, [r13, #4]
+	ldr r13,= fake_irq_flags
+	ldr r12, [r13]
+	bic r12, r11
+	str r12, [r13]
 	bx lr
 
 .global write_address_wait_control

@@ -32,12 +32,12 @@ data_abort_handler_arm:
 	beq data_abort_handler_cont
 	mov r12, sp
 	mrs sp, spsr
-	orr sp, sp, #0x80
+	orr sp, sp, #0xC0
 	msr cpsr_c, sp
 	stmia r12, {sp,lr}
 
 data_abort_handler_cont:
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	
 #ifdef DEBUG_ABORT_ADDRESS
 	sub r0, r5, #8
@@ -143,7 +143,7 @@ data_abort_handler_cont:
 
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 
 	//ldr r6,= pu_data_permissions
 	//mcr p15, 0, r6, c5, c0, 2
@@ -159,11 +159,11 @@ data_abort_handler_cont_finish:
 	//cmpne sp, #0xF
 	//ldmeqia r12, {sp,lr}^	//write user bank registers
 	beq data_abort_handler_cont3
-	orr sp, sp, #0x90
+	orr sp, sp, #0xD0
 	msr cpsr_c, sp
 	ldmia r12, {r0-r14}
 	//ldmia r12, {sp,lr}
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	
 data_abort_handler_cont2:
 	//ldr sp,= reg_table
@@ -248,7 +248,7 @@ data_abort_handler_thumb:
 	//bic sp, #1
 	//mcr p15, 0, sp, c1, c0, 0
 	
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	ldr r11,= reg_table
 	ldr r10, [r11, #(8 << 2)]
 	ldrh r10, [r10, #-8]

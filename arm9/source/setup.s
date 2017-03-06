@@ -482,7 +482,7 @@ gba_start_bkpt:
 	mov r0, #0x10
 	str r1, [r0]
 
-	ldr r0,= fiq_hook //undef_inst_handler
+	ldr r0,= undef_inst_handler
 	sub r0, #0x4	//relative to source address
 	sub r0, #8	//pc + 8 compensation
 	mov r1, #0xEA000000
@@ -638,7 +638,37 @@ nibble_to_char:
 .global undef_inst_handler
 undef_inst_handler:
 	//TODO: if this is an is-nitro breakpoint (arm 0xE7FFFFFF; thumb 0xEFFF), pass control to the debugger
+	mov sp, #0x33
+	orr sp, sp, lsl #8
+	orr sp, sp, lsl #16
+	mcr p15, 0, sp, c5, c0, 2
 
+	mrs sp, spsr
+	tst sp, #0x20
+
+	bne bkpt_test_thumb
+bkpt_test_arm:
+	ldr sp, [lr, #-4]
+	cmp sp, #0xE7FFFFFF
+	beq is_bkpt
+	sub lr, lr, #4
+	b no_bkpt
+bkpt_test_thumb:
+	ldrh sp, [lr, #-2]
+	//ugh, lack of registers
+	mov sp, sp, lsl #16
+	orr sp, sp, #0xFF00
+	orr sp, sp, #0x00FF
+	cmp sp, #0xEFFFFFFF
+	subne lr, lr, #2
+	bne no_bkpt
+is_bkpt:
+	MRS     SP, CPSR
+	ORR     SP, SP, #0xC0
+	MSR     CPSR_cxsf, SP
+	b fiq_hook_cp15_done
+
+no_bkpt:
 	mrc p15, 0, r0, c1, c0, 0
 	bic r0, #(1 | (1 << 2))	//disable pu and data cache
 	bic r0, #(1 << 12) //and cache
@@ -680,9 +710,7 @@ undef_inst_handler:
 	orr r2, r2, r3, lsl #8
 	strh r2, [r4], #2
 
-	b .
-
-/*	ldr r0, [lr]
+	ldr r0, [lr]
 	ldr r1,= nibble_to_char
 	ldr r4,= (0x06202000 + 32 * 9)
 	//print address to bottom screen
@@ -714,7 +742,9 @@ undef_inst_handler:
 	orr r2, r2, r3, lsl #8
 	strh r2, [r4], #2
 
-	mrs r0, spsr
+	b .
+
+/*	mrs r0, spsr
 	ldr r1,= nibble_to_char
 	ldr r4,= (0x06202000 + 32 * 10)
 	//print address to bottom screen
@@ -845,6 +875,11 @@ irq_handler_arm7_irq:
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]
 
+	ldr r2,= fake_irq_flags
+	ldr r1, [r2]
+	orr r1, #(3 << 9)
+	str r1, [r2]
+
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 	LDMFD   SP!, {R0-R3,R12,LR}
@@ -862,15 +897,18 @@ irq_handler_arm7_irq:
 
 //for is-nitro
 fiq_hook:
+	MRS     SP, CPSR
+	ORR     SP, SP, #0xC0
+	MSR     CPSR_cxsf, SP
+
 	mov sp, #0x33
 	orr sp, sp, lsl #8
 	orr sp, sp, lsl #16
 
 	mcr p15, 0, sp, c5, c0, 2
 
-	MRS     SP, CPSR
-	ORR     SP, SP, #0xC0
-	MSR     CPSR_cxsf, SP
+fiq_hook_cp15_done:
+
 	LDR     SP, =0x27FFD9C
 	ADD     SP, SP, #1
 	STMFD   SP!, {R12,LR}
