@@ -31,3 +31,8 @@ pu_data_permissions = 0x33600003 @0x33660003
 /*this strategy isn't the best either*/
 /*#define CACHE_STRATEGY_LFU*/
 #define CACHE_STRATEGY_ROUND_ROBIN
+
+
+#define CACHE_BLOCK_SIZE_SHIFT	9
+#define CACHE_BLOCK_SIZE		(1 << CACHE_BLOCK_SIZE_SHIFT)
+#define CACHE_BLOCK_SIZE_MASK	(CACHE_BLOCK_SIZE - 1)

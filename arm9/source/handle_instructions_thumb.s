@@ -241,54 +241,50 @@ thumb15_address_calc_0:
 2:
 	addeq r0, r9, r13, lsl #2
 
+	sub r9, r9, #4
+
 	tst r8, #1
-	beq 3f
-	mov r11, r0
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-3:
+	movne r11, r0
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #2
-	beq 4f
-	mov r11, r1
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-4:
+	movne r11, r1
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #4
-	beq 5f
-	mov r11, r2
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-5:
+	movne r11, r2
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #8
-	beq 6f
-	mov r11, r3
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-6:
+	movne r11, r3
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+	
 	tst r8, #16
-	beq 7f
-	mov r11, r4
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-7:
+	movne r11, r4
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #32
-	beq 8f
-	mov r11, r5
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-8:
+	movne r11, r5
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #64
-	beq 9f
-	mov r11, r6
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-9:
+	movne r11, r6
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #128
-	beq 10f
-	mov r11, r7
-	bl write_address_from_handler_32bit
+	movne r11, r7
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	add r9, r9, #4
-10:
+
 	and r11, r8, #(7 << 8)
 	mov r11, r11, lsr #8
 	mov r10, #1
