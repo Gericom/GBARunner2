@@ -117,7 +117,7 @@ read_address_from_handler_eeprom_32bit:
 read_address_from_handler_sram_32bit:
 	cmp r9, #0x0F000000
 	bge read_address_undefined_memory_32
-	ldr r11,= 0x01FF8000
+	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
@@ -277,7 +277,7 @@ read_address_from_handler_eeprom_16bit:
 read_address_from_handler_sram_16bit:
 	cmp r9, #0x0F000000
 	bge read_address_undefined_memory_16
-	ldr r11,= 0x01FF8000
+	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
@@ -431,7 +431,7 @@ read_address_from_handler_eeprom_8bit:
 read_address_from_handler_sram_8bit:
 	cmp r9, #0x0F000000
 	bge read_address_undefined_memory_8
-	ldr r11,= 0x01FF8000
+	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000

@@ -31,9 +31,18 @@ CFLAGS	:=	-g -Wall -O2 -nostdlib -nodefaultlibs \
 			$(ARCH) 
 
 CFLAGS	+=	$(INCLUDE) -DARM9
+
+ifdef ISNITRODEBUG
+	CFLAGS	+=  -DISNITRODEBUG
+endif
+
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fnon-call-exceptions
 
 ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s $(INCLUDE)
+
+ifdef ISNITRODEBUG
+	ASFLAGS	+=  -DISNITRODEBUG
+endif
 
 LDFLAGS	=	-specs=../ds_arm9_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -nodefaultlibs
  

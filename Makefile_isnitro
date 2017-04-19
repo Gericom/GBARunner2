@@ -10,6 +10,8 @@ include $(DEVKITARM)/ds_rules
 export TARGET		:=	$(shell basename $(CURDIR))
 export TOPDIR		:=	$(CURDIR)
 
+export ISNITRODEBUG := 1
+
 
 .PHONY: arm7/$(TARGET).elf arm9/$(TARGET).elf
 

@@ -477,6 +477,10 @@ PUT_IN_VRAM void get_save(uint32_t cur_cluster, char* gba_short_name)
 	if(save_file_entry.regular_entry.short_name[0] == 0)
 	{		
 #ifdef DONT_CREATE_SAVE_FILES
+		for (int i = 0; i < 64 * 1024 / 4; i++)
+		{
+			((uint32_t*)0x23F0000)[i] = 0;
+		}
 		return;
 #else
 		int entries_count;
@@ -502,6 +506,27 @@ PUT_IN_VRAM void get_save(uint32_t cur_cluster, char* gba_short_name)
 #endif
 	}
 	//call to function to read the save file
+	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	cur_cluster = save_file_entry.regular_entry.cluster_nr_bottom | (save_file_entry.regular_entry.cluster_nr_top << 16);
+	while (cur_cluster < 0x0FFFFFF8)
+	{
+		*cluster_table = cur_cluster;
+		cluster_table++;
+		cur_cluster = get_cluster_fat_value_simple(cur_cluster);
+	}
+	*cluster_table = cur_cluster;
+	cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	cur_cluster = *cluster_table++;
+	uint32_t data_max = 64 * 1024;
+	uint32_t data_read = 0;
+	*((vu32*)0x06202000) = 0x59504F43; //COPY
+	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > 64 * 1024) ? 64 * 1024 / 512 : vram_cd->sd_info.nr_sectors_per_cluster;
+	while (cur_cluster < 0x0FFFFFF8 && (data_read + toread * 512) <= data_max)
+	{
+		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toread, (void*)(0x23F0000 + data_read));//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(bios_dst + data_read));
+		data_read += toread * 512;
+		cur_cluster = *cluster_table++;
+	}
 }
 
 //to be called after dldi has been initialized (with the appropriate init function)

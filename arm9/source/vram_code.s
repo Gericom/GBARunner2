@@ -178,3 +178,74 @@ print_address2:
 	strh r2, [r4], #2
 	pop {r0-r4}
 	bx lr
+
+sp_tmp:
+	.word 0
+
+write_offset:
+	.word 0
+
+.global print_address_isnitro
+print_address_isnitro:
+	str r13, sp_tmp
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r6}
+	mrc p15, 0, r5, c1, c0, 0
+	bic r5, #1
+	mcr p15, 0, r5, c1, c0, 0
+
+	ldr r6,= 0x09F80000
+	//ldr r4, [r6, #0x94]
+	ldr r4, write_offset
+	add r4, #0x8000
+	add r4, r6
+
+	ldr r1,= nibble_to_char
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+	
+	//write a space and a linebreak
+	ldr r2,= 0x0A20
+	strh r2, [r4], #2
+
+	sub r4, r6
+	sub r4, #0x8000
+	str r4, write_offset
+	str r4, [r6, #0x90]
+
+	//wait till 0x94 == 0x90
+//1:
+//	ldr r3, [r6, #0x94]
+//	cmp r3, r4
+//	bne 1b
+
+	orr r5, #1
+	mcr p15, 0, r5, c1, c0, 0
+	pop {r0-r6}
+	ldr r13, sp_tmp
+	bx lr

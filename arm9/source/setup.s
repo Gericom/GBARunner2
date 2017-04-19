@@ -49,6 +49,15 @@ vram_setup_copyloop:
 	subs r1, #0x20
 	bne vram_setup_copyloop
 
+#ifdef ISNITRODEBUG
+	//this enables debug printing on IS-NITRO-EMULATOR
+	//this is not completely correct code, it should actually read the
+	//gba mapping address from 0x027FFF7C or something
+	ldr r0,= 0x09F80000
+	ldr r1,= 0x202
+	strh r1, [r0, #0xFE] //enable debug print
+#endif
+
 	//dim the screen a bit for gba colors:
 	//ldr r0,= 0x0400006C
 	//ldr r1,= 0x8008
@@ -383,13 +392,13 @@ dldi_name_copy:
 	//mov r1, #0x80
 	//strb r1, [r0]
 
-	mov r0, #0 //#0xFFFFFFFF
-	ldr r1,= 0x23F0000 //(0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
-	mov r2, #(64 * 1024)
-gba_setup_fill_H_loop:
-	str r0, [r1], #4
-	subs r2, #4
-	bne gba_setup_fill_H_loop
+//	mov r0, #0 //#0xFFFFFFFF
+//	ldr r1,= 0x23F0000 //(0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
+//	mov r2, #(64 * 1024)
+//gba_setup_fill_H_loop:
+//	str r0, [r1], #4
+//	subs r2, #4
+//	bne gba_setup_fill_H_loop
 
 	ldr r0,= 0x74
 	mov r1, #0
@@ -678,7 +687,7 @@ no_bkpt:
 	ldr r1,= 0x46444E55
 	str r1, [r0]
 
-	mov r0, lr
+/*	mov r0, lr
 	ldr r1,= nibble_to_char
 	ldr r4,= (0x06202000 + 32 * 8)
 	//print address to bottom screen
@@ -740,7 +749,7 @@ no_bkpt:
 	ldrb r3, [r1, r0, lsr #28]
 	mov r0, r0, lsl #4
 	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
+	strh r2, [r4], #2*/
 
 	b .
 
@@ -930,26 +939,6 @@ fiq_hook_cp15_done:
 	mcr p15, 0, sp, c5, c0, 2
 
 	SUBS    PC, LR, #4
-
-.global thumb_string
-thumb_string:
-	.string "Thumb"
-	.byte 0
-
-.global unk_string
-unk_string:
-	.string "Unk"
-	.byte 0
-
-.global ok_string
-ok_string:
-	.string "Ok"
-	.byte 0
-
-.global NIBBLE_LOOKUP
-NIBBLE_LOOKUP:
-	.byte	0, 1, 1, 2, 1, 2, 2, 3
-	.byte	1, 2, 2, 3, 2, 3, 3, 4
 
 .align 4
 

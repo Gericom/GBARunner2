@@ -23,6 +23,17 @@ sd_sd_info = (sd_cluster_cache_info + (256 * 8 + 4)) @0x0685C404
 
 
 pu_data_permissions = 0x33600003 @0x33660003
+
+@destroys r12, r13
+.macro printreg reg
+	mov r13, r0
+	mov r0, \reg
+	mov r12, lr
+	ldr lr,= print_address_isnitro
+	blx lr
+	mov lr, r12
+	mov r0, r13
+.endm
 #endif
 
 /*#define CACHE_STRATEGY_LRU*/

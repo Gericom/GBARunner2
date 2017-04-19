@@ -28,7 +28,7 @@ write_address_from_handler_sprites_32bit:
 write_address_from_handler_sram_32bit:
 	cmp r9, #0x0F000000
 	bxge lr
-	ldr r12,= 0x01FF8000
+	ldr r12,= 0x01FF0000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
@@ -70,7 +70,7 @@ write_address_from_handler_sprites_16bit:
 write_address_from_handler_sram_16bit:
 	cmp r9, #0x0F000000
 	bxge lr
-	ldr r12,= 0x01FF8000
+	ldr r12,= 0x01FF0000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
@@ -105,7 +105,7 @@ write_address_from_handler_sprites_8bit:
 write_address_from_handler_sram_8bit:
 	cmp r9, #0x0F000000
 	bxge lr
-	ldr r12,= 0x01FF8000
+	ldr r12,= 0x01FF0000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
@@ -436,6 +436,9 @@ write_address_dma_control_cont2:
 	bx lr
 
 write_address_dma_control_rom_src:
+	//still store the register, but not enabled
+	bic r11, r11, #0x8000
+	strh r11, [r9]
 	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	ldr r0, [r9, #-0xA]
@@ -455,10 +458,7 @@ write_address_dma_control_rom_src:
 write_address_dma_control_cont:
 	ldr r13,= 0x40000C6
 	cmp r9, r13
-	//ldr r13,= 0x40000D2
-	//cmpne r10, r13
-	//bicne r11, r11, #0x8000
-	//strneh r11, [r9]
+
 	bic r11, r11, #0x8000
 	strh r11, [r9]
 	bxne lr
@@ -471,96 +471,7 @@ write_address_dma_control_cont:
 	str r12, [r10]
 	str r13, [r10]
 
-	//cmp r10, r13
-	//beq write_address_dma_control_cont_snd2
-	//ldr r13,= cur_snd_buffer
-	//ldr r12, [r13]
-	//cmp r12, #0
-	//moveq r12, #1
-	//movne r12, #0
-	//str r12, [r13]
-	//ldreq r12,= (0x02400000 - (1584 * 2))
-	//ldrne r12,= (0x02400000 - 1584)
-	//ldr r13,= cur_snd_buffer
-	//ldr r10, [r13]
-	//mov r12, #1584
-	//mul r12, r10, r12
-	//cmp r10, #9
-	//moveq r10, #0
-	//addne r10, #1
-	//str r10, [r13]
-	//ldr r13,= 0x23F8000
-	//add r12, r13, r12
-@	ldr r12,= 0x23F8000
-@	ldr r13,= 0x40000C0
-@	str r12, [r13]
-@	bic r11, r11, #0x3B00
-	//bic r11, r11, #0x00E0
-	//orr r11, r11, #(3 << 5)
-	//bic r11, r11, #0x1F
-@	bic r11, r11, #0x00FF
-@	mov r12, #1024 //#(396 * 4)
-@	strh r12, [r9, #-2]
-@	strh r11, [r9]
-
-//	nop
-//	nop
-//write_address_dma_size_control_cont_dma_wait_loop:
-//	ldrh r11, [r9]
-//	tst r11, #0x8000
-//	bne write_address_dma_size_control_cont_dma_wait_loop
-
-	//ldr r13,= cur_snd_buffer
-	//ldr r12, [r13]
-	//cmp r12, #1
-	//bxeq lr
-	//ldr r12, [r13, #4]
-	//cmp r12, #1
-	//bxeq lr
-	//mov r12, #1
-	//str r12, [r13, #4]
-
-	//ldr r13,= cur_snd_buffer
-	//ldr r12, [r13]
-	//cmp r12, #5
-	//bxne lr
-	//ldr r12, [r13, #4]
-	//cmp r12, #1
-	//bxeq lr
-	//mov r12, #1
-	//str r12, [r13, #4]
-
-@	ldr r10,= 0x04000188
-	//ldr r11,= 0xAA5500C5
-@	ldr r13,= 0xAA5500C4
-	//mov r12, #0
-	//str r11, [r10]
-@	str r13, [r10]
-	//str r12, [r10]
-
 	bx lr
-
-//write_address_dma_control_cont_snd2:
-//	ldr r13,= 0x40000CC
-//	ldr r12,= (0x02400000 - 1584)
-//	str r12, [r13]
-//	bic r11, r11, #0x3B00
-//	bic r11, r11, #0x00E0
-	//orr r11, r11, #(3 << 5)
-//	bic r11, r11, #0x1F
-//	mov r12, #396
-//	strh r12, [r9, #-2]
-//	strh r11, [r9]
-
-//	ldr r10,= 0x04000188
-//	ldr r11,= 0xAA5500C7
-//	ldr r13,= 0xAA5500C6
-//	mov r12, #0
-//	str r11, [r10]
-//	str r13, [r10]
-//	str r12, [r10]
-
-//	bx lr
 
 .global write_address_dma_size_control
 write_address_dma_size_control:
@@ -613,6 +524,9 @@ write_address_dma_size_control_cont3:
 
 
 write_address_dma_size_control_rom_src:
+	//still store the register
+	bic r11, #0x80000000
+	str r11, [r9]
 	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	ldr r0, [r9, #-0x8]
@@ -631,10 +545,7 @@ write_address_dma_size_control_rom_src:
 write_address_dma_size_control_cont2:
 	ldr r13,= 0x040000C4
 	cmp r9, r13
-	//ldr r13,= 0x040000D0
-	//cmpne r10, r13
-	//bicne r11, #0x80000000
-	//strne r11, [r9]
+
 	bic r11, #0x80000000
 	str r11, [r9]
 	bxne lr
@@ -646,89 +557,8 @@ write_address_dma_size_control_cont2:
 	ldr r12,= 0xAA5500F8
 	str r12, [r10]
 	str r13, [r10]
-	//cmp r10, r13
-	//beq write_address_dma_size_control_cont2_snd2
-	//ldr r13,= 0x40000C0
-	//ldr r12,= (0x02400000 - (1584 * 2))
-	//str r12, [r13]
-	//ldr r13,= cur_snd_buffer
-	//ldr r12, [r13]
-	//cmp r12, #0
-	//moveq r12, #1
-	//movne r12, #0
-	//str r12, [r13]
-	//ldreq r12,= (0x02400000 - (1584 * 2))
-	//ldrne r12,= (0x02400000 - 1584)
-@	ldr r13,= 0x40000C0
-@	ldr r12,= 0x23F8000 //(0x02400000 - (1584 * 2))
-	//ldr r13,= cur_snd_buffer
-	//ldr r10, [r13]
-	//mov r12, #1584
-	//mul r12, r10, r12
-	//cmp r10, #9
-	//moveq r10, #0
-	//addne r10, #1
-	//str r10, [r13]
-	//ldr r13,= 0x23F8000
-	//add r12, r13, r12
-	//ldr r13,= 0x40000C0
-@	str r12, [r13]
-	//bic r11, r11, #0x3B000000
-	//bic r11, r11, #0x00E00000
-	//orr r11, r11, #(3 << (5 + 16))
-@	ldr r13,= 0x3BFFFFFF
-@	bic r11, r13
-@	orr r11, r11, #1024 //(396 * 2)
-@	str r11, [r9]
-	
-//	nop
-//	nop
-//write_address_dma_size_control_cont2_dma_wait_loop:
-//	ldr r11, [r9]
-//	tst r11, #0x80000000
-//	bne write_address_dma_size_control_cont2_dma_wait_loop
-
-	//ldr r13,= cur_snd_buffer
-	//ldr r12, [r13]
-	//cmp r12, #5
-	//bxne lr
-	//ldr r12, [r13, #4]
-	//cmp r12, #1
-	//bxeq lr
-	//mov r12, #1
-	//str r12, [r13, #4]
-	
-@	ldr r10,= 0x04000188
-	//ldr r11,= 0xAA5500C5
-@	ldr r13,= 0xAA5500C4
-	//mov r12, #1
-	//str r11, [r10]
-@	str r13, [r10]
-	//str r12, [r10]
 
 	bx lr
-
-//write_address_dma_size_control_cont2_snd2:
-//	ldr r13,= 0x40000CC
-//	ldr r12,= (0x02400000 - 1584)
-//	str r12, [r13]
-//	bic r11, r11, #0x3B000000
-//	bic r11, r11, #0x00E00000
-	//orr r11, r11, #(3 << (5 + 16))
-//	ldr r13,= 0x1FFFFF
-//	bic r11, r13
-//	orr r11, r11, #396
-//	str r11, [r9]
-	
-//	ldr r10,= 0x04000188
-//	ldr r11,= 0xAA5500C7
-//	ldr r13,= 0xAA5500C6
-//	mov r12, #0
-//	str r11, [r10]
-//	str r13, [r10]
-//	str r12, [r10]
-
-//	bx lr
 
 .global write_address_timer_counter
 write_address_timer_counter:
