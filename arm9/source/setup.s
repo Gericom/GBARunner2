@@ -88,7 +88,10 @@ vram_setup_copyloop:
 	//region 2 card				0x08000000-0x0FFFFFFF	2 << 26		-/-/-
 	//ldr r0,= (1 | (26 << 1) | 0x08000000)
 	//mcr p15, 0, r0, c6, c2, 0
-	mov r0, #0
+	//mov r0, #0
+	//mcr p15, 0, r0, c6, c2, 0
+	//vram; write protected, cause byte writes are not possible :/
+	ldr r0,= (1 | (16 << 1) | 0x06000000)
 	mcr p15, 0, r0, c6, c2, 0
 
 	//region 3	oam vram region	0x06010000-0x06017FFF	2 << 14		-/-/-
@@ -133,7 +136,7 @@ vram_setup_copyloop:
 	//orr r0, r0, #(0x36 << (4 * 5))
 	//orr r0, r0, #(0x3 << (4 * 7))
 	mcr p15, 0, r0, c5, c0, 2
-	ldr r0,= 0x33660003
+	ldr r0,= 0x33660303
 	mcr p15, 0, r0, c5, c0, 3
 
 	//only instruction and data cache for (fake) cartridge

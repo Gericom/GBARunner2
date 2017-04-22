@@ -276,11 +276,18 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t& cur_dir_cluster, dir_entry_t* 
 	while(1) {
 		//show cursor
 		MI_WriteByte((void*)0x06202000 + 32*(cursor_position - start_at_position + ENTRIES_START_ROW), 0x1A);
+
+		for (int i = 0; i < 8; i++)
+		{
+			while (*((vu16*)0x04000006) != 192);
+			while (*((vu16*)0x04000006) == 192);
+		}
 		
-		do {
+		//do {
 			old_keys = keys;
 			keys = ~*((vu16*)0x04000130);
-		} while (keys == old_keys);
+		//	while (*((vu16*)0x04000006) != 192);
+		//} while (keys == old_keys);
 		
 		//hide cursor
 		if(keys & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT))

@@ -22,7 +22,7 @@ sd_cluster_cache_info = (sd_is_cluster_cached_table + (16 * 1024))
 sd_sd_info = (sd_cluster_cache_info + (256 * 8 + 4)) @0x0685C404
 
 
-pu_data_permissions = 0x33600003 @0x33660003
+pu_data_permissions = 0x33600603 @0x33600003 @0x33660003
 
 @destroys r12, r13
 .macro printreg reg

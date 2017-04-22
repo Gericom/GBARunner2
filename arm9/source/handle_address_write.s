@@ -18,10 +18,22 @@ write_address_from_handler_32bit:
 write_address_from_handler_sprites_32bit:
 	cmp r9, #0x0E000000
 	bge write_address_from_handler_sram_32bit
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r13, #7
+	cmp r13, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r9, r13
+	movlt r10, r9
+	blt write_address_from_handler_sprites_32bit_cont
+
 	ldr r12,= 0x06018000
 	cmp r9, r12
 	bxge lr
 	add r10, r9, #0x3F0000
+
+write_address_from_handler_sprites_32bit_cont:
 	str r11, [r10]
 	bx lr
 
@@ -57,11 +69,22 @@ write_address_from_handler_16bit:
 write_address_from_handler_sprites_16bit:
 	cmp r9, #0x0E000000
 	bge write_address_from_handler_sram_16bit
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r13, #7
+	cmp r13, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r9, r13
+	movlt r10, r9
+	blt write_address_from_handler_sprites_16bit_cont
+
 	ldr r12,= 0x06018000
 	cmp r9, r12
 	bxge lr
 	add r10, r9, #0x3F0000
 
+write_address_from_handler_sprites_16bit_cont:
 	tst r9, #1
 	movne r11, r11, ror #8
 	strh r11, [r10]
@@ -99,6 +122,18 @@ write_address_from_handler_8bit:
 write_address_from_handler_sprites_8bit:
 	cmp r9, #0x0E000000
 	bge write_address_from_handler_sram_8bit
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r13, #7
+	cmp r13, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r9, r13
+	bxge lr //nothing written on 8 bit access
+
+	orr r11, r11, lsl #8
+	strh r11, [r9]
+
 	//nothing written on 8 bit access
 	bx lr
 
