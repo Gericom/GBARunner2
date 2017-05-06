@@ -1,6 +1,6 @@
 .section .vram
 
-.include "consts.s"
+#include "consts.s"
 
 .global address_read_table_32bit_dtcm_setup
 address_read_table_32bit_dtcm_setup:

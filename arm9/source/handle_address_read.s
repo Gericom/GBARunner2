@@ -1,6 +1,6 @@
 .section .itcm
 
-.include "consts.s"
+#include "consts.s"
 
 //bios_op = 0xE129F000 //[00DCh+8] after startup and softreset //before this address 0x27C is read
 //bios_op = 0xE25EF004 //[0134h+8] during irq execution
@@ -9,136 +9,29 @@ bios_op = 0xE3A02004 //[0188h+8] after swi execution; reads between 0x1C8 and 0x
 
 .global read_address_from_handler_32bit
 read_address_from_handler_32bit:
-	cmp r9, #0x06000000
-	bge read_address_from_handler_sprites_32bit
-	subs r12, r9, #0x04000000
-	blt read_address_from_handler_below_io_32bit
-	cmp r12, #0x20C
-	bge read_address_undefined_memory_32
-	mov r12, r12, lsr #1
-	ldr r13,= address_read_table_32bit_dtcm
-	ldrh r13, [r13, r12]
-	orr pc, r13, #0x01000000	//itcm
-
-read_address_from_handler_sprites_32bit:
-	cmp r9, #0x08000000
-	bge read_address_from_handler_rom_32bit
-	add r10, r9, #0x3F0000
-	ldr r10, [r10]
-	bx lr
-
-read_address_from_handler_rom_32bit:
-	cmp r9, #0x0D000000
-	bge read_address_from_handler_eeprom_32bit
-	ldr r12,= 0x083B0000
-	cmp r9, r12
-	blt read_address_from_handler_rom_in_mem_32bit
-
-	bic r10, r9, #0x0E000000
-
-	//block c and d to arm9
-	//ldr r12,= 0x4000242
-	//ldr r13,= 0x8080
-	//strh r13, [r12]
-
-	ldr r11,= sd_sd_info
-	ldr r13, [r11] //rom size
-	cmp r10, r13
-	movgt r10, #0
-	bxgt lr
-
-	ldr r13, [r11, #4]//cluster shift
-	mov r13, r10, lsr r13
-
-	ldr r12,= sd_is_cluster_cached_table
-	ldrb r13, [r12, r13]
-	cmp r13, #0xFF
-	beq read_address_from_handler_rom_32bit_not_cached
-	ldr r12,= sd_cluster_cache_info
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
-
-#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_MRU)
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
-	ldr r12, [r12, #0x810]//access counter
-	and r12, #0xFFFFFF
-	orr r11, r12
-	ldr r12,= sd_cluster_cache_info
-	str r11, [r12, r13, lsl #3]
-	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-#ifdef CACHE_STRATEGY_LFU
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
-	ldr r12, [r12, #0x810]//access counter
-	and r12, #0xFFFFFF
-	orr r11, r12
-	and r12, r11, #(0x7F << 24)
-	cmp r12, #(0x7F << 24)
-	addlt r11, #(1 << 24)
-
-	ldr r12,= sd_cluster_cache_info
-	str r11, [r12, r13, lsl #3]
-	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-
-	ldr r11, [r12, #0x808]//cluster shift
-	mov r13, r13, lsl r11
-	ldr r11, [r12, #0x80C]//cluster mask
-	and r10, r10, r11
-	ldr r12,= sd_cluster_cache
-	add r12, r13
-	ldr r10, [r12, r10]
-	bx lr
-
-read_address_from_handler_rom_32bit_not_cached:
-	ldr sp,= address_dtcm + (16 * 1024)
-	push {r0-r9,lr}
-	mov r0, r10
-	ldr r1,= sdread32_uncached
-	blx r1
-	mov r10, r0
-	pop {r0-r9,lr}
-	bx lr
-
-read_address_from_handler_eeprom_32bit:
-	cmp r9, #0x0E000000
-	bge read_address_from_handler_sram_32bit
-	mov r10, #1
-	bx lr
-
-read_address_from_handler_sram_32bit:
 	cmp r9, #0x0F000000
-	bge read_address_undefined_memory_32
-	ldr r11,= 0x01FF0000
-	bic r10, r9, r11
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
-	//sub r10, r10, #0x0B800000
-	//sub r10, r10, #0x00008C00
-	//sub r10, r10, #0x00000060
-	ldrb r10, [r10]
-	orr r10, r10, lsl #8
-	orr r10, r10, lsl #16
-	bx lr
+	ldrlo pc, [pc, r9, lsr #22]
+	b read_address_undefined_memory_32
 
-read_address_from_handler_rom_in_mem_32bit:
-	bic r10, r9, #0x06000000
-	sub r10, r10, #0x05000000
-	sub r10, r10, #0x00FC0000
-	ldr r10, [r10]
-	bx lr
+	.word read_address_from_handler_bios_32
+	.word read_address_undefined_memory_32
+	.word read_address_ignore
+	.word read_address_ignore
+	.word read_address_from_handler_io_32
+	.word read_address_ignore
+	.word read_address_from_handler_vram_32
+	.word read_address_ignore
+	.word read_address_from_handler_rom_32
+	.word read_address_from_handler_rom_32
+	.word read_address_from_handler_rom_32
+	.word read_address_from_handler_rom_32
+	.word read_address_from_handler_rom_32
+	.word read_address_from_handler_eeprom_32
+	.word read_address_from_handler_sram_32
 
-read_address_from_handler_below_io_32bit:
+read_address_from_handler_bios_32:
 	cmp r9, #0x4000
-	bge read_address_undefined_memory_32
+		bge read_address_undefined_memory_32
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
 	msr cpsr_c, #0xD7
@@ -161,145 +54,93 @@ read_address_from_handler_below_io_32bit:
 	movge r10, r10, ror r11
 	bx lr
 
-
-.global read_address_from_handler_16bit
-read_address_from_handler_16bit:
-	cmp r9, #0x06000000
-	bge read_address_from_handler_sprites_16bit
-	subs r12, r9, #0x04000000
-	blt read_address_from_handler_below_io_16bit
+read_address_from_handler_io_32:
+	sub r12, r9, #0x04000000
 	cmp r12, #0x20C
-	bge read_address_undefined_memory_16
-	ldr r13,= address_read_table_16bit_dtcm
-	ldrh r13, [r13, r12]
-	orr pc, r13, #0x01000000	//itcm
+		movlt r12, r12, lsr #1
+		ldrlt r13,= address_read_table_32bit_dtcm
+		ldrlth r13, [r13, r12]
+		orrlt pc, r13, #0x01000000	//itcm
+	b read_address_undefined_memory_32
 
-read_address_from_handler_sprites_16bit:
-	cmp r9, #0x08000000
-	bge read_address_from_handler_rom_16bit
+read_address_from_handler_vram_32:
 	add r10, r9, #0x3F0000
-	ldrh r10, [r10]
-	tst r9, #1
-	movne r10, r10, ror #8
+	ldr r10, [r10]
 	bx lr
 
-read_address_from_handler_rom_16bit:
-	cmp r9, #0x0D000000
-	bge read_address_from_handler_eeprom_16bit
-	ldr r12,= 0x083B0000
-	cmp r9, r12
-	blt read_address_from_handler_rom_in_mem_16bit
+read_address_from_handler_rom_32:
+	//ldr r12,= ROM_ADDRESS_MAX
+	cmp r9, #ROM_ADDRESS_MAX//r12
+		blt read_address_from_handler_rom_in_mem_32
 
 	bic r10, r9, #0x0E000000
 
-	//block c and d to arm9
-	//ldr r12,= 0x4000242
-	//ldr r13,= 0x8080
-	//strh r13, [r12]
-
-	ldr r11,= sd_sd_info
-	ldr r13, [r11] //rom size
-	cmp r10, r13
-	movgt r10, #0
-	bxgt lr
-
-	ldr r13, [r11, #4]//cluster shift
-	mov r13, r10, lsr r13
+	mov r13, r10, lsr #8
 
 	ldr r12,= sd_is_cluster_cached_table
-	ldrb r13, [r12, r13]
-	cmp r13, #0xFF
-	beq read_address_from_handler_rom_16bit_not_cached
-	ldr r12,= sd_cluster_cache_info
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
+	ldrsh r13, [r12, r13]
+	cmp r13, #0
+		blt read_address_from_handler_rom_32_not_cached
 
-#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_MRU)
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
-	ldr r12, [r12, #0x810]//access counter
-	and r12, #0xFFFFFF
-	orr r11, r12
-	ldr r12,= sd_cluster_cache_info
-	str r11, [r12, r13, lsl #3]
-	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-#ifdef CACHE_STRATEGY_LFU
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
-	ldr r12, [r12, #0x810]//access counter
-	and r12, #0xFFFFFF
-	orr r11, r12
-	and r12, r11, #(0x7F << 24)
-	cmp r12, #(0x7F << 24)
-	addlt r11, #(1 << 24)
-
-	ldr r12,= sd_cluster_cache_info
-	str r11, [r12, r13, lsl #3]
-	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-
-	ldr r11, [r12, #0x808]//cluster shift
-	mov r13, r13, lsl r11
-	ldr r11, [r12, #0x80C]//cluster mask
-	and r10, r10, r11
+	mov r10, r10, lsl #23
 	ldr r12,= sd_cluster_cache
-	add r12, r13
-	ldrh r10, [r12, r10]
-	tst r9, #1
-	movne r10, r10, ror #8
+	add r12, r13, lsl #9
+	ldr r10, [r12, r10, lsr #23]
 	bx lr
 
-read_address_from_handler_rom_16bit_not_cached:
+read_address_from_handler_rom_in_mem_32:
+	bic r10, r9, #0x06000000
+	sub r10, r10, #0x05000000
+	sub r10, r10, #0x00FC0000
+	ldr r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_32_not_cached:
 	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	mov r0, r10
-	ldr r1,= sdread16_uncached
-	blx r1
+	bl sdread32_uncached
 	mov r10, r0
 	pop {r0-r9,lr}
-	tst r9, #1
-	movne r10, r10, ror #8
 	bx lr
 
-read_address_from_handler_eeprom_16bit:
-	cmp r9, #0x0E000000
-	bge read_address_from_handler_sram_16bit
+read_address_from_handler_eeprom_32:
 	mov r10, #1
 	bx lr
 
-read_address_from_handler_sram_16bit:
-	cmp r9, #0x0F000000
-	bge read_address_undefined_memory_16
+read_address_from_handler_sram_32:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
-	//sub r10, r10, #0x0B800000
-	//sub r10, r10, #0x00008C00
-	//sub r10, r10, #0x00000060
 	ldrb r10, [r10]
 	orr r10, r10, lsl #8
-	tst r9, #1
-	movne r10, r10, ror #8
+	orr r10, r10, lsl #16
 	bx lr
 
-read_address_from_handler_rom_in_mem_16bit:
-	bic r10, r9, #0x06000000
-	sub r10, r10, #0x05000000
-	sub r10, r10, #0x00FC0000
-	ldrh r10, [r10]
-	tst r9, #1
-	movne r10, r10, ror #8
-	bx lr
+.global read_address_from_handler_16bit
+read_address_from_handler_16bit:
+	cmp r9, #0x0F000000
+	ldrlo pc, [pc, r9, lsr #22]
+	b read_address_undefined_memory_16
 
-read_address_from_handler_below_io_16bit:
+	.word read_address_from_handler_bios_16
+	.word read_address_undefined_memory_16
+	.word read_address_ignore
+	.word read_address_ignore
+	.word read_address_from_handler_io_16
+	.word read_address_ignore
+	.word read_address_from_handler_vram_16
+	.word read_address_ignore
+	.word read_address_from_handler_rom_16
+	.word read_address_from_handler_rom_16
+	.word read_address_from_handler_rom_16
+	.word read_address_from_handler_rom_16
+	.word read_address_from_handler_rom_16
+	.word read_address_from_handler_eeprom_16
+	.word read_address_from_handler_sram_16
+
+read_address_from_handler_bios_16:
 	cmp r9, #0x4000
 	bge read_address_undefined_memory_16
 	//bios area, check if this was caused by an opcode in the bios area
@@ -323,134 +164,104 @@ read_address_from_handler_below_io_16bit:
 	movne r10, r10, ror #8
 	bx lr
 
-.global read_address_from_handler_8bit
-read_address_from_handler_8bit:
-	cmp r9, #0x06000000
-	bge read_address_from_handler_sprites_8bit
-	subs r12, r9, #0x04000000
-	blt read_address_from_handler_below_io_8bit
+read_address_from_handler_io_16:
+	sub r12, r9, #0x04000000
 	cmp r12, #0x20C
-	bge read_address_undefined_memory_8
-	mov r12, r12, lsl #1
-	ldr r13,= address_read_table_8bit_dtcm
-	ldrh r13, [r13, r12]
-	orr pc, r13, #0x01000000	//itcm
+		ldrlt r13,= address_read_table_16bit_dtcm
+		ldrlth r13, [r13, r12]
+		orrlt pc, r13, #0x01000000	//itcm
+	b read_address_undefined_memory_16
 
-read_address_from_handler_sprites_8bit:
-	cmp r9, #0x08000000
-	bge read_address_from_handler_rom_8bit
+read_address_from_handler_vram_16:
 	add r10, r9, #0x3F0000
-	ldrb r10, [r10]
+	ldrh r10, [r10]
+	tst r9, #1
+		movne r10, r10, ror #8
 	bx lr
 
-read_address_from_handler_rom_8bit:
-	cmp r9, #0x0D000000
-	bge read_address_from_handler_eeprom_8bit
-	ldr r12,= 0x083B0000
-	cmp r9, r12
-	blt read_address_from_handler_rom_in_mem_8bit
+read_address_from_handler_rom_16:
+	//ldr r12,= ROM_ADDRESS_MAX
+	cmp r9, #ROM_ADDRESS_MAX //r12
+		blt read_address_from_handler_rom_in_mem_16
 
 	bic r10, r9, #0x0E000000
 
-	//block c and d to arm9
-	//ldr r12,= 0x4000242
-	//ldr r13,= 0x8080
-	//strh r13, [r12]
-
-	ldr r11,= sd_sd_info
-	ldr r13, [r11] //rom size
-	cmp r10, r13
-	movgt r10, #0
-	bxgt lr
-
-	ldr r13, [r11, #4]//cluster shift
-	mov r13, r10, lsr r13
+	mov r13, r10, lsr #8
 
 	ldr r12,= sd_is_cluster_cached_table
-	ldrb r13, [r12, r13]
-	cmp r13, #0xFF
-	beq read_address_from_handler_rom_8bit_not_cached
-	ldr r12,= sd_cluster_cache_info
+	ldrsh r13, [r12, r13]
+	cmp r13, #0
+		blt read_address_from_handler_rom_16_not_cached
 
-#if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_MRU)
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
-	ldr r12, [r12, #0x810]//access counter
-	and r12, #0xFFFFFF
-	orr r11, r12
-	ldr r12,= sd_cluster_cache_info
-	str r11, [r12, r13, lsl #3]
-	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-#ifdef CACHE_STRATEGY_LFU
-	ldr r11, [r12, r13, lsl #3]
-	bic r11, #0xFFFFFF
-	ldr r12, [r12, #0x810]//access counter
-	and r12, #0xFFFFFF
-	orr r11, r12
-	and r12, r11, #(0x7F << 24)
-	cmp r12, #(0x7F << 24)
-	addlt r11, #(1 << 24)
-
-	ldr r12,= sd_cluster_cache_info
-	str r11, [r12, r13, lsl #3]
-	
-	ldr r11, [r12, #0x810]
-	add r11, #1
-	str r11, [r12, #0x810]
-#endif
-
-	ldr r11, [r12, #0x808]//cluster shift
-	mov r13, r13, lsl r11
-	ldr r11, [r12, #0x80C]//cluster mask
-	and r10, r10, r11
+	mov r10, r10, lsl #23
+	mov r10, r10, lsr #23
 	ldr r12,= sd_cluster_cache
-	add r12, r13
-	ldrb r10, [r12, r10]
+	add r12, r13, lsl #9
+	ldrh r10, [r12, r10]
+	tst r9, #1
+	movne r10, r10, ror #8
 	bx lr
 
-read_address_from_handler_rom_8bit_not_cached:
+read_address_from_handler_rom_in_mem_16:
+	bic r10, r9, #0x06000000
+	sub r10, r10, #0x05000000
+	sub r10, r10, #0x00FC0000
+	ldrh r10, [r10]
+	tst r9, #1
+	movne r10, r10, ror #8
+	bx lr
+
+read_address_from_handler_rom_16_not_cached:
 	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	mov r0, r10
-	ldr r1,= sdread8_uncached
-	blx r1
+	bl sdread16_uncached
 	mov r10, r0
 	pop {r0-r9,lr}
+	tst r9, #1
+	movne r10, r10, ror #8
 	bx lr
 
-read_address_from_handler_eeprom_8bit:
-	cmp r9, #0x0E000000
-	bge read_address_from_handler_sram_8bit
+read_address_from_handler_eeprom_16:
 	mov r10, #1
 	bx lr
 
-read_address_from_handler_sram_8bit:
-	cmp r9, #0x0F000000
-	bge read_address_undefined_memory_8
+read_address_from_handler_sram_16:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
-	//sub r10, r10, #0x0B800000
-	//sub r10, r10, #0x00008C00
-	//sub r10, r10, #0x00000060
 	ldrb r10, [r10]
+	orr r10, r10, lsl #8
+	tst r9, #1
+	movne r10, r10, ror #8
 	bx lr
 
-read_address_from_handler_rom_in_mem_8bit:
-	bic r10, r9, #0x06000000
-	sub r10, r10, #0x05000000
-	sub r10, r10, #0x00FC0000
-	ldrb r10, [r10]
-	bx lr
+.global read_address_from_handler_8bit
+read_address_from_handler_8bit:
+	cmp r9, #0x0F000000
+	ldrlo pc, [pc, r9, lsr #22]
+	b read_address_undefined_memory_8
 
-read_address_from_handler_below_io_8bit:
+	.word read_address_from_handler_bios_8
+	.word read_address_undefined_memory_8
+	.word read_address_ignore
+	.word read_address_ignore
+	.word read_address_from_handler_io_8
+	.word read_address_ignore
+	.word read_address_from_handler_vram_8
+	.word read_address_ignore
+	.word read_address_from_handler_rom_8
+	.word read_address_from_handler_rom_8
+	.word read_address_from_handler_rom_8
+	.word read_address_from_handler_rom_8
+	.word read_address_from_handler_rom_8
+	.word read_address_from_handler_eeprom_8
+	.word read_address_from_handler_sram_8
+
+read_address_from_handler_bios_8:
 	cmp r9, #0x4000
-	bge read_address_undefined_memory_8
+		bge read_address_undefined_memory_8
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
 	msr cpsr_c, #0xD7
@@ -473,6 +284,68 @@ read_address_from_handler_below_io_8bit:
 	mov r11, r11, lsl #3
 	mov r10, r10, ror r11
 	and r10, r10, #0xFF
+	bx lr
+
+read_address_from_handler_io_8:
+	sub r12, r9, #0x04000000
+	cmp r12, #0x20C
+		movlt r12, r12, lsl #1
+		ldrlt r13,= address_read_table_8bit_dtcm
+		ldrlth r13, [r13, r12]
+		orrlt pc, r13, #0x01000000	//itcm
+	b read_address_undefined_memory_8
+
+read_address_from_handler_vram_8:
+	add r10, r9, #0x3F0000
+	ldrb r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_8:
+	//ldr r12,= ROM_ADDRESS_MAX
+	cmp r9, #ROM_ADDRESS_MAX//r12
+		blt read_address_from_handler_rom_in_mem_8
+
+	bic r10, r9, #0x0E000000
+
+	mov r13, r10, lsr #8
+
+	ldr r12,= sd_is_cluster_cached_table
+	ldrsh r13, [r12, r13]
+	cmp r13, #0
+	blt read_address_from_handler_rom_8_not_cached
+
+	mov r10, r10, lsl #23
+	ldr r12,= sd_cluster_cache
+	add r12, r13, lsl #9
+	ldrb r10, [r12, r10, lsr #23]
+	bx lr
+
+read_address_from_handler_rom_in_mem_8:
+	bic r10, r9, #0x06000000
+	sub r10, r10, #0x05000000
+	sub r10, r10, #0x00FC0000
+	ldrb r10, [r10]
+	bx lr
+
+read_address_from_handler_rom_8_not_cached:
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r9,lr}
+	mov r0, r10
+	bl sdread8_uncached
+	mov r10, r0
+	pop {r0-r9,lr}
+	bx lr
+
+read_address_from_handler_eeprom_8:
+	mov r10, #1
+	bx lr
+
+read_address_from_handler_sram_8:
+	ldr r11,= 0x01FF0000
+	bic r10, r9, r11
+	sub r10, r10, #0x0BC00000
+	sub r10, r10, #0x00010000
+	ldrb r10, [r10]
 	bx lr
 
 //read_address_from_handler_highio:

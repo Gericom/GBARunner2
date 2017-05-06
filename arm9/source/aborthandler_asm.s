@@ -1,7 +1,7 @@
 .section .itcm
 .altmacro
 
-.include "consts.s"
+#include "consts.s"
 
 //#define DEBUG_ABORT_ADDRESS
 
@@ -14,11 +14,17 @@
 data_abort_handler:
 	//ldr sp,= 0x33333333
 
-	mov sp, #0x33
-	orr sp, sp, lsl #8
-	orr sp, sp, lsl #16
+	//mov sp, #0x33
+	//orr sp, sp, lsl #8
+	//orr sp, sp, lsl #16
 
-	mcr p15, 0, sp, c5, c0, 2
+	//mcr p15, 0, sp, c5, c0, 2
+
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov sp, #0xFFFFFFFF
+	mcr p15, 0, sp, c5, c0, 0
+
 	mrs sp, spsr
 	tst sp, #0x20 //thumb bit
 	bne data_abort_handler_thumb

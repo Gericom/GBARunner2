@@ -1,10 +1,12 @@
 #ifndef __SD_ACCESS_H__
 #define __SD_ACCESS_H__
 
+#include "consts.s"
+
 #define READ_U16_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8))
 #define READ_U32_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8) | (((uint8_t*)(addr))[2] << 16) | (((uint8_t*)(addr))[3] << 24))
 
-#define vram_cd		((vram_cd_t*)0x06820000)
+#define vram_cd		((vram_cd_t*)sd_cluster_cache)
 
 #define SCREEN_COLS 32
 #define SCREEN_ROWS 24
@@ -202,7 +204,7 @@ typedef struct
 
 typedef struct
 {
-	cluster_cache_block_info_t cache_block_info[256];//128];//128 blocks at max seems reasonable
+	cluster_cache_block_info_t cache_block_info[4096];//128];//128 blocks at max seems reasonable
 	uint32_t total_nr_cacheblocks;
 } cluster_cache_info_t;
 
@@ -210,7 +212,7 @@ typedef struct
 typedef struct
 {
 	//vram b and c
-	uint8_t cluster_cache[256 * 1024];//96 * 1024];
+	uint8_t cluster_cache[SD_CACHE_SIZE];//96 * 1024];
 	/*uint8_t gba_rom_is_cluster_cached_table[16 * 1024];	//allows roms up to 64MB
 	union
 	{
@@ -222,13 +224,11 @@ typedef struct
 		};
 	};*/
 	//vram d
-	uint32_t gba_rom_cluster_table[32 * 1024 / 4];//allows roms up to 32MB
-	uint8_t arm9_transfer_region[64 * 1024];//contains data requested by the arm9
-	//uint8_t dldi_region[32 * 1024];//contains the dldi code
-	uint8_t gba_rom_is_cluster_cached_table[16 * 1024];	//allows roms up to 64MB
+	uint32_t gba_rom_cluster_table[32 * 1024 / 4];//allows roms up to 32MB at 4kb clusters
+	uint16_t gba_rom_is_cluster_cached_table[64 * 1024];	//allows roms up to 32MB
 	union
 	{
-		uint8_t reserved[16 * 1024];//will be used for memory management of the cached clusters
+		uint8_t reserved[64 * 1024];//will be used for memory management of the cached clusters
 		struct
 		{
 			cluster_cache_info_t cluster_cache_info;

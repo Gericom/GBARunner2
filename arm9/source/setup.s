@@ -1,6 +1,6 @@
 //#define DEBUG_ENABLED
 
-.include "consts.s"
+#include "consts.s"
 
 .global gba_setup
 gba_setup:
@@ -148,7 +148,7 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c2, c0, 1	//instruction cache
 
 	//no write buffer
-	mov r0, #0
+	mov r0, #(1 << 5)
 	orr r0, #(1 << 6)
 	mcr p15, 0, r0, c3, c0, 0
 
@@ -650,10 +650,11 @@ nibble_to_char:
 .global undef_inst_handler
 undef_inst_handler:
 	//TODO: if this is an is-nitro breakpoint (arm 0xE7FFFFFF; thumb 0xEFFF), pass control to the debugger
-	mov sp, #0x33
-	orr sp, sp, lsl #8
-	orr sp, sp, lsl #16
-	mcr p15, 0, sp, c5, c0, 2
+
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov sp, #0xFFFFFFFF
+	mcr p15, 0, sp, c5, c0, 0
 
 	mrs sp, spsr
 	tst sp, #0x20
@@ -829,10 +830,11 @@ irq_handler:
 	STMFD   SP!, {R0-R3,R12,LR}
 
 	//check for arm7 interrupt
-	mov r0, #0x33
-	orr r0, r0, lsl #8
-	orr r0, r0, lsl #16
-	mcr p15, 0, r0, c5, c0, 2
+
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov r0, #0xFFFFFFFF
+	mcr p15, 0, r0, c5, c0, 0
 
 	mov r12, #0x04000000
 	ldr r1, [r12, #0x214]
@@ -913,11 +915,10 @@ fiq_hook:
 	ORR     SP, SP, #0xC0
 	MSR     CPSR_cxsf, SP
 
-	mov sp, #0x33
-	orr sp, sp, lsl #8
-	orr sp, sp, lsl #16
-
-	mcr p15, 0, sp, c5, c0, 2
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov sp, #0xFFFFFFFF
+	mcr p15, 0, sp, c5, c0, 0
 
 fiq_hook_cp15_done:
 

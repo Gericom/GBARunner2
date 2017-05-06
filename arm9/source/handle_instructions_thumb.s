@@ -1,7 +1,7 @@
 .section .itcm
 .altmacro
 
-.include "consts.s"
+#include "consts.s"
 
 .macro finish_handler_skip_op_self_modifying
 	msr cpsr_c, #0xD7

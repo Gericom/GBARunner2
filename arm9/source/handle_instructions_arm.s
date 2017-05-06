@@ -1,7 +1,7 @@
 .section .itcm
 .altmacro
 
-.include "consts.s"
+#include "consts.s"
 
 .macro create_ldrh_strh_variant p, u, i, w, l
 .global ldrh_strh_address_calc_\p\u\i\w\l

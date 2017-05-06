@@ -1,13 +1,31 @@
 .section .itcm
 
-.include "consts.s"
+#include "consts.s"
 
 .global write_address_from_handler_32bit
 write_address_from_handler_32bit:
-	cmp r9, #0x06000000
-	bge write_address_from_handler_sprites_32bit
-	subs r13, r9, #0x04000000
-	bxlt lr
+	cmp r9, #0x0F000000
+	ldrlo pc, [pc, r9, lsr #22]
+	bx lr
+
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_from_handler_io_32
+	.word write_address_ignore
+	.word write_address_from_handler_vram_32
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore //write_address_from_handler_eeprom_32
+	.word write_address_from_handler_sram_32
+
+write_address_from_handler_io_32:
+	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
 	bxge lr
 	mov r13, r13, lsr #1
@@ -15,9 +33,7 @@ write_address_from_handler_32bit:
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 
-write_address_from_handler_sprites_32bit:
-	cmp r9, #0x0E000000
-	bge write_address_from_handler_sram_32bit
+write_address_from_handler_vram_32:
 	ldr r13,= DISPCNT_copy
 	ldrh r13, [r13]
 	and r13, #7
@@ -25,50 +41,60 @@ write_address_from_handler_sprites_32bit:
 	ldrlt r13,= 0x06010000
 	ldrge r13,= 0x06014000
 	cmp r9, r13
-	movlt r10, r9
-	blt write_address_from_handler_sprites_32bit_cont
+	strlt r11, [r9]
+	bxlt lr
 
 	ldr r12,= 0x06018000
 	cmp r9, r12
 	bxge lr
-	add r10, r9, #0x3F0000
 
-write_address_from_handler_sprites_32bit_cont:
+	add r10, r9, #0x3F0000
 	str r11, [r10]
 	bx lr
 
-write_address_from_handler_sram_32bit:
-	cmp r9, #0x0F000000
-	bxge lr
+write_address_from_handler_sram_32:
 	ldr r12,= 0x01FF0000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
-	//sub r10, r10, #0x0B800000
-	//sub r10, r10, #0x00008C00
-	//sub r10, r10, #0x00000060
-	//str r11, [r10]
 	and r12, r9, #3
 	mov r12, r12, lsl #3
 	mov r11, r11, ror r12
+	bic r10, r10, #3
 	strb r11, [r10]
 	bx lr
 
 .global write_address_from_handler_16bit
 write_address_from_handler_16bit:
-	cmp r9, #0x06000000
-	bge write_address_from_handler_sprites_16bit
-	subs r13, r9, #0x04000000
-	bxlt lr
+	cmp r9, #0x0F000000
+	ldrlo pc, [pc, r9, lsr #22]
+	bx lr
+
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_from_handler_io_16
+	.word write_address_ignore
+	.word write_address_from_handler_vram_16
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore //write_address_from_handler_eeprom_16
+	.word write_address_from_handler_sram_16
+
+write_address_from_handler_io_16:
+	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
 	bxge lr
 	ldr r12,= address_write_table_16bit_dtcm
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 
-write_address_from_handler_sprites_16bit:
-	cmp r9, #0x0E000000
-	bge write_address_from_handler_sram_16bit
+write_address_from_handler_vram_16:
 	ldr r13,= DISPCNT_copy
 	ldrh r13, [r13]
 	and r13, #7
@@ -76,42 +102,52 @@ write_address_from_handler_sprites_16bit:
 	ldrlt r13,= 0x06010000
 	ldrge r13,= 0x06014000
 	cmp r9, r13
-	movlt r10, r9
-	blt write_address_from_handler_sprites_16bit_cont
+	strlth r11, [r9]
+	bxlt lr
 
 	ldr r12,= 0x06018000
 	cmp r9, r12
 	bxge lr
-	add r10, r9, #0x3F0000
 
-write_address_from_handler_sprites_16bit_cont:
-	tst r9, #1
-	movne r11, r11, ror #8
+	add r10, r9, #0x3F0000
 	strh r11, [r10]
 	bx lr
 
-write_address_from_handler_sram_16bit:
-	cmp r9, #0x0F000000
-	bxge lr
+write_address_from_handler_sram_16:
 	ldr r12,= 0x01FF0000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
-	//sub r10, r10, #0x0B800000
-	//sub r10, r10, #0x00008C00
-	//sub r10, r10, #0x00000060
-	//strh r11, [r10]
 	tst r9, #1
 	movne r11, r11, ror #8
+	bic r10, r10, #1
 	strb r11, [r10]
 	bx lr
 
 .global write_address_from_handler_8bit
 write_address_from_handler_8bit:
-	cmp r9, #0x06000000
-	bge write_address_from_handler_sprites_8bit
-	subs r13, r9, #0x04000000
-	bxlt lr
+	cmp r9, #0x0F000000
+	ldrlo pc, [pc, r9, lsr #22]
+	bx lr
+
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_from_handler_io_8
+	.word write_address_ignore
+	.word write_address_from_handler_vram_8
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore
+	.word write_address_ignore //write_address_from_handler_eeprom_8
+	.word write_address_from_handler_sram_8
+
+write_address_from_handler_io_8:
+	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
 	bxge lr
 	mov r13, r13, lsl #1
@@ -119,9 +155,7 @@ write_address_from_handler_8bit:
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 
-write_address_from_handler_sprites_8bit:
-	cmp r9, #0x0E000000
-	bge write_address_from_handler_sram_8bit
+write_address_from_handler_vram_8:
 	ldr r13,= DISPCNT_copy
 	ldrh r13, [r13]
 	and r13, #7
@@ -133,20 +167,13 @@ write_address_from_handler_sprites_8bit:
 
 	orr r11, r11, lsl #8
 	strh r11, [r9]
-
-	//nothing written on 8 bit access
 	bx lr
 
-write_address_from_handler_sram_8bit:
-	cmp r9, #0x0F000000
-	bxge lr
+write_address_from_handler_sram_8:
 	ldr r12,= 0x01FF0000
 	bic r10, r9, r12
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
-	//sub r10, r10, #0x0B800000
-	//sub r10, r10, #0x00008C00
-	//sub r10, r10, #0x00000060
 	strb r11, [r10]
 	bx lr
 
@@ -446,7 +473,7 @@ write_address_dma_control:
 	biclt r11, #0x8000
 	blt write_address_dma_control_cont2
 
-	ldr r12,= 0x023F0000
+	ldr r12,= MAIN_MEMORY_ADDRESS_GBARUNNER_DATA
 
 	ldrh r10, [r9, #-0x2]
 	and r13, r11, #0x1F
@@ -477,7 +504,7 @@ write_address_dma_control_rom_src:
 	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	ldr r0, [r9, #-0xA]
-	sub r0, #0x02040000
+	sub r0, #MAIN_MEMORY_ADDRESS_ROM_DATA
 	ldrh r10, [r9, #-0x2]
 	and r12, r11, #0x1F
 	orr r10, r12, lsl #16
@@ -534,7 +561,7 @@ write_address_dma_size_control_cont:
 	biclt r11, #0x80000000
 	blt write_address_dma_size_control_cont3
 
-	ldr r12,= 0x023F0000
+	ldr r12,= MAIN_MEMORY_ADDRESS_GBARUNNER_DATA
 
 	ldr r13,= 0x1FFFFF
 	and r10, r11, r13
@@ -565,7 +592,7 @@ write_address_dma_size_control_rom_src:
 	ldr sp,= address_dtcm + (16 * 1024)
 	push {r0-r9,lr}
 	ldr r0, [r9, #-0x8]
-	sub r0, #0x02040000
+	sub r0, #MAIN_MEMORY_ADDRESS_ROM_DATA
 	ldr r12,= 0x1FFFFF
 	and r10, r11, r12
 	tst r11, #(1 << 26)
