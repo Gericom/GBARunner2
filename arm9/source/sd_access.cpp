@@ -265,6 +265,10 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t& cur_dir_cluster, dir_entry_t* 
 {	
 	uint16_t keys = 0;
 	uint16_t old_keys = 0;
+	uint16_t new_keys = 0;
+	uint16_t held_keys = 0;
+	int countdown = KEY_REPEAT_FREQ;
+	int delay = KEY_HOLD_DELAY;
 	int start_at_position = 0;
 	int cursor_position = 0;
 	vector entries_names;
@@ -276,18 +280,36 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t& cur_dir_cluster, dir_entry_t* 
 	while(1) {
 		//show cursor
 		MI_WriteByte((void*)0x06202000 + 32*(cursor_position - start_at_position + ENTRIES_START_ROW), 0x1A);
-
-		for (int i = 0; i < 8; i++)
-		{
+		
+		do {
+			old_keys = new_keys;
+			new_keys = ~*((vu16*)0x04000130);
+			
+			if(new_keys != old_keys)
+			{
+				countdown = KEY_REPEAT_FREQ;
+				delay = KEY_HOLD_DELAY;
+				held_keys = new_keys & ~old_keys;
+			}
+			if(--countdown == 0)
+			{
+				countdown = KEY_REPEAT_FREQ;
+				if(delay > 0)
+				{
+					delay--;
+				}
+				else 
+				{
+					held_keys = new_keys;
+				}
+			}
+			
+			keys = held_keys;			
+			held_keys = 0;
+			
 			while (*((vu16*)0x04000006) != 192);
 			while (*((vu16*)0x04000006) == 192);
-		}
-		
-		//do {
-			old_keys = keys;
-			keys = ~*((vu16*)0x04000130);
-		//	while (*((vu16*)0x04000006) != 192);
-		//} while (keys == old_keys);
+		} while (!keys);
 		
 		//hide cursor
 		if(keys & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT))
@@ -381,7 +403,7 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t& cur_dir_cluster, dir_entry_t* 
 			find_dir_entry(cur_dir_cluster, "..         ", &prev_dir_entry, SHORT_NAME);
 			if(prev_dir_entry.regular_entry.short_name[0] == 0x00)
 			{
-				*((vu32*)0x06202000) = 0x544f4f52; //DNFN Directory not found
+				continue;
 			}
 			cur_dir_cluster = get_entrys_first_cluster(&prev_dir_entry);
 			
