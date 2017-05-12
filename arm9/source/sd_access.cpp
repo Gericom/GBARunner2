@@ -148,7 +148,7 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 				//skip VOLUME_ID, HIDDEN or SYSTEM entry
 				for(int j = 0; j < 256/2; j++)
 				{
-					*(uint16_t*)(name_buffer + j*2) = 0x2020;
+					*(uint16_t*)(name_buffer + j*2) = 0x0000;
 				}
 				continue;
 			}
@@ -218,9 +218,9 @@ PUT_IN_VRAM void get_folder_contents(vector& entries_names, uint32_t cur_dir_clu
 					vector_add(&entries_names, file);
 				}
 				
-				for(int j = 0; j < 16; j++)
+				for(int j = 0; j < 256/2; j++)
 				{
-					*(uint16_t*)(name_buffer + j*2) = 0x2020;
+					*(uint16_t*)(name_buffer + j*2) = 0x0000;
 				}
 				
 				found_long_name = false;					
