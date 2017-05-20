@@ -204,7 +204,16 @@ typedef struct
 
 typedef struct
 {
+	uint16_t prev;
+	uint16_t next;
+} cluster_cache_block_link_t;
+
+typedef struct
+{
 	cluster_cache_block_info_t cache_block_info[4096];//128];//128 blocks at max seems reasonable
+	cluster_cache_block_link_t cache_linked_list[4096];
+	uint16_t cache_list_tail;
+	uint16_t cache_list_head;
 	uint32_t total_nr_cacheblocks;
 } cluster_cache_info_t;
 

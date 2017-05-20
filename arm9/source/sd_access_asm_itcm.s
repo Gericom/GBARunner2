@@ -98,3 +98,48 @@ strgeh r4, [r0], #2
 	
 ldmfd sp!, {r0, r4, r5, r6, r7, r8, pc}
 .endfunc
+
+//r0: src
+//r1: dst
+/*.global copy_512
+copy_512:
+	push {r4-r11,lr}
+	tst r0, #3
+		bne copy_512_unaligned_src
+	tst r1, #3
+		bne copy_512_unaligned_dst
+	//both source and destination are 32 bit aligned
+.rept 10
+	ldmia r0!, {r2-r12,lr}
+	stmia r1!, {r2-r12,lr}
+.endr
+	ldmia r0!, {r2-r9}
+	stmia r1!, {r2-r9}
+	pop {r4-r11,pc}
+
+copy_512_unaligned_src:
+	tst r1, #3
+		bne copy_512_unaligned_src_dst
+
+copy_512_unaligned_dst:
+
+	mov r2, r0
+	mov r0, r1
+	mov r1, r2
+	mov r2, #256
+	bl arm9_memcpy16
+	pop {r4-r11,pc}
+
+copy_512_unaligned_src_dst:
+	//copy first 16 bit, then we're aligned again
+	ldrh r2, [r0], #2
+	strh r2, [r1], #2
+.rept 10
+	ldmia r0!, {r2-r12,lr}
+	stmia r1!, {r2-r12,lr}
+.endr
+	ldmia r0!, {r2-r8}
+	stmia r1!, {r2-r8}
+	ldrh r2, [r0], #2
+	strh r2, [r1], #2
+	pop {r4-r11,pc}*/

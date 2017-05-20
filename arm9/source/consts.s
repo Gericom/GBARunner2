@@ -27,7 +27,10 @@
 #define sd_data_base (sd_cluster_cache + SD_CACHE_SIZE) //0x06840000
 #define sd_is_cluster_cached_table (sd_data_base + (32 * 1024)) //(96 * 1024))
 #define sd_cluster_cache_info (sd_is_cluster_cached_table + (2 * 64 * 1024))
-#define sd_sd_info (sd_cluster_cache_info + (4096 * 8 + 4)) //0x0685C404
+#define sd_cluster_cache_linked_list (sd_cluster_cache_info + (4096 * 8))
+#define sd_sd_info (sd_cluster_cache_linked_list + (4096 * 4 + 4 + 4)) //0x0685C404
+
+#define CACHE_LINKED_LIST_NIL	4096 //0x8000
 
 #define pu_data_permissions 0x33600603 //0x33600003 //0x33660003
 
@@ -51,7 +54,9 @@
 /*#define CACHE_STRATEGY_MRU*/
 /*this strategy isn't the best either*/
 /*#define CACHE_STRATEGY_LFU*/
-#define CACHE_STRATEGY_ROUND_ROBIN
+/*#define CACHE_STRATEGY_ROUND_ROBIN*/
+
+#define CACHE_STRATEGY_LRU_LIST
 
 
 #define CACHE_BLOCK_SIZE_SHIFT	9

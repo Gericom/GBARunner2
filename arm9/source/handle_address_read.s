@@ -82,10 +82,39 @@ read_address_from_handler_rom_32:
 	cmp r13, #0
 		blt read_address_from_handler_rom_32_not_cached
 
+#ifdef CACHE_STRATEGY_LRU_LIST
+	ldr r12,= sd_cluster_cache_linked_list
+	ldr r11, [r12, r13, lsl #2]
+	tst r11, #(CACHE_LINKED_LIST_NIL << 16)
+		bne read_address_from_handler_rom_32_cont
+
+	//cache_linked_list[curBlock->next].prev = curBlock->prev;
+	add r10, r12, r11, lsr #14
+	strh r11, [r10]
+
+	mov r11, r11, ror #16
+	add r10, r12, r11, lsr #14
+	strh r11, [r10, #2]
+
+	add r10, r12, #(4096 * 4)
+
+	ldrh r11, [r10]
+	strh r13, [r10]
+
+	add r10, r12, r11, lsl #2
+	strh r13, [r10, #2]
+
+	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
+	str r11, [r12, r13, lsl #2]
+#endif
+
+	bic r10, r9, #0x0E000000
+read_address_from_handler_rom_32_cont:
 	mov r10, r10, lsl #23
 	ldr r12,= sd_cluster_cache
-	add r12, r13, lsl #9
-	ldr r10, [r12, r10, lsr #23]
+	add r11, r12, r13, lsl #9
+	ldr r10, [r11, r10, lsr #23]
+
 	bx lr
 
 read_address_from_handler_rom_in_mem_32:
@@ -193,6 +222,34 @@ read_address_from_handler_rom_16:
 	cmp r13, #0
 		blt read_address_from_handler_rom_16_not_cached
 
+#ifdef CACHE_STRATEGY_LRU_LIST
+	ldr r12,= sd_cluster_cache_linked_list
+	ldr r11, [r12, r13, lsl #2]
+	tst r11, #(CACHE_LINKED_LIST_NIL << 16)
+		bne read_address_from_handler_rom_16_cont
+
+	//cache_linked_list[curBlock->next].prev = curBlock->prev;
+	add r10, r12, r11, lsr #14
+	strh r11, [r10]
+
+	mov r11, r11, ror #16
+	add r10, r12, r11, lsr #14
+	strh r11, [r10, #2]
+
+	add r10, r12, #(4096 * 4)
+
+	ldrh r11, [r10]
+	strh r13, [r10]
+
+	add r10, r12, r11, lsl #2
+	strh r13, [r10, #2]
+
+	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
+	str r11, [r12, r13, lsl #2]
+#endif
+
+	bic r10, r9, #0x0E000000
+read_address_from_handler_rom_16_cont:
 	mov r10, r10, lsl #23
 	mov r10, r10, lsr #23
 	ldr r12,= sd_cluster_cache
@@ -314,6 +371,34 @@ read_address_from_handler_rom_8:
 	cmp r13, #0
 	blt read_address_from_handler_rom_8_not_cached
 
+#ifdef CACHE_STRATEGY_LRU_LIST
+	ldr r12,= sd_cluster_cache_linked_list
+	ldr r11, [r12, r13, lsl #2]
+	tst r11, #(CACHE_LINKED_LIST_NIL << 16)
+		bne read_address_from_handler_rom_8_cont
+
+	//cache_linked_list[curBlock->next].prev = curBlock->prev;
+	add r10, r12, r11, lsr #14
+	strh r11, [r10]
+
+	mov r11, r11, ror #16
+	add r10, r12, r11, lsr #14
+	strh r11, [r10, #2]
+
+	add r10, r12, #(4096 * 4)
+
+	ldrh r11, [r10]
+	strh r13, [r10]
+
+	add r10, r12, r11, lsl #2
+	strh r13, [r10, #2]
+
+	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
+	str r11, [r12, r13, lsl #2]
+#endif
+
+	bic r10, r9, #0x0E000000
+read_address_from_handler_rom_8_cont:
 	mov r10, r10, lsl #23
 	ldr r12,= sd_cluster_cache
 	add r12, r13, lsl #9

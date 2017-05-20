@@ -603,7 +603,7 @@ instruction_abort_handler_error_2:
 	str r1, [r0]
 
 	sub r0, lr, #4
-	ldr r1,= nibble_to_char
+/*	ldr r1,= nibble_to_char
 	ldr r4,= (0x06202000 + 32 * 8)
 	//print address to bottom screen
 	ldrb r2, [r1, r0, lsr #28]
@@ -632,7 +632,7 @@ instruction_abort_handler_error_2:
 	ldrb r3, [r1, r0, lsr #28]
 	mov r0, r0, lsl #4
 	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
+	strh r2, [r4], #2*/
 
 	b .
 

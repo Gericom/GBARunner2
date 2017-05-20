@@ -12,16 +12,12 @@
 
 ITCM_CODE __attribute__ ((noinline)) static void MI_WriteByte(void *address, uint8_t value)
 {
-    uint16_t     val = *(uint16_t *)((uint32_t)address & ~1);
+    uint16_t val = *(uint16_t *)((uint32_t)address & ~1);
 
     if ((uint32_t)address & 1)
-    {
-        *(uint16_t *)((uint32_t)address & ~1) = (uint16_t)(((value & 0xff) << 8) | (val & 0xff));
-    }
+		*(uint16_t *)((uint32_t)address & ~1) = (uint16_t)(((value & 0xff) << 8) | (val & 0xff));
     else
-    {
-        *(uint16_t *)((uint32_t)address & ~1) = (uint16_t)((val & 0xff00) | (value & 0xff));
-    }
+		*(uint16_t *)((uint32_t)address & ~1) = (uint16_t)((val & 0xff00) | (value & 0xff));
 }
 
 ITCM_CODE static inline uint32_t get_sector_from_cluster(uint32_t cluster)
@@ -50,6 +46,19 @@ PUT_IN_VRAM void initialize_cache()
 		((uint32_t*)&vram_cd->cluster_cache_info)[i] = 0;
 	}
 	vram_cd->cluster_cache_info.total_nr_cacheblocks = sizeof(vram_cd->cluster_cache) / 512; //>> vram_cd->sd_info.cluster_shift;
+	for (int i = 0; i < vram_cd->cluster_cache_info.total_nr_cacheblocks; i++)
+	{
+		if(i > 0)
+			vram_cd->cluster_cache_info.cache_linked_list[i].prev = i - 1;
+		else
+			vram_cd->cluster_cache_info.cache_linked_list[i].prev = CACHE_LINKED_LIST_NIL;
+		if (i < vram_cd->cluster_cache_info.total_nr_cacheblocks - 1)
+			vram_cd->cluster_cache_info.cache_linked_list[i].next = i + 1;
+		else
+			vram_cd->cluster_cache_info.cache_linked_list[i].prev = CACHE_LINKED_LIST_NIL;
+	}
+	vram_cd->cluster_cache_info.cache_list_head = 0;
+	vram_cd->cluster_cache_info.cache_list_tail = vram_cd->cluster_cache_info.total_nr_cacheblocks - 1;
 	//if(vram_cd->cluster_cache_info.total_nr_cacheblocks >= 256)
 	//	vram_cd->cluster_cache_info.total_nr_cacheblocks = 255;
 }
@@ -610,7 +619,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 }
 
 //gets an empty one or wipes the oldest
-ITCM_CODE static inline int get_new_cache_block()
+ITCM_CODE static int get_new_cache_block()
 {
 	/*int oldest = -1;
 	int oldest_counter_val = -1;
@@ -695,6 +704,19 @@ ITCM_CODE static inline int get_new_cache_block()
 	if(vram_cd->cluster_cache_info.cache_block_info[block].in_use)
 		vram_cd->gba_rom_is_cluster_cached_table[vram_cd->cluster_cache_info.cache_block_info[block].cluster_index] = 0xFFFF;
 #endif
+#ifdef CACHE_STRATEGY_LRU_LIST
+	block = vram_cd->cluster_cache_info.cache_list_head;
+	//move block to tail
+	cluster_cache_block_link_t* curBlock = &vram_cd->cluster_cache_info.cache_linked_list[block];
+	vram_cd->cluster_cache_info.cache_list_head = curBlock->next;
+	vram_cd->cluster_cache_info.cache_linked_list[curBlock->next].prev = CACHE_LINKED_LIST_NIL;
+	vram_cd->cluster_cache_info.cache_linked_list[vram_cd->cluster_cache_info.cache_list_tail].next = block;
+	curBlock->prev = vram_cd->cluster_cache_info.cache_list_tail;
+	curBlock->next = CACHE_LINKED_LIST_NIL;
+	vram_cd->cluster_cache_info.cache_list_tail = block;
+	if (vram_cd->cluster_cache_info.cache_block_info[block].in_use)
+		vram_cd->gba_rom_is_cluster_cached_table[vram_cd->cluster_cache_info.cache_block_info[block].cluster_index] = 0xFFFF;
+#endif
 	//wipe this old block
 	//vram_cd->gba_rom_is_cluster_cached_table[vram_cd->cluster_cache_info.cache_block_info[block].cluster_index] = 0xFFFF;
 	//vram_cd->cluster_cache_info.cache_block_info[block].in_use = 0;
@@ -703,7 +725,7 @@ ITCM_CODE static inline int get_new_cache_block()
 	return block;
 }
 
-ITCM_CODE int ensure_cluster_cached(uint32_t cluster_index)
+ITCM_CODE static int ensure_cluster_cached(uint32_t cluster_index)
 {
 	int block = vram_cd->gba_rom_is_cluster_cached_table[cluster_index];
 	if(block == 0xFFFF)
@@ -734,9 +756,24 @@ ITCM_CODE int ensure_cluster_cached(uint32_t cluster_index)
 	ensure_cluster_cached(cluster + 1);
 }*/
 
-ITCM_CODE static inline void* get_cluster_data(uint32_t cluster_index)
+ITCM_CODE static void* get_cluster_data(uint32_t cluster_index)
 {
 	int block = ensure_cluster_cached(cluster_index);
+
+#ifdef CACHE_STRATEGY_LRU_LIST
+	if (block != vram_cd->cluster_cache_info.cache_list_tail)
+	{
+		//move block to tail
+		cluster_cache_block_link_t* curBlock = &vram_cd->cluster_cache_info.cache_linked_list[block];
+		vram_cd->cluster_cache_info.cache_linked_list[curBlock->prev].next = curBlock->next;
+		vram_cd->cluster_cache_info.cache_linked_list[curBlock->next].prev = curBlock->prev;
+		vram_cd->cluster_cache_info.cache_linked_list[vram_cd->cluster_cache_info.cache_list_tail].next = block;
+		curBlock->prev = vram_cd->cluster_cache_info.cache_list_tail;
+		curBlock->next = CACHE_LINKED_LIST_NIL;
+		vram_cd->cluster_cache_info.cache_list_tail = block;
+	}
+#endif
+
 	//int block = vram_cd->gba_rom_is_cluster_cached_table[cluster_index];
 #if defined(CACHE_STRATEGY_LRU) || defined(CACHE_STRATEGY_LFU) || defined(CACHE_STRATEGY_MRU)
 	vram_cd->cluster_cache_info.cache_block_info[block].counter = vram_cd->sd_info.access_counter;
@@ -813,6 +850,8 @@ extern "C" ITCM_CODE uint8_t sdread8_uncached(uint32_t address)
 	return *((uint8_t*)(cluster_data + cluster_offset));
 }
 
+//extern "C" void copy_512(uint16_t* src, uint16_t* dst);
+
 
 extern "C" ITCM_CODE void read_gba_rom(uint32_t address, uint32_t size, uint8_t* dst)
 {
@@ -843,6 +882,7 @@ extern "C" ITCM_CODE void read_gba_rom(uint32_t address, uint32_t size, uint8_t*
 	while(size_left >= 512)//(1 << vram_cd->sd_info.cluster_shift))
 	{
 		cluster_data = get_cluster_data(cluster++);
+		//copy_512((uint16_t*)cluster_data, (uint16_t*)dst);
 		arm9_memcpy16((uint16_t*)dst, (uint16_t*)cluster_data, /*(1 << vram_cd->sd_info.cluster_shift)*/512 / 2);
 		size_left -= 512;//1 << vram_cd->sd_info.cluster_shift;
 		dst += 512;//1 << vram_cd->sd_info.cluster_shift;

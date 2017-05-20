@@ -4,7 +4,7 @@
 bios_waitintr_fix:
 	mcr p15,0,r0,c7,c0,4
 
-.global bios_cpufastset_sd_patch
+/*.global bios_cpufastset_sd_patch
 bios_cpufastset_sd_patch:
 	beq 0xC24
 
@@ -66,4 +66,4 @@ bios_cpufastset_sd_patch_fifo_loop:
 
 	ldr r0,= 0x06868000
 	
-	b 0xBD8
+	b 0xBD8*/
