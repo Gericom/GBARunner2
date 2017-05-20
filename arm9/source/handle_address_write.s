@@ -213,6 +213,11 @@ write_address_dispcontrol_cont:
 	cmp r13, #1
 	moveq r11, #2
 	biceq r12, #(1 << 11)
+	cmp r13, #1
+		biceq r12, #0x800
+	cmp r13, #2
+		biceq r12, #0x300
+
 	cmp r13, #3
 	movge r11, #5
 	orr r12, r11
