@@ -55,7 +55,7 @@ PUT_IN_VRAM void initialize_cache()
 		if (i < vram_cd->cluster_cache_info.total_nr_cacheblocks - 1)
 			vram_cd->cluster_cache_info.cache_linked_list[i].next = i + 1;
 		else
-			vram_cd->cluster_cache_info.cache_linked_list[i].prev = CACHE_LINKED_LIST_NIL;
+			vram_cd->cluster_cache_info.cache_linked_list[i].next = CACHE_LINKED_LIST_NIL;
 	}
 	vram_cd->cluster_cache_info.cache_list_head = 0;
 	vram_cd->cluster_cache_info.cache_list_tail = vram_cd->cluster_cache_info.total_nr_cacheblocks - 1;
