@@ -507,7 +507,7 @@ write_address_dma_control_rom_src:
 	bic r11, r11, #0x8000
 	strh r11, [r9]
 	ldr sp,= address_dtcm + (16 * 1024)
-	push {r0-r9,lr}
+	push {r0-r3,lr}
 	ldr r0, [r9, #-0xA]
 	sub r0, #MAIN_MEMORY_ADDRESS_ROM_DATA
 	ldrh r10, [r9, #-0x2]
@@ -517,9 +517,8 @@ write_address_dma_control_rom_src:
 	moveq r1, r10, lsl #1
 	movne r1, r10, lsl #2
 	ldr r2, [r9, #-0x6]
-	ldr r3,= read_gba_rom
-	blx r3
-	pop {r0-r9,lr}
+	bl read_gba_rom_asm
+	pop {r0-r3,lr}
 	bx lr
 
 write_address_dma_control_cont:
@@ -595,7 +594,7 @@ write_address_dma_size_control_rom_src:
 	bic r11, #0x80000000
 	str r11, [r9]
 	ldr sp,= address_dtcm + (16 * 1024)
-	push {r0-r9,lr}
+	push {r0-r3,lr}
 	ldr r0, [r9, #-0x8]
 	sub r0, #MAIN_MEMORY_ADDRESS_ROM_DATA
 	ldr r12,= 0x1FFFFF
@@ -604,9 +603,8 @@ write_address_dma_size_control_rom_src:
 	moveq r1, r10, lsl #1
 	movne r1, r10, lsl #2
 	ldr r2, [r9, #-0x4]
-	ldr r3,= read_gba_rom
-	blx r3
-	pop {r0-r9,lr}
+	bl read_gba_rom_asm
+	pop {r0-r3,lr}
 	bx lr
 
 write_address_dma_size_control_cont2:

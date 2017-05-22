@@ -47,11 +47,12 @@ read_address_from_handler_bios_32:
 
 	sub r10, #8
 	cmp r10, #0x4000
-	ldrlt r10, [r9] //if the opcode is in the bios, read the data
-	ldrge r10,= bios_op
-	andge r11, r9, #3
-	movge r11, r11, lsl #3
-	movge r10, r10, ror r11
+		ldrlt r10, [r9] //if the opcode is in the bios, read the data
+		bxlt lr
+	ldr r10,= bios_op
+	and r11, r9, #3
+	mov r11, r11, lsl #3
+	mov r10, r10, ror r11
 	bx lr
 
 read_address_from_handler_io_32:
@@ -83,10 +84,8 @@ read_address_from_handler_rom_32:
 		blt read_address_from_handler_rom_32_not_cached
 
 #ifdef CACHE_STRATEGY_LRU_LIST
-	ldr r12,= sd_cluster_cache_linked_list
+	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	ldr r11, [r12, r13, lsl #2]
-	tst r11, #(CACHE_LINKED_LIST_NIL << 16)
-		bne read_address_from_handler_rom_32_cont
 
 	//cache_linked_list[curBlock->next].prev = curBlock->prev;
 	add r10, r12, r11, lsr #14
@@ -106,10 +105,10 @@ read_address_from_handler_rom_32:
 
 	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
 	str r11, [r12, r13, lsl #2]
-#endif
 
 	bic r10, r9, #0x0E000000
-read_address_from_handler_rom_32_cont:
+#endif
+
 	mov r10, r10, lsl #23
 	ldr r12,= sd_cluster_cache
 	add r11, r12, r13, lsl #9
@@ -126,11 +125,11 @@ read_address_from_handler_rom_in_mem_32:
 
 read_address_from_handler_rom_32_not_cached:
 	ldr sp,= address_dtcm + (16 * 1024)
-	push {r0-r9,lr}
+	push {r0-r3,lr}
 	mov r0, r10
 	bl sdread32_uncached
 	mov r10, r0
-	pop {r0-r9,lr}
+	pop {r0-r3,lr}
 	bx lr
 
 read_address_from_handler_eeprom_32:
@@ -223,10 +222,8 @@ read_address_from_handler_rom_16:
 		blt read_address_from_handler_rom_16_not_cached
 
 #ifdef CACHE_STRATEGY_LRU_LIST
-	ldr r12,= sd_cluster_cache_linked_list
+	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	ldr r11, [r12, r13, lsl #2]
-	tst r11, #(CACHE_LINKED_LIST_NIL << 16)
-		bne read_address_from_handler_rom_16_cont
 
 	//cache_linked_list[curBlock->next].prev = curBlock->prev;
 	add r10, r12, r11, lsr #14
@@ -246,10 +243,10 @@ read_address_from_handler_rom_16:
 
 	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
 	str r11, [r12, r13, lsl #2]
-#endif
 
 	bic r10, r9, #0x0E000000
-read_address_from_handler_rom_16_cont:
+#endif
+
 	mov r10, r10, lsl #23
 	mov r10, r10, lsr #23
 	ldr r12,= sd_cluster_cache
@@ -270,11 +267,11 @@ read_address_from_handler_rom_in_mem_16:
 
 read_address_from_handler_rom_16_not_cached:
 	ldr sp,= address_dtcm + (16 * 1024)
-	push {r0-r9,lr}
+	push {r0-r3,lr}
 	mov r0, r10
 	bl sdread16_uncached
 	mov r10, r0
-	pop {r0-r9,lr}
+	pop {r0-r3,lr}
 	tst r9, #1
 	movne r10, r10, ror #8
 	bx lr
@@ -372,10 +369,8 @@ read_address_from_handler_rom_8:
 	blt read_address_from_handler_rom_8_not_cached
 
 #ifdef CACHE_STRATEGY_LRU_LIST
-	ldr r12,= sd_cluster_cache_linked_list
+	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	ldr r11, [r12, r13, lsl #2]
-	tst r11, #(CACHE_LINKED_LIST_NIL << 16)
-		bne read_address_from_handler_rom_8_cont
 
 	//cache_linked_list[curBlock->next].prev = curBlock->prev;
 	add r10, r12, r11, lsr #14
@@ -395,10 +390,10 @@ read_address_from_handler_rom_8:
 
 	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
 	str r11, [r12, r13, lsl #2]
-#endif
 
 	bic r10, r9, #0x0E000000
-read_address_from_handler_rom_8_cont:
+#endif
+
 	mov r10, r10, lsl #23
 	ldr r12,= sd_cluster_cache
 	add r12, r13, lsl #9
@@ -414,11 +409,11 @@ read_address_from_handler_rom_in_mem_8:
 
 read_address_from_handler_rom_8_not_cached:
 	ldr sp,= address_dtcm + (16 * 1024)
-	push {r0-r9,lr}
+	push {r0-r3,lr}
 	mov r0, r10
 	bl sdread8_uncached
 	mov r10, r0
-	pop {r0-r9,lr}
+	pop {r0-r3,lr}
 	bx lr
 
 read_address_from_handler_eeprom_8:
