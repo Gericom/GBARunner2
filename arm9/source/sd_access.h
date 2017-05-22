@@ -14,6 +14,8 @@
 #define ENTRIES_START_ROW 2
 #define ENTRIES_PER_SCREEN (SCREEN_ROWS - ENTRIES_START_ROW)
 #define SKIP_ENTRIES (ENTRIES_PER_SCREEN/2 - 1)
+#define KEY_HOLD_DELAY 4
+#define KEY_REPEAT_FREQ 6
 
 extern uint8_t _io_dldi;
 
