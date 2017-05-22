@@ -2,8 +2,11 @@
 #include <string.h>
 #include "timer.h"
 #include "sound.h"
+#include "fifo.h"
 
 #define SOUND_BUFFER_SIZE	8192
+
+#define FIFO_BLOCK_SIZE	16
 
 s8 soundBuffer[SOUND_BUFFER_SIZE];
 
@@ -17,6 +20,8 @@ uint32_t samplesPerBlock;
 int sampleFreq;
 
 volatile int soundStarted;
+
+uint32_t srcAddress = 0;
 
 /*static void gba_sound_timer2_handler()
 {
@@ -43,7 +48,7 @@ void gba_sound_init()
 	//irqSet(IRQ_TIMER2, gba_sound_timer2_handler);
 }
 
-static inline void gba_sound_resync()
+void gba_sound_resync()
 {
 	soundStarted = 0;
 	soundBufferWriteOffset = 0;
@@ -74,6 +79,7 @@ static void gba_sound_update_ds_channels()
 
 void gba_sound_notify_reset()
 {
+	return;
 	if(sampleFreq <= 0)
 		return;
 	if(!(*((vu32*)0x04000136) & 1))
@@ -131,34 +137,81 @@ void gba_sound_vblank()
 
 }
 
+static int sampcnter = 0;
+
+extern "C" void timer3_overflow_irq()
+{
+	if(srcAddress == 0)
+		return;
+	if(sampcnter == 0)//(FIFO_BLOCK_SIZE - 1))
+	{
+		if(!(*((vu32*)0x04000184) & 2))
+		{
+			REG_SEND_FIFO = srcAddress;
+			//invoke an irq on arm9
+			*((vu32*)0x04000180) |= (1 << 13);
+		}
+		else
+		{
+			for(int i = 0; i < FIFO_BLOCK_SIZE; i++)
+				soundBuffer[(soundBufferWriteOffset + i) % SOUND_BUFFER_SIZE] = soundBuffer[(soundBufferWriteOffset - FIFO_BLOCK_SIZE + i) % SOUND_BUFFER_SIZE];
+			soundBufferWriteOffset += FIFO_BLOCK_SIZE;
+			if(soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
+				soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
+			gba_sound_update_ds_channels();
+		}
+		srcAddress += FIFO_BLOCK_SIZE;//16;
+	}
+	sampcnter++;
+	if(sampcnter == FIFO_BLOCK_SIZE)
+		sampcnter = 0;
+}
+
 void gba_sound_timer_updated(uint16_t reloadVal)
 {
+	if(reloadVal == 0)
+		return;
 	int freq = (-16 * 1024 * 1024) / ((int16_t)reloadVal);
 	if(sampleFreq != freq)
 	{
 		sampleFreq = freq;
 		gba_sound_resync();
+		//setup the sound fifo timer
+		//REG_TM[3].CNT_H = 0;
+		//REG_TM[3].CNT_L = ((TIMER_FREQ(sampleFreq) + 2) * FIFO_BLOCK_SIZE);//* 64 / FIFO_BLOCK_SIZE);//16);
+		//REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;// | REG_TMXCNT_H_PS_64;
+		//REG_IE |= (1 << 6);
 	}
 }
 
 void gba_sound_fifo_write(uint32_t samps)
 {
-	if(SOUND_BUFFER_SIZE - soundBufferWriteOffset >= 4)
-	{
-		soundBuffer[soundBufferWriteOffset] = samps & 0xFF;
-		soundBuffer[soundBufferWriteOffset + 1] = (samps >> 8) & 0xFF;
-		soundBuffer[soundBufferWriteOffset + 2] = (samps >> 16) & 0xFF;
-		soundBuffer[soundBufferWriteOffset + 3] = (samps >> 24) & 0xFF;
-	}
-	else
-	{
-		//wrap around
-		soundBuffer[(soundBufferWriteOffset) % SOUND_BUFFER_SIZE] = samps & 0xFF;
-		soundBuffer[(soundBufferWriteOffset + 1) % SOUND_BUFFER_SIZE] = (samps >> 8) & 0xFF;
-		soundBuffer[(soundBufferWriteOffset + 2) % SOUND_BUFFER_SIZE] = (samps >> 16) & 0xFF;
-		soundBuffer[(soundBufferWriteOffset + 3) % SOUND_BUFFER_SIZE] = (samps >> 24) & 0xFF;
-	}
+	soundBuffer[(soundBufferWriteOffset) % SOUND_BUFFER_SIZE] = samps & 0xFF;
+	soundBuffer[(soundBufferWriteOffset + 1) % SOUND_BUFFER_SIZE] = (samps >> 8) & 0xFF;
+	soundBuffer[(soundBufferWriteOffset + 2) % SOUND_BUFFER_SIZE] = (samps >> 16) & 0xFF;
+	soundBuffer[(soundBufferWriteOffset + 3) % SOUND_BUFFER_SIZE] = (samps >> 24) & 0xFF;
 	soundBufferWriteOffset += 4;
+	if(soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
+		soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
+	gba_sound_update_ds_channels();
+}
+
+void gba_sound_set_src(uint32_t address)
+{
+	srcAddress = address;
+	REG_TM[3].CNT_H = 0;
+	sampcnter = 0;
+	//timer3_overflow_irq();
+	REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq);// * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
+	REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;// | REG_TMXCNT_H_PS_64;
+	REG_IE |= (1 << 6);
+}
+
+void gba_sound_fifo_write16(uint8_t* samps)
+{
+	for(int i = 0; i < FIFO_BLOCK_SIZE; i++)
+		soundBuffer[(soundBufferWriteOffset + i) % SOUND_BUFFER_SIZE] = samps[i];
+	soundBufferWriteOffset += FIFO_BLOCK_SIZE;
 	if(soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
 		soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
 	gba_sound_update_ds_channels();

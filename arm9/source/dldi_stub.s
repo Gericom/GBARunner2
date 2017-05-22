@@ -1,8 +1,18 @@
+#include "consts.s"
+
+#ifdef ARM7_DLDI
 .section .text
+#else
+.section .vram
+#endif
+
+
 @---------------------------------------------------------------------------------
 	.align	4
 	.arm
-	//.global _io_dldi
+#ifndef ARM7_DLDI
+	.global _io_dldi
+#endif
 @---------------------------------------------------------------------------------
 .equ FEATURE_MEDIUM_CANREAD,		0x00000001
 .equ FEATURE_MEDIUM_CANWRITE,		0x00000002
@@ -34,8 +44,13 @@ _dldi_start:
 @---------------------------------------------------------------------------------
 @ Offsets to important sections within the data	-- 32 bytes
 	.align	6
+#ifdef ARM7_DLDI
 	.word   0x03805000 //_dldi_start		@ data start
 	.word   0x0380D000 //_dldi_end		@ data end
+#else
+	.word   _dldi_start		@ data start
+	.word   _dldi_end		@ data end
+#endif
 	.word	0x00000000		@ Interworking glue start	-- Needs address fixing
 	.word	0x00000000		@ Interworking glue end
 	.word   0x00000000		@ GOT start					-- Needs address fixing

@@ -4,3 +4,4 @@ resources
 bios.bin
 rom.bin
 *.elf
+nitrofiles

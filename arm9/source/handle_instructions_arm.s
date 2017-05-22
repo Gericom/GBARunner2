@@ -1,7 +1,7 @@
 .section .itcm
 .altmacro
 
-.include "consts.s"
+#include "consts.s"
 
 .macro create_ldrh_strh_variant p, u, i, w, l
 .global ldrh_strh_address_calc_\p\u\i\w\l
@@ -160,6 +160,10 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 		add r9, r9, r0
 	.endif
 .endif
+//align if 32 bit write
+.if !\bw && !\l
+	bic r9, r9, #3
+.endif
 
 .if \p && \w //pre
 	str r9, [r11, r8, lsr #14]
@@ -212,7 +216,7 @@ ldm_stm_address_calc_\p\u\s\w\l:
 	//ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16
 	//count nr bits
-	ldr r12,= 0x10000040
+	ldr r12,= address_count_bit_table
 	and r13, r1, #0xFF0000
 	ldrb r13, [r12, r13, lsr #16]
 	ldrb r12, [r12, r1, lsr #24]

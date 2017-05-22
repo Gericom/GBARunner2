@@ -1,6 +1,6 @@
 //#define DEBUG_ENABLED
 
-.include "consts.s"
+#include "consts.s"
 
 .global gba_setup
 gba_setup:
@@ -18,8 +18,13 @@ gba_setup:
 	//map the gba cartridge to the arm7 and nds card too
 	ldr r0,= 0x4000204
 	ldrh r1, [r0]
+#ifdef ARM7_DLDI
 	orr r1, #0x80
 	orr r1, #0x800 //card to arm7
+#else
+	bic r1, #0x80
+	bic r1, #0x800 //card to arm9
+#endif
 	bic r1, #0x8000	//set memory priority to arm9
 	strh r1, [r0]
 
@@ -49,6 +54,15 @@ vram_setup_copyloop:
 	subs r1, #0x20
 	bne vram_setup_copyloop
 
+#ifdef ISNITRODEBUG
+	//this enables debug printing on IS-NITRO-EMULATOR
+	//this is not completely correct code, it should actually read the
+	//gba mapping address from 0x027FFF7C or something
+	ldr r0,= 0x09F80000
+	ldr r1,= 0x202
+	strh r1, [r0, #0xFE] //enable debug print
+#endif
+
 	//dim the screen a bit for gba colors:
 	//ldr r0,= 0x0400006C
 	//ldr r1,= 0x8008
@@ -67,7 +81,9 @@ vram_setup_copyloop:
 	//-region 6 exclusion region for i-cache	0x02000000-0x0203FFFF	r/w/x
 
 	//region 0	bg region		0x00000000-0xFFFFFFFF	2 << 31		r/w/x
-	ldr r0,= (1 | (31 << 1) | 0)
+	//ldr r0,= (1 | (31 << 1) | 0)
+	//mcr p15, 0, r0, c6, c0, 0
+	ldr r0,= (1 | (26 << 1) | 0)
 	mcr p15, 0, r0, c6, c0, 0
 
 	//region 1	io region		0x04000000-0x04FFFFFF	2 << 23		-/-/-
@@ -75,7 +91,12 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c6, c1, 0
 
 	//region 2 card				0x08000000-0x0FFFFFFF	2 << 26		-/-/-
-	ldr r0,= (1 | (26 << 1) | 0x08000000)
+	//ldr r0,= (1 | (26 << 1) | 0x08000000)
+	//mcr p15, 0, r0, c6, c2, 0
+	//mov r0, #0
+	//mcr p15, 0, r0, c6, c2, 0
+	//vram; write protected, cause byte writes are not possible :/
+	ldr r0,= (1 | (16 << 1) | 0x06000000)
 	mcr p15, 0, r0, c6, c2, 0
 
 	//region 3	oam vram region	0x06010000-0x06017FFF	2 << 14		-/-/-
@@ -89,7 +110,9 @@ vram_setup_copyloop:
 	//ldr r0,= (1 | (24 << 1) | 0x00000000)
 	//this does not protect the whole itcm, because we don't want reading and writing to bios to work,
 	//but itcm should be able to read itself!
-	ldr r0,= (1 | (23 << 1) | 0x00000000)
+	//ldr r0,= (1 | (23 << 1) | 0x00000000)
+	//mcr p15, 0, r0, c6, c4, 0
+	ldr r0,= (1 | (24 << 1) | 0x00000000)
 	mcr p15, 0, r0, c6, c4, 0
 
 	//main memory
@@ -118,7 +141,7 @@ vram_setup_copyloop:
 	//orr r0, r0, #(0x36 << (4 * 5))
 	//orr r0, r0, #(0x3 << (4 * 7))
 	mcr p15, 0, r0, c5, c0, 2
-	ldr r0,= 0x33660003
+	ldr r0,= 0x33660303
 	mcr p15, 0, r0, c5, c0, 3
 
 	//only instruction and data cache for (fake) cartridge
@@ -131,7 +154,7 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c2, c0, 1	//instruction cache
 
 	//no write buffer
-	mov r0, #0
+	mov r0, #(1 << 5)
 	orr r0, #(1 << 6)
 	mcr p15, 0, r0, c3, c0, 0
 
@@ -205,7 +228,8 @@ gba_setup_fill_sub_loop:
 	strh r1, [r0]
 
 	//put the dtcm at 10000000 for the abort mode stack
-	ldr r0,= 0x1000000A
+	//ldr r0,= 0x1000000A
+	ldr r0,= (address_dtcm + 0xA)
 	mcr p15, 0, r0, c9, c1, 0
 
 	ldr r0,= address_write_table_32bit_dtcm_setup
@@ -227,16 +251,25 @@ gba_setup_fill_sub_loop:
 	ldr r1,= (0x8000 | (1 << 3))
 	str r1, [r0, #4]
 
-	//mov r1, #(1 << 14)
-	//str r1, [r0]
+	//enable arm7 irq
+	mov r1, #(1 << 14)
+	str r1, [r0]
+
+	ldr r0,= 0x04000210
+	mov r1, #(1 << 16)
+	str r1, [r0]
 
 	//send setup command to arm7
+#ifdef ARM7_DLDI
 	ldr r2,= _dldi_start
+#endif
 	ldr r0,= 0x04000188
 	ldr r1,= 0xAA5555AA
 	//ldr r3,= bios_tmp
 	str r1, [r0]
+#ifdef ARM7_DLDI
 	str r2, [r0]
+#endif
 	//str r3, [r0]
 
 	//wait for the arm7 sync command
@@ -253,14 +286,16 @@ fifo_loop_1:
 	strne r1, [r2]
 	bne fifo_loop_1
 
-	ldr sp,= 0x10000000 + (16 * 1024)
+	ldr sp,= address_dtcm + (16 * 1024)
 
+#ifndef ARM7_DLDI
 	//setup dldi
-	//ldr r0,= (_io_dldi + 8)
-	//ldr r0, [r0]
-	//blx r0
-	//cmp r0, #0
-	//beq .
+	ldr r0,= (_io_dldi + 8)
+	ldr r0, [r0]
+	blx r0
+	cmp r0, #0
+		beq .
+#endif
 
 	ldr r0,= _dldi_start + 16
 	ldr r1,= 0x06202000
@@ -372,13 +407,13 @@ dldi_name_copy:
 	//mov r1, #0x80
 	//strb r1, [r0]
 
-	mov r0, #0 //#0xFFFFFFFF
-	ldr r1,= 0x23F0000 //(0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
-	mov r2, #(64 * 1024)
-gba_setup_fill_H_loop:
-	str r0, [r1], #4
-	subs r2, #4
-	bne gba_setup_fill_H_loop
+//	mov r0, #0 //#0xFFFFFFFF
+//	ldr r1,= 0x23F0000 //(0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
+//	mov r2, #(64 * 1024)
+//gba_setup_fill_H_loop:
+//	str r0, [r1], #4
+//	subs r2, #4
+//	bne gba_setup_fill_H_loop
 
 	ldr r0,= 0x74
 	mov r1, #0
@@ -479,7 +514,7 @@ gba_start_bkpt:
 	mov r0, #0x4
 	str r1, [r0]
 
-#ifdef DEBUG_ENABLED
+//#ifdef DEBUG_ENABLED
 	//for debugging
 	ldr r0,= irq_handler
 	sub r0, #0x18	//relative to source address
@@ -488,16 +523,26 @@ gba_start_bkpt:
 	orr r1, r0, lsr #2
 	mov r0, #0x18
 	str r1, [r0]
-#endif
+//#endif
+
+	//fiq handler for is-nitro
+	ldr r0,= fiq_hook
+	sub r0, #0x1C	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x1C
+	str r1, [r0]
 
 	//set the abort mode stack
 	mrs r0, cpsr
 	and r0, r0, #0xE0
 	orr r1, r0, #0x17
 	msr cpsr_c, r1
-	ldr sp,= 0x10004000
+	ldr sp,= (address_dtcm + 0x4000) //0x10004000
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
+	
 
 	ldr r0,= count_bits_initialize
 	blx r0
@@ -542,6 +587,16 @@ instruction_abort_handler_cont:
 	subs pc, lr, #4
 
 instruction_abort_handler_error:
+	mov sp, #0x06000000
+	orr sp, #0x00010000
+	cmp lr, sp
+	blt instruction_abort_handler_error_cont
+	orr sp, #0x00008000
+	cmp lr, sp
+	bge instruction_abort_handler_error_cont
+	add lr, #0x3F0000
+	subs pc, lr, #4
+instruction_abort_handler_error_cont:
 	add sp, lr, #0x5000000
 	add sp, #0x0FC0000
 	cmp sp, #0x08000000
@@ -560,6 +615,95 @@ instruction_abort_handler_error_2:
 	str r1, [r0]
 
 	sub r0, lr, #4
+/*	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 8)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2*/
+
+	b .
+
+.align 4
+
+//undef_inst_handler:
+//	ldr pc,= undef_inst_handler_vram
+
+.global nibble_to_char
+nibble_to_char:
+	.byte	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46
+
+.align 4
+
+.global undef_inst_handler
+undef_inst_handler:
+	//TODO: if this is an is-nitro breakpoint (arm 0xE7FFFFFF; thumb 0xEFFF), pass control to the debugger
+
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov sp, #0xFFFFFFFF
+	mcr p15, 0, sp, c5, c0, 0
+
+	mrs sp, spsr
+	tst sp, #0x20
+
+	bne bkpt_test_thumb
+bkpt_test_arm:
+	ldr sp, [lr, #-4]
+	cmp sp, #0xE7FFFFFF
+	beq is_bkpt
+	sub lr, lr, #4
+	b no_bkpt
+bkpt_test_thumb:
+	ldrh sp, [lr, #-2]
+	//ugh, lack of registers
+	mov sp, sp, lsl #16
+	orr sp, sp, #0xFF00
+	orr sp, sp, #0x00FF
+	cmp sp, #0xEFFFFFFF
+	subne lr, lr, #2
+	bne no_bkpt
+is_bkpt:
+	MRS     SP, CPSR
+	ORR     SP, SP, #0xC0
+	MSR     CPSR_cxsf, SP
+	b fiq_hook_cp15_done
+
+no_bkpt:
+	mrc p15, 0, r0, c1, c0, 0
+	bic r0, #(1 | (1 << 2))	//disable pu and data cache
+	bic r0, #(1 << 12) //and cache
+	mcr p15, 0, r0, c1, c0, 0
+
+	ldr r0,= 0x06202000
+	ldr r1,= 0x46444E55
+	str r1, [r0]
+
+/*	mov r0, lr
 	ldr r1,= nibble_to_char
 	ldr r4,= (0x06202000 + 32 * 8)
 	//print address to bottom screen
@@ -591,142 +735,226 @@ instruction_abort_handler_error_2:
 	orr r2, r2, r3, lsl #8
 	strh r2, [r4], #2
 
+	ldr r0, [lr]
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 9)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2*/
+
 	b .
 
-.align 4
+/*	mrs r0, spsr
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 10)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
 
-undef_inst_handler:
-	ldr pc,= undef_inst_handler_vram
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	msr cpsr_c, #0x9F
+	mov r0, lr
+	msr cpsr_c, #0x9B
+	ldr r1,= nibble_to_char
+	ldr r4,= (0x06202000 + 32 * 11)
+	//print address to bottom screen
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	ldrb r2, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	ldrb r3, [r1, r0, lsr #28]
+	mov r0, r0, lsl #4
+	orr r2, r2, r3, lsl #8
+	strh r2, [r4], #2
+
+	b .*/
 
 //inbetween to catch the current running function in usermode
 irq_handler:
 	STMFD   SP!, {R0-R3,R12,LR}
 
-	ldr r1,= nibble_to_char
-	ldr r12,= (0x06202000 + 32 * 11)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
+	//check for arm7 interrupt
 
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov r0, #0xFFFFFFFF
+	mcr p15, 0, r0, c5, c0, 0
 
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
+	mov r12, #0x04000000
+	ldr r1, [r12, #0x214]
+	tst r1, #(1 << 16)
+	bne irq_handler_arm7_irq
+	ldr r1,= pu_data_permissions
+	mcr p15, 0, r1, c5, c0, 2
 
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	sub r0, lr, #4
-	ldr r1,= nibble_to_char
-	ldr r12,= (0x06202000 + 32 * 10)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	mrs r0, cpsr
-	msr cpsr_c, #0x93
-	ldr r1, [sp, #(7<<2)]
-	msr cpsr_c, r0
-	mov r0, r1
-	ldr r1,= nibble_to_char
-	ldr r12,= (0x06202000 + 32 * 12)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	MOV     R0, #0x4000000
 	ADR     LR, loc_138
-	LDR     PC, [R0,#-4]
+	LDR     PC, [R12,#-4]
 loc_138:
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
 
-.global thumb_string
-thumb_string:
-	.string "Thumb"
-	.byte 0
+irq_handler_arm7_irq:
+	//do stuff
+1:
+	ldr r1, [r12, #0x184]
+	tst r1, #(1 << 8)
+	bne 1b
+2:
+	mov r0, #0x04100000
+	ldr r1, [r0]	//read word from fifo
 
-.global unk_string
-unk_string:
-	.string "Unk"
-	.byte 0
+	//cmp r1, #0x000000A5
+	//beq irq_handler_arm7_irq_masterbright
+	//cmp r1, #0x000000A6
+	//beq irq_handler_arm7_irq_masterbright2
 
-.global ok_string
-ok_string:
-	.string "Ok"
-	.byte 0
+	//wait for fifo empty to prevent overflow
+3:
+	ldr r0, [r12, #0x184]
+	tst r0, #1
+	beq 3b
 
-.global NIBBLE_LOOKUP
-NIBBLE_LOOKUP:
-	.byte	0, 1, 1, 2, 1, 2, 2, 3
-	.byte	1, 2, 2, 3, 2, 3, 3, 4
+	ldr r0,= 0xAA5500F9
+	str r0, [r12, #0x188]
+
+	ldmia r1!, {r0, r2, r3, lr}
+	
+	str r0, [r12, #0x188]
+	str r2, [r12, #0x188]
+	str r3, [r12, #0x188]
+	str lr, [r12, #0x188]
+
+//4:
+	ldr r1, [r12, #0x184]
+	tst r1, #(1 << 8)
+	beq 2b
+
+	//acknowledge
+	mov r1, #(1 << 16)
+	str r1, [r12, #0x214]
+
+	ldr r2,= fake_irq_flags
+	ldr r1, [r2]
+	orr r1, #(3 << 9)
+	str r1, [r2]
+
+	ldr r1,= pu_data_permissions
+	mcr p15, 0, r1, c5, c0, 2
+	LDMFD   SP!, {R0-R3,R12,LR}
+	SUBS    PC, LR, #4
+
+//irq_handler_arm7_irq_masterbright:
+//	ldr r1,= 0x8010
+//	str r1, [r12, #0x6C]
+//	b 4b
+
+//irq_handler_arm7_irq_masterbright2:
+//	mov r1, #0
+//	str r1, [r12, #0x6C]
+//	b 4b
+
+//for is-nitro
+fiq_hook:
+	MRS     SP, CPSR
+	ORR     SP, SP, #0xC0
+	MSR     CPSR_cxsf, SP
+
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov sp, #0xFFFFFFFF
+	mcr p15, 0, sp, c5, c0, 0
+
+fiq_hook_cp15_done:
+
+	LDR     SP, =0x27FFD9C
+	ADD     SP, SP, #1
+	STMFD   SP!, {R12,LR}
+	MRS     LR, SPSR
+	MRC     p15, 0, R12,c1,c0, 0
+	STMFD   SP!, {R12,LR}
+	BIC     R12, R12, #1
+	MCR     p15, 0, R12,c1,c0, 0
+	BIC     R12, SP, #1
+	LDR     R12, [R12,#0x10]
+	CMP     R12, #0
+	BLXNE   R12
+	LDMFD   SP!, {R12,LR}
+	MCR     p15, 0, R12,c1,c0, 0
+	MSR     SPSR_cxsf, LR
+	LDMFD   SP!, {R12,LR}
+
+	ldr sp,= pu_data_permissions
+	mcr p15, 0, sp, c5, c0, 2
+
+	SUBS    PC, LR, #4
 
 .align 4
 

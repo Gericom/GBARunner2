@@ -1,7 +1,7 @@
 .section .itcm
 .altmacro
 
-.include "consts.s"
+#include "consts.s"
 
 //#define DEBUG_ABORT_ADDRESS
 
@@ -12,8 +12,19 @@
 
 .global data_abort_handler
 data_abort_handler:
-	ldr sp,= 0x33333333
-	mcr p15, 0, sp, c5, c0, 2
+	//ldr sp,= 0x33333333
+
+	//mov sp, #0x33
+	//orr sp, sp, lsl #8
+	//orr sp, sp, lsl #16
+
+	//mcr p15, 0, sp, c5, c0, 2
+
+	//make use of the backwards compatible version
+	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
+	mov sp, #0xFFFFFFFF
+	mcr p15, 0, sp, c5, c0, 0
+
 	mrs sp, spsr
 	tst sp, #0x20 //thumb bit
 	bne data_abort_handler_thumb
@@ -27,12 +38,12 @@ data_abort_handler_arm:
 	beq data_abort_handler_cont
 	mov r12, sp
 	mrs sp, spsr
-	orr sp, sp, #0x80
+	orr sp, sp, #0xC0
 	msr cpsr_c, sp
 	stmia r12, {sp,lr}
 
 data_abort_handler_cont:
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	
 #ifdef DEBUG_ABORT_ADDRESS
 	sub r0, r5, #8
@@ -138,10 +149,10 @@ data_abort_handler_cont:
 
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 
-	ldr r6,= pu_data_permissions
-	mcr p15, 0, r6, c5, c0, 2
+	//ldr r6,= pu_data_permissions
+	//mcr p15, 0, r6, c5, c0, 2
 
 	//mcr p15, 0, r6, c1, c0, 0
 
@@ -154,11 +165,11 @@ data_abort_handler_cont_finish:
 	//cmpne sp, #0xF
 	//ldmeqia r12, {sp,lr}^	//write user bank registers
 	beq data_abort_handler_cont3
-	orr sp, sp, #0x90
+	orr sp, sp, #0xD0
 	msr cpsr_c, sp
 	ldmia r12, {r0-r14}
 	//ldmia r12, {sp,lr}
-	msr cpsr_c, #0x97
+	msr cpsr_c, #0xD7
 	
 data_abort_handler_cont2:
 	//ldr sp,= reg_table
@@ -167,6 +178,9 @@ data_abort_handler_cont2:
 	//cmp lr, #0
 	//bne data_abort_handler_r15_dst
 	//pop {lr}
+
+	ldr sp,= pu_data_permissions
+	mcr p15, 0, sp, c5, c0, 2
 
 	subs pc, lr, #4
 
@@ -180,7 +194,11 @@ data_abort_handler_cont3:
 	//cmp lr, #0
 	//bne data_abort_handler_r15_dst
 	//pop {lr}
-	nop
+	//nop
+
+	ldr sp,= pu_data_permissions
+	mcr p15, 0, sp, c5, c0, 2
+
 	subs pc, lr, #4
 
 //data_abort_handler_r15_dst:
@@ -236,7 +254,7 @@ data_abort_handler_thumb:
 	//bic sp, #1
 	//mcr p15, 0, sp, c1, c0, 0
 	
-	msr cpsr_c, #0x91
+	msr cpsr_c, #0xD1
 	ldr r11,= reg_table
 	ldr r10, [r11, #(8 << 2)]
 	ldrh r10, [r10, #-8]

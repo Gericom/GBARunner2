@@ -90,7 +90,7 @@ address_read_table_16bit:
 //0x04000002
 .word read_address_ignore
 //0x04000004
-.word read_address_nomod_16
+.word read_address_dispstat
 //0x04000006
 .word read_address_vcount
 //0x04000008

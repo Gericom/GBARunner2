@@ -97,8 +97,10 @@ address_write_table_16bit:
 .word write_address_dispcontrol
 //0x04000002
 .word write_address_ignore
-//0x04000004-0x0400005E
-.rept 46
+//0x04000004
+.word write_address_dispstat
+//0x04000006-0x0400005E
+.rept 45
 .word write_address_nomod_16
 .endr
 //0x04000060-0x040000AE

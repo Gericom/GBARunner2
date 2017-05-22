@@ -1,12 +1,11 @@
 .section .itcm
 .altmacro
 
-.include "consts.s"
+#include "consts.s"
 
 .macro finish_handler_skip_op_self_modifying
-	msr cpsr_c, #0x97
-	//orr sp, #1
-	//mcr p15, 0, sp, c1, c0, 0
+	msr cpsr_c, #0xD7
+
 	ldr sp,= pu_data_permissions
 	mcr p15, 0, sp, c5, c0, 2
 
@@ -47,6 +46,10 @@ thumb7_address_calc_\l\bw:
 	b 1f
 1:
 	.word 0
+//align if 32 bit write
+.if !\bw && !\l
+	bic r9, r9, #3
+.endif
 .ifeq \l //write
 2:
 	mov r11, r0
@@ -146,6 +149,10 @@ thumb9_address_calc_\bw\l:
 .else
 	add r9, lr, r12, lsr #6
 .endif
+//align if 32 bit write
+.if !\bw && !\l
+	bic r9, r9, #3
+.endif
 .ifeq \l //write
 2:
 	mov r11, r0
@@ -218,6 +225,7 @@ thumb15_address_calc_0:
 	subne r8, #1
 	tstne r10, r8
 
+	//I think this piece is broken, the rb in rlist edge case
 	moveq r9, r9, lsl #4
 	orreq r9, #1
 	streqb r9, (2f + 1)
@@ -227,60 +235,56 @@ thumb15_address_calc_0:
 	bic r9, r9, #3
 
 	andeq r8, r10, #0xFF
-	ldreq r12,= 0x10000040
+	ldreq r12,= address_count_bit_table
 	ldreqb r13, [r12, r8]
 	mov r8, r10
 2:
 	addeq r0, r9, r13, lsl #2
 
+	sub r9, r9, #4
+
 	tst r8, #1
-	beq 3f
-	mov r11, r0
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-3:
+	movne r11, r0
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #2
-	beq 4f
-	mov r11, r1
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-4:
+	movne r11, r1
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #4
-	beq 5f
-	mov r11, r2
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-5:
+	movne r11, r2
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #8
-	beq 6f
-	mov r11, r3
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-6:
+	movne r11, r3
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+	
 	tst r8, #16
-	beq 7f
-	mov r11, r4
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-7:
+	movne r11, r4
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #32
-	beq 8f
-	mov r11, r5
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-8:
+	movne r11, r5
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #64
-	beq 9f
-	mov r11, r6
-	bl write_address_from_handler_32bit
-	add r9, r9, #4
-9:
+	movne r11, r6
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	tst r8, #128
-	beq 10f
-	mov r11, r7
-	bl write_address_from_handler_32bit
+	movne r11, r7
+	addne r9, r9, #4
+	blne write_address_from_handler_32bit
+
 	add r9, r9, #4
-10:
+
 	and r11, r8, #(7 << 8)
 	mov r11, r11, lsr #8
 	mov r10, #1
@@ -315,7 +319,7 @@ thumb15_address_calc_1:
 	bic r9, r9, #3
 
 	and r8, r10, #0xFF
-	ldr r12,= 0x10000040
+	ldr r12,= address_count_bit_table
 	ldrb r13, [r12, r8]
 2:
 	add r0, r9, r13, lsl #2
