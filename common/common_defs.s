@@ -1,7 +1,7 @@
 #ifndef __COMMON_DEFS_H__
 #define __COMMON_DEFS_H__
 
-#define ARM7_DLDI
+//#define ARM7_DLDI
 
 #define SD_CACHE_SIZE	(1424 * 1024)
 
