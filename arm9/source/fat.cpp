@@ -496,7 +496,14 @@ PUT_IN_VRAM static uint8_t get_checksum(const uint8_t* short_name)
 	return (Sum);
 }
 
-PUT_IN_VRAM int write_entries_to_sd(const uint8_t* long_name, const uint8_t* short_name, const int entries_count, uint8_t attribute, const uint32_t cur_dir_cluster)
+PUT_IN_VRAM int write_entries_to_sd(
+			const uint8_t* long_name,
+			const uint8_t* short_name,
+			const int entries_count,
+			uint8_t attribute,
+			const uint32_t cur_dir_cluster,
+			const uint32_t first_cluster,
+			uint32_t file_size)
 {
 #ifndef ARM7_DLDI
 	dir_entry_t cur_entry;
@@ -562,12 +569,12 @@ PUT_IN_VRAM int write_entries_to_sd(const uint8_t* long_name, const uint8_t* sho
 						cur_entry.regular_entry.creation_time = 0x0000; 			// 00:00:00
 						cur_entry.regular_entry.creation_date = 0x0022;				// 02/Jan/1980
 						cur_entry.regular_entry.last_access_date = 0x0022;			// 02/Jan/1980
-						cur_entry.regular_entry.cluster_nr_top = 0x0000;
+						cur_entry.regular_entry.cluster_nr_top = first_cluster >> 16;
 						cur_entry.regular_entry.last_modification_time = 0x0000; 	// 00:00:00
 						cur_entry.regular_entry.last_modification_date = 0x0022;	// 02/Jan/1980
-						cur_entry.regular_entry.cluster_nr_bottom = 0x0000;
-						cur_entry.regular_entry.file_size = 0x00000000;
-						
+						cur_entry.regular_entry.cluster_nr_bottom = first_cluster & 0xFFFF;
+						cur_entry.regular_entry.file_size = file_size;
+
 						entries_inserted = true;
 					}
 					
@@ -592,13 +599,126 @@ PUT_IN_VRAM int write_entries_to_sd(const uint8_t* long_name, const uint8_t* sho
 		uint32_t next = get_cluster_fat_value_simple(cur_cluster);
 		if(next >= 0x0FFFFFF8)
 		{
-			// Function to allocate new cluster needed
-			*((vu32*)0x06202000) = 0x4C434E4E; //Needs new cluster
-			while(1);
+			next = allocate_clusters(cur_cluster, vram_cd->sd_info.nr_sectors_per_cluster*512);
 		}
 		cur_cluster = next;
 		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	}
 #endif
 	return 0;
+}
+
+PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
+{
+	void* tmp_buf = (void*)vram_cd;
+
+    int cluster_size = vram_cd->sd_info.nr_sectors_per_cluster * 512;
+    int to_allocate = (cluster_size >= file_size) ? cluster_size : file_size;
+
+    uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	uint32_t cur_sector = vram_cd->sd_info.first_fat_sector;
+	uint32_t prev_sector = 0;
+    int prev_index = 0;
+    bool found = false;
+    bool done = false;
+    bool extend = false;
+
+    if(first_cluster != 0)
+    {
+        extend = true;
+        uint32_t fat_offset = first_cluster * 4;
+        prev_sector = vram_cd->sd_info.first_fat_sector + (fat_offset >> 9); //sector_size);
+        prev_index = fat_offset & 0x1FF;//% sector_size;
+        prev_index = prev_index >> 2;
+        first_cluster = 0;
+    }
+
+    //uint32_t cluster_count = vram_cd->sd_info.sectors_per_fat * 512/4;
+
+    while(1)//cluster_count-- >= 0)
+    {
+        read_sd_sectors_safe(cur_sector, 1, tmp_buf);//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf);
+        uint32_t* clusters = (uint32_t*)tmp_buf;
+
+        for(int i=0; i<512/4; i++)
+        {
+            if(clusters[i] == 0x00000000)
+            {
+                to_allocate -= cluster_size;
+                if(first_cluster == 0)
+                {
+                    first_cluster = (cur_sector - vram_cd->sd_info.first_fat_sector) * 512/4 + i;
+                    *cluster_table = first_cluster;
+                    cluster_table++;
+                }
+                if(!extend)
+                {
+                    extend = true;
+                }
+                else
+                {
+                    uint32_t num=0;
+                    if(prev_sector == cur_sector)
+                    {
+                        clusters[prev_index] = (cur_sector - vram_cd->sd_info.first_fat_sector) * 512/4 + i;
+                        *cluster_table = clusters[prev_index];
+                        cluster_table++;
+                    }
+                    else
+                    {
+                        read_sd_sectors_safe(prev_sector, 1, tmp_buf + 512);//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf + 512);
+
+                        uint32_t* cluster_ptr = (uint32_t*)(tmp_buf + 512);
+                        cluster_ptr[prev_index] = (cur_sector - vram_cd->sd_info.first_fat_sector) * 512/4 + i;
+                        *cluster_table = cluster_ptr[prev_index];
+                        cluster_table++;
+						
+                        write_sd_sectors_safe(prev_sector, 1, tmp_buf + 512);
+                    }
+                }
+
+                prev_sector = cur_sector;
+                prev_index = i;
+                found = true;
+
+                if(to_allocate <= 0)
+                {
+                    clusters[i] = 0x0FFFFFFF;//Last cluster
+                    *cluster_table = clusters[i];
+                    cluster_table++;
+                    done = true;
+                    break;
+                }
+            }
+        }
+
+        if(found)
+        {
+            write_sd_sectors_safe(cur_sector, 1, tmp_buf);
+        }
+        if(done)
+        {
+            //Clear the allocated clusters
+            *((vu32*)0x06202000) = 0x43524C43; //CLRC
+            cluster_table = &vram_cd->gba_rom_cluster_table[0];
+            uint32_t cur_cluster = *cluster_table; cluster_table++;
+            int toclean = vram_cd->sd_info.nr_sectors_per_cluster;
+
+            for(int i=0; i<toclean*512/4; i++)
+            {
+                ((uint32_t*)0x23F0000)[i] = 0;
+            }
+
+            while (cur_cluster < 0x0FFFFFF8)
+            {
+                write_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toclean, (void*)(0x23F0000));
+                cur_cluster = *cluster_table; cluster_table++;
+            }
+            return first_cluster;
+        }
+        cur_sector++;
+    }
+
+    *((vu32*)0x06202000) = 0x4C4C5546; //FULL No space available
+    while(1);
 }

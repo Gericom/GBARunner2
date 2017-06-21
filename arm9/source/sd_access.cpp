@@ -588,12 +588,21 @@ PUT_IN_VRAM void get_save(uint32_t cur_cluster, char* gba_short_name)
 		{
 			entries_count = 1;
 		}
-			
-		write_entries_to_sd(long_name_buff, short_name_buff, entries_count, DIR_ATTRIB_ARCHIVE, cur_cluster);
 		
-		//call to function to allocate needed clusters	
+		*((vu32*)0x06202000) = 0x56415343;//CSAV Creating save file
+		
+		uint32_t first_cluster = allocate_clusters(0, 64*1024);
+		write_entries_to_sd(
+				long_name_buff, 
+				short_name_buff, 
+				entries_count, 
+				DIR_ATTRIB_ARCHIVE, 
+				cur_cluster, 
+				first_cluster,
+				64*1024);
 #endif
 	}
+	
 	//call to function to read the save file
 	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
 	cur_cluster = save_file_entry.regular_entry.cluster_nr_bottom | (save_file_entry.regular_entry.cluster_nr_top << 16);
