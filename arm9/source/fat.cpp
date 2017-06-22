@@ -615,7 +615,16 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 	int cluster_size = vram_cd->sd_info.nr_sectors_per_cluster * 512;
 	int to_allocate = (cluster_size >= file_size) ? cluster_size : file_size;
 
-	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	uint32_t nr_clusters = file_size + cluster_size - 1;
+	
+	for(int i = cluster_size; i != 1; i >>= 1)
+	{
+		nr_clusters >>= 1;
+	}
+	
+	uint32_t* table_ptr = (uint32_t*)vramheap_alloc(sizeof(uint32_t) * (nr_clusters + 1));
+	uint32_t* cluster_table = table_ptr;
+	
 	uint32_t cur_sector = vram_cd->sd_info.first_fat_sector;
 	uint32_t prev_sector = 0;
 	uint16_t prev_index = 0;
@@ -677,7 +686,6 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 				{
 					clusters[i] = 0x0FFFFFFF;//Last cluster
 					*cluster_table = clusters[i];
-					cluster_table++;
 					done = true;
 					break;
 				}
@@ -693,8 +701,8 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 		{
 			//Clear the allocated clusters
 			*((vu32*)0x06202000) = 0x43524C43; //CLRC
-			cluster_table = &vram_cd->gba_rom_cluster_table[0];
-			uint32_t cur_cluster = *cluster_table; cluster_table++;
+			cluster_table = table_ptr;
+			uint32_t cur_cluster = *cluster_table++;
 			int toclean = vram_cd->sd_info.nr_sectors_per_cluster;
 
 			for(int i=0; i<toclean*512/4; i++)
@@ -705,8 +713,10 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 			while (cur_cluster < 0x0FFFFFF8)
 			{
 				write_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toclean, (void*)(0x23F0000));
-				cur_cluster = *cluster_table; cluster_table++;
+				cur_cluster = *cluster_table++;
 			}
+			
+			vramheap_free(table_ptr);
 			return first_cluster;
 		}
 		cur_sector++;
