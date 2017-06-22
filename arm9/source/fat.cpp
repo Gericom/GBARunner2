@@ -618,27 +618,26 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
     uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
 	uint32_t cur_sector = vram_cd->sd_info.first_fat_sector;
 	uint32_t prev_sector = 0;
-    int prev_index = 0;
+    uint16_t prev_index = 0;
+	uint16_t buff_pos = 0;
     bool found = false;
     bool done = false;
-    bool extend = false;
 
     if(first_cluster != 0)
     {
-        extend = true;
         uint32_t fat_offset = first_cluster * 4;
         prev_sector = vram_cd->sd_info.first_fat_sector + (fat_offset >> 9); //sector_size);
-        prev_index = fat_offset & 0x1FF;//% sector_size;
-        prev_index = prev_index >> 2;
-        first_cluster = 0;
+        prev_index = (fat_offset & 0x1FF) >> 2;//% sector_size;
+		
+		read_sd_sectors_safe(prev_sector, 1, tmp_buf + (buff_pos^512));//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf + 512);
     }
 
     //uint32_t cluster_count = vram_cd->sd_info.sectors_per_fat * 512/4;
 
     while(1)//cluster_count-- >= 0)
     {
-        read_sd_sectors_safe(cur_sector, 1, tmp_buf);//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf);
-        uint32_t* clusters = (uint32_t*)tmp_buf;
+        read_sd_sectors_safe(cur_sector, 1, tmp_buf + buff_pos);//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf);
+        uint32_t* clusters = (uint32_t*)(tmp_buf + buff_pos);
 
         for(int i=0; i<512/4; i++)
         {
@@ -651,13 +650,8 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
                     *cluster_table = first_cluster;
                     cluster_table++;
                 }
-                if(!extend)
-                {
-                    extend = true;
-                }
                 else
                 {
-                    uint32_t num=0;
                     if(prev_sector == cur_sector)
                     {
                         clusters[prev_index] = (cur_sector - vram_cd->sd_info.first_fat_sector) * 512/4 + i;
@@ -666,14 +660,12 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
                     }
                     else
                     {
-                        read_sd_sectors_safe(prev_sector, 1, tmp_buf + 512);//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf + 512);
-
-                        uint32_t* cluster_ptr = (uint32_t*)(tmp_buf + 512);
+                        uint32_t* cluster_ptr = (uint32_t*)(tmp_buf + (buff_pos^512));
                         cluster_ptr[prev_index] = (cur_sector - vram_cd->sd_info.first_fat_sector) * 512/4 + i;
                         *cluster_table = cluster_ptr[prev_index];
                         cluster_table++;
-						
-                        write_sd_sectors_safe(prev_sector, 1, tmp_buf + 512);
+                        
+                        write_sd_sectors_safe(prev_sector, 1, tmp_buf + (buff_pos^512));
                     }
                 }
 
@@ -694,7 +686,8 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 
         if(found)
         {
-            write_sd_sectors_safe(cur_sector, 1, tmp_buf);
+            write_sd_sectors_safe(cur_sector, 1, tmp_buf + buff_pos);
+			buff_pos ^= 512;
         }
         if(done)
         {
