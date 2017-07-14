@@ -911,13 +911,13 @@ irq_handler_arm7_irq:
 	strb r2, [r12, #1]
 	strb r1, [r12]
 
+	cmp r2, #0
+	bgt 1b
+4:
 	ldr r0,= 0xAA5500F9
 	mov r1, #0x04000000
 	str r0, [r1, #0x188]
 
-	cmp r2, #0
-	bgt 1b
-4:
 	mov r12, #0x04000000
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]

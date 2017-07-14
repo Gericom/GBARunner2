@@ -181,30 +181,6 @@ extern "C" void timer3_overflow_irq()
 			//invoke an irq on arm9
 			*((vu32*)0x04000180) |= (1 << 13);
 		}
-		/*if(vram_cd->sound_emu_work.req_size < SOUND_EMU_QUEUE_LEN)//!(*((vu32*)0x04000184) & 2))
-		{
-			//REG_SEND_FIFO = srcAddress;
-			vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
-			vram_cd->sound_emu_work.req_write_ptr++;
-			if (vram_cd->sound_emu_work.req_write_ptr >= SOUND_EMU_QUEUE_LEN)
-				vram_cd->sound_emu_work.req_write_ptr -= SOUND_EMU_QUEUE_LEN;
-			lock_lock(&vram_cd->sound_emu_work.req_size_lock);
-			{
-				vram_cd->sound_emu_work.req_size++;
-			}
-			lock_unlock(&vram_cd->sound_emu_work.req_size_lock);
-			//invoke an irq on arm9
-			*((vu32*)0x04000180) |= (1 << 13);
-		}
-		else
-		{
-			for(int i = 0; i < FIFO_BLOCK_SIZE; i++)
-				soundBuffer[(soundBufferWriteOffset + i) % SOUND_BUFFER_SIZE] = soundBuffer[(soundBufferWriteOffset - FIFO_BLOCK_SIZE + i) % SOUND_BUFFER_SIZE];
-			soundBufferWriteOffset += FIFO_BLOCK_SIZE;
-			if(soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
-				soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
-			gba_sound_update_ds_channels();
-		}*/
 		srcAddress += FIFO_BLOCK_SIZE;//16;
 	}
 	sampcnter++;

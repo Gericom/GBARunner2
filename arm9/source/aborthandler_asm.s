@@ -30,10 +30,12 @@ data_abort_handler:
 	bne data_abort_handler_thumb
 data_abort_handler_arm:
 	ldr sp,= reg_table
-	stmeqia sp!, {r0-r12}
+	stmia sp!, {r0-r12}
 	mov r5, lr
 	mov r12, sp
 	mrs sp, spsr
+	ands sp, #0xF
+	orreq sp, #0xF
 	orr sp, sp, #0xC0
 	msr cpsr_c, sp
 	stmia r12, {sp,lr}
