@@ -249,3 +249,83 @@ print_address_isnitro:
 	pop {r0-r6}
 	ldr r13, sp_tmp
 	bx lr
+
+.global gba_start_bkpt_vram
+gba_start_bkpt_vram:
+	//set abort exception handlers
+	ldr r0,= instruction_abort_handler
+	sub r0, #0xC	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0xC
+	str r1, [r0]
+
+	ldr r0,= data_abort_handler
+	sub r0, #0x10	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x10
+	str r1, [r0]
+
+	ldr r0,= undef_inst_handler
+	sub r0, #0x4	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x4
+	str r1, [r0]
+
+//#ifdef DEBUG_ENABLED
+	//for debugging
+	ldr r0,= irq_handler
+	sub r0, #0x18	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x18
+	str r1, [r0]
+//#endif
+
+	//fiq handler for is-nitro
+	ldr r0,= fiq_hook
+	sub r0, #0x1C	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x1C
+	str r1, [r0]
+
+	//set the abort mode stack
+	mrs r0, cpsr
+	and r0, r0, #0xE0
+	orr r1, r0, #0x17
+	msr cpsr_c, r1
+	ldr sp,= (address_dtcm + 0x4000) //0x10004000
+	orr r1, r0, #0x13
+	msr cpsr_c, r1
+	
+
+	ldr r0,= count_bits_initialize
+	blx r0
+
+	ldr r0,= 0x05000000
+	ldr r1,= 0x3E0
+	strh r1, [r0]
+	mrc p15, 0, r0, c1, c0, 0
+	//orr r0, #(1<<15)
+	orr r0, #(1 | (1 << 2))	//enable pu and data cache
+	orr r0, #(1 << 12) //and cache
+	orr r0, #(1 << 14) //round robin cache replacement improves worst case performance
+	mcr p15, 0, r0, c1, c0, 0
+
+	//invalidate instruction cache
+	mov r0, #0
+	mcr p15, 0, r0, c7, c5, 0
+
+	//and data cache
+	mcr p15, 0, r0, c7, c6, 0
+
+	mov r0, #0
+	bx r0

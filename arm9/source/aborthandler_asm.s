@@ -12,95 +12,83 @@
 
 .global data_abort_handler
 data_abort_handler:
-	//ldr sp,= 0x33333333
-
-	//mov sp, #0x33
-	//orr sp, sp, lsl #8
-	//orr sp, sp, lsl #16
-
-	//mcr p15, 0, sp, c5, c0, 2
-
 	//make use of the backwards compatible version
 	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
 	mov sp, #0xFFFFFFFF
 	mcr p15, 0, sp, c5, c0, 0
 
 	mrs sp, spsr
-	tst sp, #0x20 //thumb bit
-	bne data_abort_handler_thumb
-data_abort_handler_arm:
+	movs sp, sp, lsl #27
+	ldrcc pc, [pc, sp, lsr #25]
+
+//this should be exactly 17 instructions!
+data_abort_handler_thumb:
+	str lr, data_abort_handler_thumb_pc_tmp
+	msr cpsr_c, #0xD1
+	ldr r11, data_abort_handler_thumb_pc_tmp
+	ldrh r10, [r11, #-8]
+	ldr r12,= thumb_table
+	ldr pc, [r12, r10, lsr #7]
+
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+
+	.word data_abort_handler_arm_usr_sys //usr
+	.word address_calc_unknown //fiq
+	.word data_abort_handler_arm_irq //irq
+	.word data_abort_handler_arm_svc //svc
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown //abt
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown //und
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word address_calc_unknown
+	.word data_abort_handler_arm_usr_sys
+
+data_abort_handler_arm_irq:
 	ldr sp,= reg_table
 	stmia sp!, {r0-r12}
 	mov r5, lr
 	mov r12, sp
-	mrs sp, spsr
-	ands sp, #0xF
-	orreq sp, #0xF
-	orr sp, sp, #0xC0
-	msr cpsr_c, sp
+	msr cpsr_c, #0xD2
 	stmia r12, {sp,lr}
+	b data_abort_handler_cont
 
-//	ands sp, sp, #0xF
-//	cmpne sp, #0xF
-//	ldr sp,= reg_table
-//	stmeqia sp, {r0-r14}^
-//	stmneia sp!, {r0-r12}
-//	mov r5, lr
-//	beq data_abort_handler_cont
-//	mov r12, sp
-//	mrs sp, spsr
-//	orr sp, sp, #0xC0
-//	msr cpsr_c, sp
-//	stmia r12, {sp,lr}
+data_abort_handler_arm_svc:
+	ldr sp,= reg_table
+	stmia sp!, {r0-r12}
+	mov r5, lr
+	mov r12, sp
+	msr cpsr_c, #0xD3
+	stmia r12, {sp,lr}
+	b data_abort_handler_cont
+
+data_abort_handler_arm_usr_sys:
+	ldr sp,= reg_table
+	stmia sp, {r0-r14}^
+	mov r5, lr
 
 data_abort_handler_cont:
 	msr cpsr_c, #0xD1
-	
-#ifdef DEBUG_ABORT_ADDRESS
-	sub r0, r5, #8
-	ldr r1,= nibble_to_char
-	ldr r4,= (0x06202000 + 32 * 9)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-#endif
 
 	ldr r11,= reg_table
 	//add r6, r5, #4	//pc+12
 	//pc + 8
 	str r5, [r11, #(4 * 15)]
-
-	//ldr r6,= 0x33333333
-	//mcr p15, 0, r6, c5, c0, 2
-
-	//mrc p15, 0, r6, c1, c0, 0
-	//bic r2, r6, #1
-	//mcr p15, 0, r2, c1, c0, 0
 
 	ldr r10, [r5, #-8]
 	and r10, r10, #0x0FFFFFFF
@@ -108,8 +96,6 @@ data_abort_handler_cont:
 	and r8, r10, #(0xF << 16)
 	ldr r9, [r11, r8, lsr #14]
 
-	//ldr pc, [pc, r10, lsr #23]
-	//ldr pc, [pc, r10, lsr #21]
 	ldr pc, [pc, r10, lsr #18]
 
 	nop
@@ -222,65 +208,7 @@ data_abort_handler_cont3:
 data_abort_handler_thumb_pc_tmp:
 	.word 0
 
-data_abort_handler_thumb:
-	str lr, data_abort_handler_thumb_pc_tmp
-	//ldr sp,= reg_table
-	//stmia sp!, {r0-r7}	//non-banked registers
-	//str lr, [sp, #(8 << 2)]
-
-#ifdef DEBUG_ABORT_ADDRESS
-	sub r0, lr, #8
-	ldr r1,= nibble_to_char
-	ldr r4,= (0x06202000 + 32 * 9)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r4], #2
-
-#endif
-
-	//ldr sp,= 0x33333333
-	//mcr p15, 0, sp, c5, c0, 2
-
-	//mrc p15, 0, sp, c1, c0, 0
-	//bic sp, #1
-	//mcr p15, 0, sp, c1, c0, 0
-	
-	msr cpsr_c, #0xD1
-	//ldr r11,= reg_table
-	//ldr r10, [r11, #(8 << 2)]
-	ldr r11, data_abort_handler_thumb_pc_tmp
-	ldrh r10, [r11, #-8]
-
-	//ldr pc, [pc, r10, lsr #11]
-	ldr pc, [pc, r10, lsr #7]
-
-	nop
-
+thumb_table:
 	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown
