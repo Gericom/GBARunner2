@@ -18,6 +18,10 @@
 #define sd_cluster_cache_linked_list (sd_cluster_cache_info + (4096 * 8))
 #define sd_sd_info (sd_cluster_cache_linked_list + (4096 * 4 + 4 + 4)) //0x0685C404
 
+#define SOUND_EMU_QUEUE_LEN		64
+
+#define sound_sound_emu_work (sd_sd_info + 32)
+
 #define CACHE_LINKED_LIST_NIL	4096 //0x8000
 
 #endif

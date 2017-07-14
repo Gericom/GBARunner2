@@ -29,18 +29,27 @@ data_abort_handler:
 	tst sp, #0x20 //thumb bit
 	bne data_abort_handler_thumb
 data_abort_handler_arm:
-	ands sp, sp, #0xF
-	cmpne sp, #0xF
 	ldr sp,= reg_table
-	stmeqia sp, {r0-r14}^
-	stmneia sp!, {r0-r12}
+	stmeqia sp!, {r0-r12}
 	mov r5, lr
-	beq data_abort_handler_cont
 	mov r12, sp
 	mrs sp, spsr
 	orr sp, sp, #0xC0
 	msr cpsr_c, sp
 	stmia r12, {sp,lr}
+
+//	ands sp, sp, #0xF
+//	cmpne sp, #0xF
+//	ldr sp,= reg_table
+//	stmeqia sp, {r0-r14}^
+//	stmneia sp!, {r0-r12}
+//	mov r5, lr
+//	beq data_abort_handler_cont
+//	mov r12, sp
+//	mrs sp, spsr
+//	orr sp, sp, #0xC0
+//	msr cpsr_c, sp
+//	stmia r12, {sp,lr}
 
 data_abort_handler_cont:
 	msr cpsr_c, #0xD1
@@ -207,10 +216,15 @@ data_abort_handler_cont3:
 //	bl print_address
 //	b .
 
+.global data_abort_handler_thumb_pc_tmp
+data_abort_handler_thumb_pc_tmp:
+	.word 0
+
 data_abort_handler_thumb:
-	ldr sp,= reg_table
+	str lr, data_abort_handler_thumb_pc_tmp
+	//ldr sp,= reg_table
 	//stmia sp!, {r0-r7}	//non-banked registers
-	str lr, [sp, #(8 << 2)]
+	//str lr, [sp, #(8 << 2)]
 
 #ifdef DEBUG_ABORT_ADDRESS
 	sub r0, lr, #8
@@ -255,9 +269,10 @@ data_abort_handler_thumb:
 	//mcr p15, 0, sp, c1, c0, 0
 	
 	msr cpsr_c, #0xD1
-	ldr r11,= reg_table
-	ldr r10, [r11, #(8 << 2)]
-	ldrh r10, [r10, #-8]
+	//ldr r11,= reg_table
+	//ldr r10, [r11, #(8 << 2)]
+	ldr r11, data_abort_handler_thumb_pc_tmp
+	ldrh r10, [r11, #-8]
 
 	//ldr pc, [pc, r10, lsr #11]
 	ldr pc, [pc, r10, lsr #7]

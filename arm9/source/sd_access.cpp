@@ -108,6 +108,14 @@ PUT_IN_VRAM void initialize_cache()
 	}
 	vram_cd->cluster_cache_info.cache_list_head = 0;
 	vram_cd->cluster_cache_info.cache_list_tail = vram_cd->cluster_cache_info.total_nr_cacheblocks - 1;
+	vram_cd->sound_emu_work.req_size_lock = 0;
+	vram_cd->sound_emu_work.req_size = 0;
+	vram_cd->sound_emu_work.req_write_ptr = 0;
+	vram_cd->sound_emu_work.req_read_ptr = 0;
+	vram_cd->sound_emu_work.resp_size_lock = 0;
+	vram_cd->sound_emu_work.resp_size = 0;
+	vram_cd->sound_emu_work.resp_write_ptr = 0;
+	vram_cd->sound_emu_work.resp_read_ptr = 0;
 	//if(vram_cd->cluster_cache_info.total_nr_cacheblocks >= 256)
 	//	vram_cd->cluster_cache_info.total_nr_cacheblocks = 255;
 }

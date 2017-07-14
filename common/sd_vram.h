@@ -3,6 +3,10 @@
 
 #include "common_defs.s"
 
+#include "sound_emu.h"
+
+#define vram_cd		((vram_cd_t*)sd_cluster_cache)
+
 typedef uint32_t sec_t;
 
 typedef bool (* FN_MEDIUM_STARTUP)(void) ;
@@ -210,15 +214,9 @@ typedef struct
 	//vram d
 	uint32_t gba_rom_cluster_table[32 * 1024 / 4];//allows roms up to 32MB at 4kb clusters
 	uint16_t gba_rom_is_cluster_cached_table[64 * 1024];	//allows roms up to 32MB
-	union
-	{
-		uint8_t reserved[64 * 1024];//will be used for memory management of the cached clusters
-		struct
-		{
-			cluster_cache_info_t cluster_cache_info;
-			sd_info_t sd_info;
-		};
-	};
+	cluster_cache_info_t cluster_cache_info;
+	sd_info_t sd_info;
+	sound_emu_work_t sound_emu_work;
 } vram_cd_t;
 
 #endif

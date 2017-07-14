@@ -862,42 +862,63 @@ loc_138:
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
-	//do stuff
+	ldr r12,= sound_sound_emu_work
+	orr r12, #0x00800000
 1:
-	ldr r1, [r12, #0x184]
-	tst r1, #(1 << 8)
-	bne 1b
+	ldrb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 1)]
+	cmp r2, #SOUND_EMU_QUEUE_LEN
+	bge 4f
+
+	ldrb r2, [r12, #3]
+	add r3, r2, #1
+	cmp r3, #SOUND_EMU_QUEUE_LEN
+	subge r3, #SOUND_EMU_QUEUE_LEN
+	strb r3, [r12, #3]
+
+	add r3, r12, r2, lsl #2
+	ldr r1, [r3, #4]
+
+	ldrb lr, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)]
+	add r2, lr, #1
+	cmp r2, #SOUND_EMU_QUEUE_LEN
+	subge r2, #SOUND_EMU_QUEUE_LEN
+	strb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)]
+
+	ldmia r1, {r0, r1, r2, r3}
+
+	add lr, r12, lr, lsl #4
+	add lr, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 4)
+	stmia lr, {r0, r1, r2, r3}
+
+	mov r1, #1
+	add r3, r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4))
 2:
-	mov r0, #0x04100000
-	ldr r1, [r0]	//read word from fifo
+	swpb r1, r1, [r3]
+	cmp r1, #0
+	bne 2b
+	ldrb r2, [r3, #1]
+	add r2, #1
+	strb r2, [r3, #1]
+	strb r1, [r3]
 
-	//cmp r1, #0x000000A5
-	//beq irq_handler_arm7_irq_masterbright
-	//cmp r1, #0x000000A6
-	//beq irq_handler_arm7_irq_masterbright2
-
-	//wait for fifo empty to prevent overflow
+	mov r1, #1
 3:
-	ldr r0, [r12, #0x184]
-	tst r0, #1
-	beq 3b
+	swpb r1, r1, [r12]
+	cmp r1, #0
+	bne 3b
+	ldrb r2, [r12, #1]
+	sub r2, #1
+	strb r2, [r12, #1]
+	strb r1, [r12]
 
 	ldr r0,= 0xAA5500F9
-	str r0, [r12, #0x188]
+	mov r1, #0x04000000
+	str r0, [r1, #0x188]
 
-	ldmia r1!, {r0, r2, r3, lr}
-	
-	str r0, [r12, #0x188]
-	str r2, [r12, #0x188]
-	str r3, [r12, #0x188]
-	str lr, [r12, #0x188]
-
-//4:
-	ldr r1, [r12, #0x184]
-	tst r1, #(1 << 8)
-	beq 2b
-
-	//acknowledge
+	cmp r2, #0
+	bgt 1b
+4:
+	mov r12, #0x04000000
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]
 
@@ -910,16 +931,6 @@ irq_handler_arm7_irq:
 	mcr p15, 0, r1, c5, c0, 2
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
-
-//irq_handler_arm7_irq_masterbright:
-//	ldr r1,= 0x8010
-//	str r1, [r12, #0x6C]
-//	b 4b
-
-//irq_handler_arm7_irq_masterbright2:
-//	mov r1, #0
-//	str r1, [r12, #0x6C]
-//	b 4b
 
 //for is-nitro
 fiq_hook:

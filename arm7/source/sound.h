@@ -48,5 +48,6 @@ void gba_sound_fifo_write(uint32_t samps);
 void gba_sound_set_src(uint32_t address);
 void gba_sound_fifo_write16(uint8_t* samps);
 void gba_sound_resync();
+void gba_sound_fifo_update();
 
 #endif

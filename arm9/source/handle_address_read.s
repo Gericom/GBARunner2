@@ -42,8 +42,8 @@ read_address_from_handler_bios_32:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	moveq r10, r5
 	//thumb
-	ldrne r11,= reg_table
-	ldrne r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
+	ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
 
 	sub r10, #8
 	cmp r10, #0x4000
@@ -181,8 +181,8 @@ read_address_from_handler_bios_16:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	moveq r10, r5
 	//thumb
-	ldrne r11,= reg_table
-	ldrne r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
+	ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
 
 	sub r10, #8
 	cmp r10, #0x4000
@@ -326,8 +326,8 @@ read_address_from_handler_bios_8:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	moveq r10, r5
 	//thumb
-	ldrne r11,= reg_table
-	ldrne r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
+	ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
 
 	sub r10, #8
 	cmp r10, #0x4000
@@ -499,8 +499,10 @@ read_address_undefined_memory_32_arm:
 	bx lr
 
 read_address_undefined_memory_32_thumb:
-	ldr r11,= reg_table
-	ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	//ldr r11,= reg_table
+	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	ldr r10,= data_abort_handler_thumb_pc_tmp
+	ldr r10, [r10]
 	ldrh r11, [r10, #-4]
 	orr r10, r11, r11, lsl #16
 	and r11, r9, #3
@@ -525,8 +527,10 @@ read_address_undefined_memory_16_arm:
 	bx lr
 
 read_address_undefined_memory_16_thumb:
-	ldr r11,= reg_table
-	ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	//ldr r11,= reg_table
+	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	ldr r10,= data_abort_handler_thumb_pc_tmp
+	ldr r10, [r10]
 	ldrh r10, [r10, #-4]
 	tst r9, #1
 	movne r10, r10, ror #8
@@ -551,8 +555,10 @@ read_address_undefined_memory_8_arm:
 	bx lr
 
 read_address_undefined_memory_8_thumb:
-	ldr r11,= reg_table
-	ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	//ldr r11,= reg_table
+	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
+	ldr r10,= data_abort_handler_thumb_pc_tmp
+	ldr r10, [r10]
 	ldrb r10, [r10, #-4]
 	bx lr
 

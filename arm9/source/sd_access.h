@@ -7,8 +7,6 @@
 #define READ_U16_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8))
 #define READ_U32_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8) | (((uint8_t*)(addr))[2] << 16) | (((uint8_t*)(addr))[3] << 24))
 
-#define vram_cd		((vram_cd_t*)sd_cluster_cache)
-
 #define SCREEN_COLS 32
 #define SCREEN_ROWS 24
 #define ENTRIES_START_ROW 2

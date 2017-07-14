@@ -368,7 +368,7 @@ int main()
 			gba_sound_set_src(val);
 			break;
 		case 0xAA5500F9:
-			while(*((vu32*)0x04000184) & (1 << 8));
+			/*while(*((vu32*)0x04000184) & (1 << 8));
 				vals[0] = REG_RECV_FIFO;
 			while(*((vu32*)0x04000184) & (1 << 8));
 				vals[1] = REG_RECV_FIFO;
@@ -376,15 +376,8 @@ int main()
 				vals[2] = REG_RECV_FIFO;
 			while(*((vu32*)0x04000184) & (1 << 8));
 				vals[3] = REG_RECV_FIFO;
-			/*while(*((vu32*)0x04000184) & (1 << 8));
-				vals[4] = REG_RECV_FIFO;
-			while(*((vu32*)0x04000184) & (1 << 8));
-				vals[5] = REG_RECV_FIFO;
-			while(*((vu32*)0x04000184) & (1 << 8));
-				vals[6] = REG_RECV_FIFO;
-			while(*((vu32*)0x04000184) & (1 << 8));
-				vals[7] = REG_RECV_FIFO;*/
-			gba_sound_fifo_write16((uint8_t*)&vals[0]);
+			gba_sound_fifo_write16((uint8_t*)&vals[0]);*/
+			gba_sound_fifo_update();
 			break;
 		case 0x040000A0:
 			while(*((vu32*)0x04000184) & (1 << 8));

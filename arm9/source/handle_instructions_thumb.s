@@ -17,8 +17,8 @@ thumb6_address_calc:
 	and r13, r10, #(7 << 8)
 	mov r13, r13, lsr #4
 	strb r13, (1f + 1)
-	ldr r9, [r11, #(8 << 2)]
-	sub r9, #4
+	//ldr r9, [r11, #(8 << 2)]
+	sub r9, r11, #4
 	bic r9, #3
 	and r12, r10, #0xFF
 	add r9, r9, r12, lsl #2
