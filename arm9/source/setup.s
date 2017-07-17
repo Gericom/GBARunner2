@@ -44,6 +44,11 @@ gba_setup:
 	mov r1, #0x80
 	strb r1, [r0]
 
+	//setup display capture
+	ldr r0,= 0x320000
+	ldr r1,= 0x4000064
+	str r0, [r1]
+
 	//copy the vram code to a
 	ldr r0,= __vram_lma
 	ldr r1,= (128 * 1024)
@@ -308,6 +313,73 @@ dldi_name_copy:
 
 	mov r0, #0x01000000
 	bl sd_init
+
+	//more displaycap stuff
+	ldr r0,= 0x04001000
+	ldr r1,= 0x13823
+	str r1, [r0]
+	ldr r1,= 0x4084
+	strh r1, [r0, #0xE]
+	//center
+	ldr r1,= -(8 * 256)
+	str r1, [r0, #0x38]
+	ldr r1,= -(16 * 256)
+	str r1, [r0, #0x3C]
+	//mask
+	ldr r1,= 0x08F8
+	strh r1, [r0, #0x40]
+	ldr r1,= 0x10B0
+	strh r1, [r0, #0x44]
+	mov r1, #0x18
+	strh r1, [r0, #0x48]
+	mov r1, #0x00
+	strh r1, [r0, #0x4A]
+
+	ldr r2,= 0x05000400
+	strh r1, [r2]
+
+	//setup the oam
+	ldr r2,= 0x07000400
+	mov r1, #0
+1:
+	mov r0, #0
+2:
+	orr r3, r1, #0x0C00 //bitmap obj
+	add r3, #16
+	strh r3, [r2], #2
+	orr r3, r0, #0xC000 //64x64
+	add r3, #8
+	strh r3, [r2], #2
+	mov r3, r1, lsr #3
+	mov r3, r3, lsl #5
+	add r3, r3, r0, lsr #3
+	orr r3, #0xF000 //fully visible
+	strh r3, [r2], #4
+
+	add r0, #64
+	cmp r0, #256
+	blt 2b
+
+	add r1, #64
+	cmp r1, #192
+	blt 1b
+
+	//disable vram h
+	ldr r0,= 0x04000248
+	mov r1, #0x00
+	strb r1, [r0]
+
+	//disable the 3d geometry and render engine and swap the screens
+	ldr r0,= 0x04000304
+	ldrh r1, [r0]
+	bic r1, #0xC
+	bic r1, #0x8000
+	strh r1, [r0]
+
+	//turn off the main engine display using masterbright
+	ldr r0,= 0x0400006C
+	ldr r1,= 0x801F
+	strh r1, [r0]
 
 	//Copy GBA Bios in place
 //	ldr r0,= bios_tmp
@@ -776,9 +848,13 @@ irq_handler:
 	mcr p15, 0, r0, c5, c0, 0
 
 	mov r12, #0x04000000
+	ldr r1, [r12, #0x64]
+	tst r1, #0x80000000
+	beq cap_control
 	ldr r1, [r12, #0x214]
 	tst r1, #(1 << 16)
 	bne irq_handler_arm7_irq
+irq_cont:
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 
@@ -858,6 +934,19 @@ irq_handler_arm7_irq:
 	mcr p15, 0, r1, c5, c0, 2
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
+
+cap_control:
+	eor r1, #0x00010000
+	tst r1, #0x00010000
+	mov r2, #0x80
+	streqb r2, [r12, #0x242]
+	strneb r2, [r12, #0x243]
+	mov r2, #0x84
+	strneb r2, [r12, #0x242]
+	streqb r2, [r12, #0x243]
+	orr r1, #0x80000000
+	str r1, [r12, #0x64]
+	b irq_cont
 
 //for is-nitro
 .global fiq_hook
