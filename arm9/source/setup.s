@@ -851,10 +851,11 @@ irq_handler:
 	ldr r1, [r12, #0x64]
 	tst r1, #0x80000000
 	beq cap_control
+irq_cont:
 	ldr r1, [r12, #0x214]
 	tst r1, #(1 << 16)
 	bne irq_handler_arm7_irq
-irq_cont:
+
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 
