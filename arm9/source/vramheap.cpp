@@ -7,8 +7,8 @@
 #define HEAP_TAG_FREE	(uint32_t)'FREE'
 
 //TODO: make a vram data section to put this in; or make it const or something
-static uint16_t* ram_start = NULL;
-static uint32_t ram_size = 0;
+//static uint16_t* ram_start = NULL;
+//static uint32_t ram_size = 0;
 
 extern "C" uint32_t __vram_start;
 extern "C" uint32_t __vram_end;
@@ -18,10 +18,12 @@ extern "C" uint32_t __vram_end;
 
 static heap_block_t* first_block = NULL;
 
+#define ram_start ((uint16_t*)VRAM_END)
+#define ram_size ((VRAM_START + 128 * 1024) - VRAM_END)
+
 PUT_IN_VRAM void vramheap_init()
 {
-	ram_start = (uint16_t*)VRAM_END;
-	ram_size = (VRAM_START + 128 * 1024) - VRAM_END;
+	
 }
 
 PUT_IN_VRAM static heap_block_t* vramheap_findfreeblock(heap_block_t** last, int size)
