@@ -74,6 +74,18 @@ address_write_table_8bit_dtcm_setup_loop:
 	bne address_write_table_8bit_dtcm_setup_loop
 	bx lr
 
+.global thumb_table_dtcm_setup
+thumb_table_dtcm_setup:
+	ldr r10,= address_thumb_table_dtcm
+	ldr r11,= thumb_table
+	mov r12, #128
+1:
+	ldr r13, [r11], #4
+	str r13, [r10], #4
+	subs r12, #1
+	bne 1b
+	bx lr
+
 .global count_bits_initialize
 count_bits_initialize:
 	ldr r0,= address_count_bit_table

@@ -27,7 +27,7 @@ data_abort_handler_thumb:
 	msr cpsr_c, #0xD1
 	ldr r11, data_abort_handler_thumb_pc_tmp
 	ldrh r10, [r11, #-8]
-	ldr r12,= thumb_table
+	ldr r12,= address_thumb_table_dtcm //thumb_table
 	ldr pc, [r12, r10, lsr #7]
 
 	nop
@@ -208,136 +208,7 @@ data_abort_handler_cont3:
 data_abort_handler_thumb_pc_tmp:
 	.word 0
 
-thumb_table:
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word thumb6_address_calc
-	.word thumb6_address_calc
-	.word thumb6_address_calc
-	.word thumb6_address_calc
-	.word thumb7_address_calc_00
-	.word thumb8_address_calc_00
-	.word thumb7_address_calc_01
-	.word thumb8_address_calc_01
-	.word thumb7_address_calc_10
-	.word thumb8_address_calc_10
-	.word thumb7_address_calc_11
-	.word thumb8_address_calc_11
-	.word thumb9_address_calc_00
-	.word thumb9_address_calc_00
-	.word thumb9_address_calc_00
-	.word thumb9_address_calc_00
-	.word thumb9_address_calc_01
-	.word thumb9_address_calc_01
-	.word thumb9_address_calc_01
-	.word thumb9_address_calc_01
-	.word thumb9_address_calc_10
-	.word thumb9_address_calc_10
-	.word thumb9_address_calc_10
-	.word thumb9_address_calc_10
-	.word thumb9_address_calc_11
-	.word thumb9_address_calc_11
-	.word thumb9_address_calc_11
-	.word thumb9_address_calc_11
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_1
-	.word thumb10_address_calc_1
-	.word thumb10_address_calc_1
-	.word thumb10_address_calc_1
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_0
-	.word thumb10_address_calc_1
-	.word thumb10_address_calc_1
-	.word thumb10_address_calc_1
-	.word thumb10_address_calc_1
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_0
-	.word thumb15_address_calc_1
-	.word thumb15_address_calc_1
-	.word thumb15_address_calc_1
-	.word thumb15_address_calc_1
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-	.word address_calc_unknown
-
+.global address_calc_unknown
 address_calc_unknown:
 	ldr r0,= 0x06202000
 	ldr r1,= 0x4B4E5541

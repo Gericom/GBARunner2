@@ -70,11 +70,10 @@ read_address_from_handler_vram_32:
 	bx lr
 
 read_address_from_handler_rom_32:
+	bic r10, r9, #0x0E000000
 	//ldr r12,= ROM_ADDRESS_MAX
 	cmp r9, #ROM_ADDRESS_MAX//r12
 		blt read_address_from_handler_rom_in_mem_32
-
-	bic r10, r9, #0x0E000000
 
 	mov r13, r10, lsr #8
 
@@ -105,11 +104,9 @@ read_address_from_handler_rom_32:
 
 	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
 	str r11, [r12, r13, lsl #2]
-
-	bic r10, r9, #0x0E000000
 #endif
 
-	mov r10, r10, lsl #23
+	mov r10, r9, lsl #23
 	ldr r12,= sd_cluster_cache
 	add r11, r12, r13, lsl #9
 	ldr r10, [r11, r10, lsr #23]
@@ -117,9 +114,11 @@ read_address_from_handler_rom_32:
 	bx lr
 
 read_address_from_handler_rom_in_mem_32:
-	bic r10, r9, #0x06000000
-	sub r10, r10, #0x05000000
-	sub r10, r10, #0x00FC0000
+	//bic r10, r9, #0x06000000
+	//sub r10, r10, #0x05000000
+	//sub r10, r10, #0x00FC0000
+	add r10, r10, #0x02000000
+	add r10, r10, #0x00040000
 	ldr r10, [r10]
 	bx lr
 
@@ -208,11 +207,11 @@ read_address_from_handler_vram_16:
 	bx lr
 
 read_address_from_handler_rom_16:
+	bic r10, r9, #0x0E000000
+
 	//ldr r12,= ROM_ADDRESS_MAX
 	cmp r9, #ROM_ADDRESS_MAX //r12
 		blt read_address_from_handler_rom_in_mem_16
-
-	bic r10, r9, #0x0E000000
 
 	mov r13, r10, lsr #8
 
@@ -243,11 +242,9 @@ read_address_from_handler_rom_16:
 
 	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
 	str r11, [r12, r13, lsl #2]
-
-	bic r10, r9, #0x0E000000
 #endif
 
-	mov r10, r10, lsl #23
+	mov r10, r9, lsl #23
 	mov r10, r10, lsr #23
 	ldr r12,= sd_cluster_cache
 	add r12, r13, lsl #9
@@ -257,12 +254,14 @@ read_address_from_handler_rom_16:
 	bx lr
 
 read_address_from_handler_rom_in_mem_16:
-	bic r10, r9, #0x06000000
-	sub r10, r10, #0x05000000
-	sub r10, r10, #0x00FC0000
+	//bic r10, r9, #0x06000000
+	//sub r10, r10, #0x05000000
+	//sub r10, r10, #0x00FC0000
+	add r10, r10, #0x02000000
+	add r10, r10, #0x00040000
 	ldrh r10, [r10]
 	tst r9, #1
-	movne r10, r10, ror #8
+		movne r10, r10, ror #8
 	bx lr
 
 read_address_from_handler_rom_16_not_cached:
@@ -355,11 +354,11 @@ read_address_from_handler_vram_8:
 	bx lr
 
 read_address_from_handler_rom_8:
+	bic r10, r9, #0x0E000000
+
 	//ldr r12,= ROM_ADDRESS_MAX
 	cmp r9, #ROM_ADDRESS_MAX//r12
 		blt read_address_from_handler_rom_in_mem_8
-
-	bic r10, r9, #0x0E000000
 
 	mov r13, r10, lsr #8
 
@@ -390,20 +389,20 @@ read_address_from_handler_rom_8:
 
 	orr r11, #(CACHE_LINKED_LIST_NIL << 16)
 	str r11, [r12, r13, lsl #2]
-
-	bic r10, r9, #0x0E000000
 #endif
 
-	mov r10, r10, lsl #23
+	mov r10, r9, lsl #23
 	ldr r12,= sd_cluster_cache
 	add r12, r13, lsl #9
 	ldrb r10, [r12, r10, lsr #23]
 	bx lr
 
 read_address_from_handler_rom_in_mem_8:
-	bic r10, r9, #0x06000000
-	sub r10, r10, #0x05000000
-	sub r10, r10, #0x00FC0000
+	//bic r10, r9, #0x06000000
+	//sub r10, r10, #0x05000000
+	//sub r10, r10, #0x00FC0000
+	add r10, r10, #0x02000000
+	add r10, r10, #0x00040000
 	ldrb r10, [r10]
 	bx lr
 

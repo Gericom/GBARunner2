@@ -26,7 +26,25 @@ ldrh_strh_address_calc_\p\u\i\w\l:
 		add r9, r9, r0
 	.endif
 .endif
+.if !\l
+	.if \p && \w
+		str r9, [r11, r8, lsr #14]
+	.endif
+	.if !\p
+		mov r7, r11
+	.endif
+	and r12, r10, #(0xF << 12)
+	mov r12, r12, lsr #10
+	ldrh r11, [r11, r12]
+	bl write_address_from_handler_16bit
+	.if !\p
+		add r9, r0
+		str r9, [r7, r8, lsr #14]
+	.endif
+	b data_abort_handler_cont_finish
+.else
 	b ldrh_strh_address_calc_cont_\p\w\l
+.endif
 .endm
 
 .macro create_all_ldrh_strh_variants arg=0
@@ -38,16 +56,16 @@ ldrh_strh_address_calc_\p\u\i\w\l:
 
 create_all_ldrh_strh_variants
 
-ldrh_strh_address_calc_cont_000:
-ldrh_strh_address_calc_cont_010:
-	mov r7, r11
-	and r12, r10, #(0xF << 12)
-	mov r12, r12, lsr #10
-	ldrh r11, [r11, r12]
-	bl write_address_from_handler_16bit
-	add r9, r0
-	str r9, [r7, r8, lsr #14]
-	b data_abort_handler_cont_finish
+//ldrh_strh_address_calc_cont_000:
+//ldrh_strh_address_calc_cont_010:
+//	mov r7, r11
+//	and r12, r10, #(0xF << 12)
+//	mov r12, r12, lsr #10
+//	ldrh r11, [r11, r12]
+//	bl write_address_from_handler_16bit
+//	add r9, r0
+//	str r9, [r7, r8, lsr #14]
+//	b data_abort_handler_cont_finish
 
 ldrh_strh_address_calc_cont_001:
 ldrh_strh_address_calc_cont_011:
@@ -81,14 +99,14 @@ ldrh_strh_address_calc_cont_011:
 	b data_abort_handler_cont_finish
 
 
-ldrh_strh_address_calc_cont_110:
-	str r9, [r11, r8, lsr #14]
-ldrh_strh_address_calc_cont_100:
-	and r12, r10, #(0xF << 12)
-	mov r12, r12, lsr #10
-	ldrh r11, [r11, r12]
-	bl write_address_from_handler_16bit
-	b data_abort_handler_cont_finish
+//ldrh_strh_address_calc_cont_110:
+//	str r9, [r11, r8, lsr #14]
+//ldrh_strh_address_calc_cont_100:
+//	and r12, r10, #(0xF << 12)
+//	mov r12, r12, lsr #10
+//	ldrh r11, [r11, r12]
+//	bl write_address_from_handler_16bit
+//	b data_abort_handler_cont_finish
 
 ldrh_strh_address_calc_cont_111:
 	str r9, [r11, r8, lsr #14]
@@ -128,7 +146,9 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 	//and r8, r10, #(0xF << 16)
 	//ldr r9, [r11, r8, lsr #14]
 	mov r0, r10, lsl #20
-	mov r0, r0, lsr #20
+	.if !\p
+		mov r0, r0, lsr #20
+	.endif
 .else
 	//shifted register
 	and r0, r10, #0xF
@@ -155,9 +175,17 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 	.endif
 .else
 	.ifeq \u
-		sub r9, r9, r0
+		.if !\i
+			sub r9, r9, r0, lsr #20
+		.else
+			sub r9, r9, r0
+		.endif
 	.else
-		add r9, r9, r0
+		.if !\i
+			add r9, r9, r0, lsr #20
+		.else
+			add r9, r9, r0
+		.endif
 	.endif
 .endif
 //align if 32 bit write

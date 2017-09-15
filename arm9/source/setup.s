@@ -249,6 +249,8 @@ gba_setup_fill_sub_loop:
 	blx r0
 	ldr r0,= address_read_table_8bit_dtcm_setup
 	blx r0
+	ldr r0,= thumb_table_dtcm_setup
+	blx r0
 	
 	//wait for the arm7 to copy the dldi data
 	//enable the arm7-arm9 fifo

@@ -16,6 +16,8 @@
 #define address_write_table_16bit_dtcm (address_dtcm + 0x248) //0x10000248
 #define address_write_table_8bit_dtcm (address_dtcm + 0x454) //0x10000454
 
+#define address_thumb_table_dtcm (address_dtcm + 0xF98)
+
 #define pu_data_permissions 0x33600603 //0x33600003 //0x33660003
 
 #ifdef __ASSEMBLER__
