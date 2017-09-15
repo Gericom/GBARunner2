@@ -20,7 +20,7 @@
 
 #define SOUND_EMU_QUEUE_LEN		64
 
-#define sound_sound_emu_work (sd_sd_info + 32)
+#define sound_sound_emu_work (sd_sd_info + 36)
 
 #define CACHE_LINKED_LIST_NIL	4096 //0x8000
 

@@ -663,6 +663,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	vram_cd->sd_info.first_fat_sector = boot_sect + bootsect->nr_reserved_sectors;
 	vram_cd->sd_info.first_cluster_sector = boot_sect + bootsect->nr_reserved_sectors + (bootsect->nr_fats * bootsect->fat32_nr_sectors_per_fat);
 	vram_cd->sd_info.root_directory_cluster = bootsect->fat32_root_dir_cluster;
+	vram_cd->sd_info.sectors_per_fat = bootsect->fat32_nr_sectors_per_fat;
 
 	vram_cd->sd_info.cluster_shift = 31 - __builtin_clz(bootsect->nr_sector_per_cluster * 512);
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;

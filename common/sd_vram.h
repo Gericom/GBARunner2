@@ -170,6 +170,7 @@ typedef struct
 	sec_t first_fat_sector;
 	sec_t first_cluster_sector;
 	uint32_t root_directory_cluster;
+	uint32_t sectors_per_fat;
 } sd_info_t;
 
 typedef struct

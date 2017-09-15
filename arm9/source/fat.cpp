@@ -641,9 +641,9 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 		read_sd_sectors_safe(prev_sector, 1, tmp_buf + (buff_pos^512));//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf + 512);
 	}
 
-	//uint32_t cluster_count = vram_cd->sd_info.sectors_per_fat * 512/4;
+	uint32_t cluster_count = vram_cd->sd_info.sectors_per_fat * 512/4;
 
-	while(1)//cluster_count-- >= 0)
+	while(cluster_count-- >= 0)
 	{
 		read_sd_sectors_safe(cur_sector, 1, tmp_buf + buff_pos);//_DLDI_readSectors_ptr(cur_sector, 1, tmp_buf);
 		uint32_t* clusters = (uint32_t*)(tmp_buf + buff_pos);
