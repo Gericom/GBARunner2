@@ -237,6 +237,15 @@ gba_setup_fill_sub_loop:
 	ldr r0,= (address_dtcm + 0xA)
 	mcr p15, 0, r0, c9, c1, 0
 
+	ldr r0,= __dtcm2_lma
+	ldr r1,= (16 * 1024)
+	ldr r2,= __dtcm2_start
+dtcm_setup_copyloop:
+	ldmia r0!, {r3-r10}
+	stmia r2!, {r3-r10}
+	subs r1, #0x20
+	bne dtcm_setup_copyloop
+
 	ldr r0,= address_write_table_32bit_dtcm_setup
 	blx r0
 	ldr r0,= address_write_table_16bit_dtcm_setup
@@ -249,8 +258,8 @@ gba_setup_fill_sub_loop:
 	blx r0
 	ldr r0,= address_read_table_8bit_dtcm_setup
 	blx r0
-	ldr r0,= thumb_table_dtcm_setup
-	blx r0
+	//ldr r0,= thumb_table_dtcm_setup
+	//blx r0
 	
 	//wait for the arm7 to copy the dldi data
 	//enable the arm7-arm9 fifo
@@ -587,22 +596,25 @@ instruction_abort_handler_cont:
 	subs pc, lr, #4
 
 instruction_abort_handler_error:
-	mov sp, #0x06000000
-	orr sp, #0x00010000
-	cmp lr, sp
+	str r12, [r13, #1]
+	mov r12, #0x06000000
+	orr r12, #0x00010000
+	cmp lr, r12
 	blt instruction_abort_handler_error_cont
-	orr sp, #0x00008000
-	cmp lr, sp
+	orr r12, #0x00008000
+	cmp lr, r12
 	bge instruction_abort_handler_error_cont
 	add lr, #0x3F0000
+	ldr r12, [r13, #1]
 	subs pc, lr, #4
 instruction_abort_handler_error_cont:
-	add sp, lr, #0x5000000
-	add sp, #0x0FC0000
-	cmp sp, #0x08000000
+	add r12, lr, #0x5000000
+	add r12, #0x0FC0000
+	cmp r12, #0x08000000
 	blt instruction_abort_handler_error_2
-	cmp sp, #0x0E000000
-	movlt lr, sp
+	cmp r12, #0x0E000000
+	movlt lr, r12
+	ldrlt r12, [r13, #1]
 	blt instruction_abort_handler_cont
 instruction_abort_handler_error_2:
 	mrc p15, 0, r0, c1, c0, 0

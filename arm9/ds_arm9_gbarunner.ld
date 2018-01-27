@@ -5,6 +5,7 @@ ENTRY(_start)
 __vectors_start	=	ORIGIN(vectors);
 __itcm_start	=	ORIGIN(itcm);
 __vram_start	=	ORIGIN(vram);
+__dtcm2_start	=	ORIGIN(dtcm2);
 __ewram_end	=	ORIGIN(ewram) + LENGTH(ewram);
 __eheap_end	=	ORIGIN(ewram) + LENGTH(ewram);
 __dtcm_start	=	ORIGIN(dtcm);
@@ -192,7 +193,17 @@ __secure_area__ = .;
 		__vram_end = ABSOLUTE(.);
 	} >vram = 0xff
 
-	__bss_vma = __vram_lma + (__vram_end - __vram_start);
+	__dtcm2_lma = __vram_lma + (__vram_end - __vram_start);
+
+	.dtcm2 __dtcm2_start : AT (__dtcm2_lma)
+	{
+		*(.dtcm2)
+		*dtcm2.*(.text)
+		. = ALIGN(32);
+		__dtcm2_end = ABSOLUTE(.);
+	} >dtcm2 = 0xff
+
+	__bss_vma = __dtcm2_lma + (__dtcm2_end - __dtcm2_start);
 	
 	.sbss __dtcm_end (NOLOAD): 
 	{

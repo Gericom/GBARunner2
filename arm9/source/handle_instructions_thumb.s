@@ -6,8 +6,11 @@
 .macro finish_handler_skip_op_self_modifying
 	msr cpsr_c, #0xD7
 
-	ldr sp,= pu_data_permissions
-	mcr p15, 0, sp, c5, c0, 2
+	ldr lr,= pu_data_permissions
+	mcr p15, 0, lr, c5, c0, 2
+
+	//assume the dtcm is always accessible
+	ldr lr, [r13], #(-4 * 15 - 1)
 
 	subs pc, lr, #6
 .endm
@@ -235,7 +238,7 @@ thumb15_address_calc_0:
 	bic r9, r9, #3
 
 	andeq r8, r10, #0xFF
-	ldreq r12,= address_count_bit_table
+	ldreq r12,= count_bit_table_new
 	ldreqb r13, [r12, r8]
 	mov r8, r10
 2:
@@ -319,7 +322,7 @@ thumb15_address_calc_1:
 	bic r9, r9, #3
 
 	and r8, r10, #0xFF
-	ldr r12,= address_count_bit_table
+	ldr r12,= count_bit_table_new
 	ldrb r13, [r12, r8]
 2:
 	add r0, r9, r13, lsl #2

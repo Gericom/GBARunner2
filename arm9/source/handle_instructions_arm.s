@@ -244,7 +244,7 @@ ldm_stm_address_calc_\p\u\s\w\l:
 	//ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16
 	//count nr bits
-	ldr r12,= address_count_bit_table
+	ldr r12,= count_bit_table_new
 	and r13, r1, #0xFF0000
 	ldrb r13, [r12, r13, lsr #16]
 	ldrb r12, [r12, r1, lsr #24]

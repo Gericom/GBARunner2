@@ -34,16 +34,20 @@ read_address_from_handler_bios_32:
 		bge read_address_undefined_memory_32
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0xD7
-	mrs sp, spsr
-	tst sp, #0x20
+	//msr cpsr_c, #0xD7
+	//mrs lr, spsr
+	//tst lr, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0xD1
+	//msr cpsr_c, #0xD1
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
-	moveq r10, r5
+	//moveq r10, r5
+	//ldreq r10,= reg_table
+	//ldreq r10, [r10, #(4 * 15)]
 	//thumb
-	ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
-	ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
+	//ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
+	//ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
 
 	sub r10, #8
 	cmp r10, #0x4000
@@ -59,7 +63,7 @@ read_address_from_handler_io_32:
 	sub r12, r9, #0x04000000
 	cmp r12, #0x20C
 		movlt r12, r12, lsr #1
-		ldrlt r13,= address_read_table_32bit_dtcm
+		ldrlt r13,= read_table_32bit_dtcm_new
 		ldrlth r13, [r13, r12]
 		orrlt pc, r13, #0x01000000	//itcm
 	b read_address_undefined_memory_32
@@ -169,19 +173,23 @@ read_address_from_handler_16bit:
 
 read_address_from_handler_bios_16:
 	cmp r9, #0x4000
-	bge read_address_undefined_memory_16
+		bge read_address_undefined_memory_16
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0xD7
-	mrs sp, spsr
-	tst sp, #0x20
+	//msr cpsr_c, #0xD7
+	//mrs lr, spsr
+	//tst lr, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0xD1
+	//msr cpsr_c, #0xD1
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
-	moveq r10, r5
+	//moveq r10, r5
+	//ldreq r10,= reg_table
+	//ldreq r10, [r10, #(4 * 15)]
 	//thumb
-	ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
-	ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
+	//ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
+	//ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
 
 	sub r10, #8
 	cmp r10, #0x4000
@@ -194,7 +202,7 @@ read_address_from_handler_bios_16:
 read_address_from_handler_io_16:
 	sub r12, r9, #0x04000000
 	cmp r12, #0x20C
-		ldrlt r13,= address_read_table_16bit_dtcm
+		ldrlt r13,= read_table_16bit_dtcm_new
 		ldrlth r13, [r13, r12]
 		orrlt pc, r13, #0x01000000	//itcm
 	b read_address_undefined_memory_16
@@ -317,16 +325,20 @@ read_address_from_handler_bios_8:
 		bge read_address_undefined_memory_8
 	//bios area, check if this was caused by an opcode in the bios area
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0xD7
-	mrs sp, spsr
-	tst sp, #0x20
+	//msr cpsr_c, #0xD7
+	//mrs lr, spsr
+	//tst lr, #0x20
 	//back to fiq mode
-	msr cpsr_c, #0xD1
+	//msr cpsr_c, #0xD1
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
-	moveq r10, r5
+	//moveq r10, r5
+	//ldreq r10,= reg_table
+	//ldreq r10, [r10, #(4 * 15)]
 	//thumb
-	ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
-	ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
+	//ldrne r11,= data_abort_handler_thumb_pc_tmp//reg_table
+	//ldrne r10, [r11]//, #(8 << 2)] //value of lr = instruction address + 8
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
 
 	sub r10, #8
 	cmp r10, #0x4000
@@ -343,7 +355,7 @@ read_address_from_handler_io_8:
 	sub r12, r9, #0x04000000
 	cmp r12, #0x20C
 		movlt r12, r12, lsl #1
-		ldrlt r13,= address_read_table_8bit_dtcm
+		ldrlt r13,= read_table_8bit_dtcm_new
 		ldrlth r13, [r13, r12]
 		orrlt pc, r13, #0x01000000	//itcm
 	b read_address_undefined_memory_8
@@ -484,14 +496,16 @@ read_address_ignore:
 read_address_undefined_memory_32:
 	//switch back to abt mode, since we have some info there
 	msr cpsr_c, #0xD7
-	mrs sp, spsr
-	tst sp, #0x20
+	mrs lr, spsr
+	tst lr, #0x20
 	//back to fiq mode
 	msr cpsr_c, #0xD1
 	bne read_address_undefined_memory_32_thumb
 read_address_undefined_memory_32_arm:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
-	ldr r10, [r5]
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
+	ldr r10, [r10]//r5]
 	and r11, r9, #3
 	mov r11, r11, lsl #3
 	mov r10, r10, ror r11
@@ -500,8 +514,9 @@ read_address_undefined_memory_32_arm:
 read_address_undefined_memory_32_thumb:
 	//ldr r11,= reg_table
 	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
-	ldr r10,= data_abort_handler_thumb_pc_tmp
-	ldr r10, [r10]
+	//ldr r10,= data_abort_handler_thumb_pc_tmp
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
 	ldrh r11, [r10, #-4]
 	orr r10, r11, r11, lsl #16
 	and r11, r9, #3
@@ -513,14 +528,16 @@ read_address_undefined_memory_32_thumb:
 read_address_undefined_memory_16:
 	//switch back to abt mode, since we have some info there
 	msr cpsr_c, #0xD7
-	mrs sp, spsr
-	tst sp, #0x20
+	mrs lr, spsr
+	tst lr, #0x20
 	//back to fiq mode
 	msr cpsr_c, #0xD1
 	bne read_address_undefined_memory_16_thumb
 read_address_undefined_memory_16_arm:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
-	ldrh r10, [r5]
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
+	ldrh r10, [r10]//r5]
 	tst r9, #1
 	movne r10, r10, ror #8
 	bx lr
@@ -528,8 +545,9 @@ read_address_undefined_memory_16_arm:
 read_address_undefined_memory_16_thumb:
 	//ldr r11,= reg_table
 	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
-	ldr r10,= data_abort_handler_thumb_pc_tmp
-	ldr r10, [r10]
+	//ldr r10,= data_abort_handler_thumb_pc_tmp
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
 	ldrh r10, [r10, #-4]
 	tst r9, #1
 	movne r10, r10, ror #8
@@ -539,14 +557,16 @@ read_address_undefined_memory_16_thumb:
 read_address_undefined_memory_8:
 	//switch back to abt mode, since we have some info there
 	msr cpsr_c, #0xD7
-	mrs sp, spsr
-	tst sp, #0x20
+	mrs lr, spsr
+	tst lr, #0x20
 	//back to fiq mode
 	msr cpsr_c, #0xD1
 	bne read_address_undefined_memory_8_thumb
 read_address_undefined_memory_8_arm:
 	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
-	ldr r10, [r5]
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
+	ldr r10, [r10]//r5]
 	and r11, r9, #3
 	mov r11, r11, lsl #3
 	mov r10, r10, ror r11
@@ -556,8 +576,9 @@ read_address_undefined_memory_8_arm:
 read_address_undefined_memory_8_thumb:
 	//ldr r11,= reg_table
 	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
-	ldr r10,= data_abort_handler_thumb_pc_tmp
-	ldr r10, [r10]
+	//ldr r10,= data_abort_handler_thumb_pc_tmp
+	ldr r10,= reg_table
+	ldr r10, [r10, #(4 * 15)]
 	ldrb r10, [r10, #-4]
 	bx lr
 
