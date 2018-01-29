@@ -3,7 +3,7 @@
 
 #include "../../common/common_defs.s"
 
-#define address_dtcm 0x05800000 //0x01800000
+#define address_dtcm 0x07800000 //0x01800000
 //#define reg_table address_dtcm
 
 //#define address_count_bit_table (address_dtcm + 0x40)
@@ -19,6 +19,24 @@
 //#define address_thumb_table_dtcm (address_dtcm + 0xFA0) //(address_dtcm + 0xF98)
 
 #define pu_data_permissions 0x33600603 //0x33600003 //0x33660003
+
+//for debugging the abort handler only!
+//registers will be destroyed by a fiq interrupt though
+//#define ALLOW_FIQ
+
+#ifdef ALLOW_FIQ
+#define CPSR_IRQ_FIQ_BITS	0x80
+#else
+#define CPSR_IRQ_FIQ_BITS	0xC0
+#endif
+
+//enabling the wram icache can significantly improve
+//speed in some games (dk3, rayman3, riviera), however
+//it may lead to crashes depending on the game.
+//This is not good for games that use a lot of
+//self-modifying code for instance.
+//In general it's better to keep it off
+//#define ENABLE_WRAM_ICACHE
 
 #ifdef __ASSEMBLER__
 @destroys r12, r13
@@ -95,6 +113,7 @@ FIELDS(address_dtcm,
 	reg_table, 0x40,
 	address_cpu_mode_switch_dtcm, 4 * 31,
 	address_thumb_table_dtcm, 4 * 128,
+	address_arm_table_dtcm, 4 * 256,
 	address_count_bit_table, 0x100,
 	address_write_table_32bit_dtcm, 0x108,
 	address_write_table_16bit_dtcm, 0x20C,

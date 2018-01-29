@@ -27,7 +27,7 @@ data_abort_handler:
 	ldrcc pc, [r13, lr, lsr #25] //uses cpu_mode_switch_dtcm
 
 data_abort_handler_thumb:
-	msr cpsr_c, #0xD1
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
 	ldr r12,= reg_table
 	ldr r11, [r12, #(4 * 15)]
 	ldrh r10, [r11, #-8]
@@ -38,7 +38,7 @@ data_abort_handler_thumb:
 data_abort_handler_arm_irq:
 	str r0, [r13, #(-4 * 15)]
 	sub r0, r13, #(4 * 14)
-	msr cpsr_c, #0xD2
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x12)
 	stmia r0, {r1-r12,sp,lr}
 	b data_abort_handler_cont
 
@@ -46,7 +46,7 @@ data_abort_handler_arm_irq:
 data_abort_handler_arm_svc:
 	str r0, [r13, #(-4 * 15)]
 	sub r0, r13, #(4 * 14)
-	msr cpsr_c, #0xD3
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x13)
 	stmia r0, {r1-r12,sp,lr}
 	b data_abort_handler_cont
 
@@ -55,80 +55,36 @@ data_abort_handler_arm_usr_sys:
 	stmdb r13, {r0-r14}^
 
 data_abort_handler_cont:
-	msr cpsr_c, #0xD1
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
 
-	ldr r11,= reg_table
+	ldr r12,= reg_table
 	//add r6, r5, #4	//pc+12
 	//pc + 8
 	//str r5, [r11, #(4 * 15)]
-	ldr r10, [r11, #(4 * 15)]
+	ldr r10, [r12, #(4 * 15)]
 
 	ldr r10, [r10, #-8]
 	and r10, r10, #0x0FFFFFFF
 
 	and r8, r10, #(0xF << 16)
-	ldr r9, [r11, r8, lsr #14]
+	ldr r9, [r12, r8, lsr #14]
 
-	ldr pc, [pc, r10, lsr #18]
-
-	nop
-.macro list_ldrh_strh_variant a,b,c,d,e
-	.word ldrh_strh_address_calc_\a\b\c\d\e
-.endm
-
-.macro list_all_ldrh_strh_variants arg=0
-	list_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
-.if \arg<0x1F
-	list_all_ldrh_strh_variants %(\arg+1)
-.endif
-.endm
-	list_all_ldrh_strh_variants
-
-.rept 32
-	.word address_calc_unknown
-.endr
-
-.macro list_ldr_str_variant a,b,c,d,e,f
-	.word ldr_str_address_calc_\a\b\c\d\e\f
-.endm
-
-.altmacro
-.macro list_all_ldr_str_variants arg=0
-	list_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
-.if \arg<0x3F
-	list_all_ldr_str_variants %(\arg+1)
-.endif
-.endm
-
-	list_all_ldr_str_variants
-
-.macro list_ldm_stm_variant a,b,c,d,e
-	.word ldm_stm_address_calc_\a\b\c\d\e
-.endm
-
-.macro list_all_ldm_stm_variants arg=0
-	list_ldm_stm_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
-.if \arg<0x1F
-	list_all_ldm_stm_variants %(\arg+1)
-.endif
-.endm
-	list_all_ldm_stm_variants
-.rept 96
-	.word address_calc_unknown
-.endr
+	add r11, r12, #(address_arm_table_dtcm - reg_table)
+	ldr pc, [r11, r10, lsr #18]
 
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:
-	msr cpsr_fc, #0xD7
+	//important! this should set the v flag to 0
+	msr cpsr_fc, #(CPSR_IRQ_FIQ_BITS | 0x17)
 
-	mrs lr, spsr
-	movs lr, lr, lsl #28
+	//lr still contains spsr << 27
+	movs lr, lr, lsl #1
 
 	bgt data_abort_handler_cont2
 data_abort_handler_cont3:
 	ldmdb r13, {r0-r14}^
 
-	ldr lr,= pu_data_permissions
+	ldr lr, [r13, #4] //pu_data_permissions
 	mcr p15, 0, lr, c5, c0, 2
 
 	//assume the dtcm is always accessible
@@ -139,12 +95,12 @@ data_abort_handler_cont3:
 data_abort_handler_cont2:
 	sub r12, r13, #(4 * 15)
 	mov lr, lr, lsr #28
-	orr lr, lr, #0xD0
+	orr lr, lr, #(CPSR_IRQ_FIQ_BITS | 0x10)
 	msr cpsr_c, lr
 	ldmia r12, {r0-r14}
-	msr cpsr_c, #0xD7
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
 
-	ldr lr,= pu_data_permissions
+	ldr lr, [r13, #4] //pu_data_permissions
 	mcr p15, 0, lr, c5, c0, 2
 
 	//assume the dtcm is always accessible

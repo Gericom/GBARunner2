@@ -495,16 +495,15 @@ read_address_ignore:
 .global read_address_undefined_memory_32
 read_address_undefined_memory_32:
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0xD7
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
 	mrs lr, spsr
-	tst lr, #0x20
-	//back to fiq mode
-	msr cpsr_c, #0xD1
-	bne read_address_undefined_memory_32_thumb
-read_address_undefined_memory_32_arm:
-	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
+	movs lr, lr, lsl #27
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
 	ldr r10,= reg_table
 	ldr r10, [r10, #(4 * 15)]
+	bcs read_address_undefined_memory_32_thumb
+read_address_undefined_memory_32_arm:
+	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	ldr r10, [r10]//r5]
 	and r11, r9, #3
 	mov r11, r11, lsl #3
@@ -512,11 +511,6 @@ read_address_undefined_memory_32_arm:
 	bx lr
 
 read_address_undefined_memory_32_thumb:
-	//ldr r11,= reg_table
-	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
-	//ldr r10,= data_abort_handler_thumb_pc_tmp
-	ldr r10,= reg_table
-	ldr r10, [r10, #(4 * 15)]
 	ldrh r11, [r10, #-4]
 	orr r10, r11, r11, lsl #16
 	and r11, r9, #3
@@ -527,16 +521,15 @@ read_address_undefined_memory_32_thumb:
 .global read_address_undefined_memory_16
 read_address_undefined_memory_16:
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0xD7
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
 	mrs lr, spsr
-	tst lr, #0x20
-	//back to fiq mode
-	msr cpsr_c, #0xD1
-	bne read_address_undefined_memory_16_thumb
-read_address_undefined_memory_16_arm:
-	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
+	movs lr, lr, lsl #27
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
 	ldr r10,= reg_table
 	ldr r10, [r10, #(4 * 15)]
+	bcs read_address_undefined_memory_16_thumb
+read_address_undefined_memory_16_arm:
+	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	ldrh r10, [r10]//r5]
 	tst r9, #1
 	movne r10, r10, ror #8
@@ -546,8 +539,6 @@ read_address_undefined_memory_16_thumb:
 	//ldr r11,= reg_table
 	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
 	//ldr r10,= data_abort_handler_thumb_pc_tmp
-	ldr r10,= reg_table
-	ldr r10, [r10, #(4 * 15)]
 	ldrh r10, [r10, #-4]
 	tst r9, #1
 	movne r10, r10, ror #8
@@ -556,16 +547,15 @@ read_address_undefined_memory_16_thumb:
 .global read_address_undefined_memory_8
 read_address_undefined_memory_8:
 	//switch back to abt mode, since we have some info there
-	msr cpsr_c, #0xD7
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
 	mrs lr, spsr
-	tst lr, #0x20
-	//back to fiq mode
-	msr cpsr_c, #0xD1
-	bne read_address_undefined_memory_8_thumb
-read_address_undefined_memory_8_arm:
-	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
+	movs lr, lr, lsl #27
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
 	ldr r10,= reg_table
 	ldr r10, [r10, #(4 * 15)]
+	bcs read_address_undefined_memory_8_thumb
+read_address_undefined_memory_8_arm:
+	//for arm the instruction address + 8 is in r5, and it's exactly the address we want to read
 	ldr r10, [r10]//r5]
 	and r11, r9, #3
 	mov r11, r11, lsl #3
@@ -574,11 +564,6 @@ read_address_undefined_memory_8_arm:
 	bx lr
 
 read_address_undefined_memory_8_thumb:
-	//ldr r11,= reg_table
-	//ldr r10, [r11, #(8 << 2)] //value of lr = instruction address + 8
-	//ldr r10,= data_abort_handler_thumb_pc_tmp
-	ldr r10,= reg_table
-	ldr r10, [r10, #(4 * 15)]
 	ldrb r10, [r10, #-4]
 	bx lr
 

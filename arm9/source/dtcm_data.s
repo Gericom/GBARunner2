@@ -1,4 +1,8 @@
 .section .dtcm2
+.altmacro
+
+#include "consts.s"
+
 .global reg_table_dtcm
 reg_table_dtcm:
 .rept 16
@@ -7,7 +11,9 @@ reg_table_dtcm:
 
 .global cpu_mode_switch_dtcm
 cpu_mode_switch_dtcm:
-.rept 15
+	.word pu_data_permissions
+	.word data_abort_handler_cont_finish
+.rept 13
 	.word 0
 .endr
 	.word data_abort_handler_arm_usr_sys //usr
@@ -88,6 +94,53 @@ thumb_table:
 	.word thumb15_address_calc_1
 	.word thumb15_address_calc_1
 .rept 24
+	.word address_calc_unknown
+.endr
+
+.global arm_table
+arm_table:
+.macro list_ldrh_strh_variant a,b,c,d,e
+	.word ldrh_strh_address_calc_\a\b\c\d\e
+.endm
+
+.macro list_all_ldrh_strh_variants arg=0
+	list_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x1F
+	list_all_ldrh_strh_variants %(\arg+1)
+.endif
+.endm
+	list_all_ldrh_strh_variants
+
+.rept 32
+	.word address_calc_unknown
+.endr
+
+.macro list_ldr_str_variant a,b,c,d,e,f
+	.word ldr_str_address_calc_\a\b\c\d\e\f
+.endm
+
+.altmacro
+.macro list_all_ldr_str_variants arg=0
+	list_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x3F
+	list_all_ldr_str_variants %(\arg+1)
+.endif
+.endm
+
+	list_all_ldr_str_variants
+
+.macro list_ldm_stm_variant a,b,c,d,e
+	.word ldm_stm_address_calc_\a\b\c\d\e
+.endm
+
+.macro list_all_ldm_stm_variants arg=0
+	list_ldm_stm_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x1F
+	list_all_ldm_stm_variants %(\arg+1)
+.endif
+.endm
+	list_all_ldm_stm_variants
+.rept 96
 	.word address_calc_unknown
 .endr
 

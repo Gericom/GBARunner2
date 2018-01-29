@@ -156,6 +156,10 @@ vram_setup_copyloop:
 	//orr r0, #(1 << 6)
 	//orr r1, #(1 << 6)
 	//orr r1, #(1 << 7)
+#ifdef ENABLE_WRAM_ICACHE
+	orr r0, #(1 << 0)
+	orr r0, #(1 << 7)
+#endif
 	mcr p15, 0, r0, c2, c0, 1	//instruction cache
 
 	//no write buffer
@@ -853,6 +857,11 @@ no_bkpt:
 .global irq_handler
 irq_handler:
 	STMFD   SP!, {R0-R3,R12,LR}
+
+#ifdef ENABLE_WRAM_ICACHE
+	mov r0, #0
+	mcr p15, 0, r0, c7, c5, 0
+#endif
 
 	//check for arm7 interrupt
 

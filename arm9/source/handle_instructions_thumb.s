@@ -4,9 +4,9 @@
 #include "consts.s"
 
 .macro finish_handler_skip_op_self_modifying
-	msr cpsr_c, #0xD7
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
 
-	ldr lr,= pu_data_permissions
+	ldr lr, [r13, #4] //pu_data_permissions
 	mcr p15, 0, lr, c5, c0, 2
 
 	//assume the dtcm is always accessible

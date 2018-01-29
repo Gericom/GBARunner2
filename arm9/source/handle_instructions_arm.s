@@ -9,39 +9,40 @@ ldrh_strh_address_calc_\p\u\i\w\l:
 	//and r8, r10, #(0xF << 16)
 	//ldr r9, [r11, r8, lsr #14]
 	and r0, r10, #0xF
-.ifeq \i
-	ldr r0, [r11, r0, lsl #2]
+.if !\i
+	ldr r0, [r12, r0, lsl #2]
 .else
-	and r1, r10, #0xF00
-	orr r0, r1, lsr #4
+	and r14, r10, #0xF00
+	orr r0, r14, lsr #4
 .endif
-.ifeq \p
-	.ifeq \u
-		rsb r0, r0, #0
-	.endif
-.else
-	.ifeq \u
+.if \p
+	.if !\u
 		sub r9, r9, r0
 	.else
 		add r9, r9, r0
 	.endif
+.else
+	.if \l && !\u
+		rsb r0, r0, #0
+	.endif
 .endif
 .if !\l
 	.if \p && \w
-		str r9, [r11, r8, lsr #14]
+		str r9, [r12, r8, lsr #14]
 	.endif
+	and r11, r10, #(0xF << 12)
+	mov r11, r11, lsr #10
+	ldrh r11, [r12, r11]
 	.if !\p
-		mov r7, r11
+		.if !\u
+			sub r13, r9, r0
+		.else
+			add r13, r9, r0
+		.endif
+		str r13, [r12, r8, lsr #14]
 	.endif
-	and r12, r10, #(0xF << 12)
-	mov r12, r12, lsr #10
-	ldrh r11, [r11, r12]
-	bl write_address_from_handler_16bit
-	.if !\p
-		add r9, r0
-		str r9, [r7, r8, lsr #14]
-	.endif
-	b data_abort_handler_cont_finish
+	ldr lr, [r12, #(17 * 4)] //data_abort_handler_cont_finish
+	b write_address_from_handler_16bit
 .else
 	b ldrh_strh_address_calc_cont_\p\w\l
 .endif
@@ -70,7 +71,7 @@ create_all_ldrh_strh_variants
 ldrh_strh_address_calc_cont_001:
 ldrh_strh_address_calc_cont_011:
 	mov r1, r10
-	mov r7, r11
+	mov r7, r12
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
 	beq 2f
@@ -109,10 +110,10 @@ ldrh_strh_address_calc_cont_011:
 //	b data_abort_handler_cont_finish
 
 ldrh_strh_address_calc_cont_111:
-	str r9, [r11, r8, lsr #14]
+	str r9, [r12, r8, lsr #14]
 ldrh_strh_address_calc_cont_101:
 	mov r1, r10
-	mov r7, r11
+	mov r7, r12
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
 	beq 2f
@@ -134,6 +135,8 @@ ldrh_strh_address_calc_cont_101:
 	str r10, [r7, r11, lsr #10]
 	b data_abort_handler_cont_finish
 
+.pool
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -141,40 +144,31 @@ ldrh_strh_address_calc_cont_101:
 .macro create_ldr_str_variant i, p, u, bw, w, l
 .global ldr_str_address_calc_\i\p\u\bw\w\l
 ldr_str_address_calc_\i\p\u\bw\w\l:
-.ifeq \i
+.if !\i
 	//immediate
 	//and r8, r10, #(0xF << 16)
 	//ldr r9, [r11, r8, lsr #14]
 	mov r0, r10, lsl #20
-	.if !\p
-		mov r0, r0, lsr #20
-	.endif
 .else
 	//shifted register
 	and r0, r10, #0xF
-	ldr r0, [r11, r0, lsl #2]
+	ldr r0, [r12, r0, lsl #2]
 	//construct shift (mov r0, r0, xxx #y)
-	and r1, r10, #0xFE0
-	strh r1, 1f
-	//keep in mind that there should be enough instructions here for the pipeline not to read the instruction too early
+	ands r14, r10, #0xFE0
+	beq 2f
+	strh r14, 1f
 	//fix c-flag
-	//this is the wrong c-flag, since we're in fiq mode, not in abt mode
-	//TODO: fix this!
-	//mrs r12, spsr
-	//msr cpsr_f, r12
-	//and r8, r10, #(0xF << 16)
-	//ldr r9, [r11, r8, lsr #14]
-	//b ldr_str_address_calc_shift_instruction
-	b 1f
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
+	mrs r1, spsr
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
+	msr cpsr_f, r1
+//	b 1f
 1:
 	mov r0, r0
+2:
 .endif	
-.ifeq \p
-	.ifeq \u
-		rsb r0, r0, #0
-	.endif
-.else
-	.ifeq \u
+.if \p
+	.if !\u
 		.if !\i
 			sub r9, r9, r0, lsr #20
 		.else
@@ -194,33 +188,63 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 .endif
 
 .if \p && \w //pre
-	str r9, [r11, r8, lsr #14]
+	str r9, [r12, r8, lsr #14]
 .endif
 	and r1, r10, #(0xF << 12)
-.if !\p || \l //post or read
-	mov r7, r11
-.endif
-.ifeq \l //write
+.if !\l //write
 	.if \bw
-		ldrb r11, [r11, r1, lsr #10]
-		bl write_address_from_handler_8bit
+		ldrb r11, [r12, r1, lsr #10]
 	.else
-		ldr r11, [r11, r1, lsr #10]
-		bl write_address_from_handler_32bit
+		ldr r11, [r12, r1, lsr #10]
+	.endif
+	.if !\p
+		.if !\u
+			.if !\i
+				sub r13, r9, r0, lsr #20
+			.else
+				sub r13, r9, r0
+			.endif
+		.else
+			.if !\i
+				add r13, r9, r0, lsr #20
+			.else
+				add r13, r9, r0
+			.endif
+		.endif		
+		str r13, [r12, r8, lsr #14]
+	.endif
+	ldr lr, [r12, #(17 * 4)] //data_abort_handler_cont_finish
+	.if \bw
+		b write_address_from_handler_8bit
+	.else
+		b write_address_from_handler_32bit
 	.endif
 .else
+	.if !\p
+		.if !\u
+			.if !\i
+				sub r13, r9, r0, lsr #20
+			.else
+				sub r13, r9, r0
+			.endif
+		.else
+			.if !\i
+				add r13, r9, r0, lsr #20
+			.else
+				add r13, r9, r0
+			.endif
+		.endif
+		str r13, [r12, r8, lsr #14]
+	.endif
+	add r8, r12, r1, lsr #10
 	.if \bw
 		bl read_address_from_handler_8bit
 	.else
 		bl read_address_from_handler_32bit
 	.endif
-	str r10, [r7, r1, lsr #10]
-.endif
-.ifeq \p
-	add r9, r0
-	str r9, [r7, r8, lsr #14]
-.endif
+	str r10, [r8]
 	b data_abort_handler_cont_finish
+.endif
 .endm
 
 .macro create_all_ldr_str_variants arg=0
@@ -231,6 +255,8 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 .endm
 
 create_all_ldr_str_variants
+
+.pool
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -244,16 +270,16 @@ ldm_stm_address_calc_\p\u\s\w\l:
 	//ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16
 	//count nr bits
-	ldr r12,= count_bit_table_new
+	ldr r11,= count_bit_table_new
 	and r13, r1, #0xFF0000
-	ldrb r13, [r12, r13, lsr #16]
-	ldrb r12, [r12, r1, lsr #24]
-	add r12, r12, r13
+	ldrb r13, [r11, r13, lsr #16]
+	ldrb r11, [r11, r1, lsr #24]
+	add r11, r11, r13
 .if \w
 	.ifeq \u
-		sub r13, r9, r12, lsl #2
+		sub r13, r9, r11, lsl #2
 	.else
-		add r13, r9, r12, lsl #2
+		add r13, r9, r11, lsl #2
 	.endif
 
 	//mov r2, #1
@@ -263,15 +289,15 @@ ldm_stm_address_calc_\p\u\s\w\l:
 	//subne r2, #1
 	//tstne r10, r2
 
-	str r13, [r11, r8, lsr #14]
+	str r13, [r12, r8, lsr #14]
 .endif
 .ifeq \u
-	sub r9, r9, r12, lsl #2
+	sub r9, r9, r11, lsl #2
 .endif
 .if \p == \u
 	add r9, r9, #4
 .endif
-	mov r4, r11
+	mov r4, r12
 	mov r1, r1, lsr #16
 1:
 	tst r1, #1
