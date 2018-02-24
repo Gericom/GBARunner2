@@ -2,10 +2,13 @@
 
 #include "consts.s"
 
+.global __aeabi_unwind_cpp_pr0
+.equ __aeabi_unwind_cpp_pr0, 0
+.global __aeabi_unwind_cpp_pr1
+.equ __aeabi_unwind_cpp_pr1, 0
+
 .global gba_setup
 gba_setup:
-	push {r4-r11,r14}
-
 	//Make sure interupts are disabled!
 	ldr r0,= 0x4000210
 	mov r1, #0
@@ -13,7 +16,22 @@ gba_setup:
 	str r1, [r0]
 	mov r1, #0xFFFFFFFF
 	str r1, [r0, #4]
-	bl gba_setup_itcm
+
+	ldr r0,= 0x50078
+	mcr p15, 0, r0, c1, c0, 0
+
+	mov sp, #(16 * 1024)
+	bl initSystem
+
+	//copy the itcm in place
+	ldr r0,= __itcm_lma
+	ldr r1,= (32 * 1024)
+	ldr r2,= __itcm_start
+itcm_setup_copyloop:
+	ldmia r0!, {r3-r10}
+	stmia r2!, {r3-r10}
+	subs r1, #0x20
+	bne itcm_setup_copyloop
 
 	//map the gba cartridge to the arm7 and nds card too
 	ldr r0,= 0x4000204
@@ -533,15 +551,29 @@ dldi_name_copy:
 	mov r1, #0x1B0
 	str r0, [r1]
 
+#ifdef ENABLE_WRAM_ICACHE
+	ldr r0,= bios_cpuset_cache_patch
+	mov r1, #0x1F4
+	str r0, [r1]
+
+	ldr r0,= bios_cpufastset_cache_patch
+	mov r1, #0x1F8
+	str r0, [r1]
+#endif
+
 	//We need to get into privileged mode, misuse the undefined mode for it
-	ldr r0,= gba_start_bkpt
-	sub r0, #0xC	//relative to source address
-	sub r0, #8	//pc + 8 compensation
-	mov r1, #0xEA000000
-	orr r1, r0, lsr #2
-	mov r0, #0xC
-	str r1, [r0]
-	bkpt #0
+	//ldr r0,= gba_start_bkpt
+	//sub r0, #0xC	//relative to source address
+	//sub r0, #8	//pc + 8 compensation
+	//mov r1, #0xEA000000
+	//orr r1, r0, lsr #2
+	//mov r0, #0xC
+	//str r1, [r0]
+
+	ldr r0,= gba_start_bkpt_vram
+	bx r0
+
+	//bkpt #0
 	//Try out bios checksum
 	//swi #0xD0000
 	//ldr r1,= 0xBAAE187F
@@ -559,7 +591,6 @@ dldi_name_copy:
 	//swi #0
 gba_setup_loop:
 	b gba_setup_loop
-	pop {r4-r11,pc}
 
 //.section .itcm
 //swi_handler:
@@ -575,17 +606,9 @@ gba_setup_loop:
 .section .itcm
 //.org 0x4000
 //Jump to reset vector
-gba_start_bkpt:
-	ldr r0,= gba_start_bkpt_vram
-	bx r0
-
-gba_setup_itcm:
-	//disable the cache from within the itcm
-	mrc p15, 0, r0, c1, c0, 0
-	ldr r1,= (0x3004 | 1)
-	bic r0, r1
-	mcr p15, 0, r0, c1, c0, 0
-	bx lr
+//gba_start_bkpt:
+//	ldr r0,= gba_start_bkpt_vram
+//	bx r0
 
 .global instruction_abort_handler
 instruction_abort_handler:
@@ -859,8 +882,8 @@ irq_handler:
 	STMFD   SP!, {R0-R3,R12,LR}
 
 #ifdef ENABLE_WRAM_ICACHE
-	mov r0, #0
-	mcr p15, 0, r0, c7, c5, 0
+	//mov r0, #0
+	//mcr p15, 0, r0, c7, c5, 0
 #endif
 
 	//check for arm7 interrupt
@@ -960,6 +983,11 @@ irq_handler_arm7_irq:
 	SUBS    PC, LR, #4
 
 cap_control:
+#ifdef ENABLE_WRAM_ICACHE
+	//mov r2, #0
+	//mcr p15, 0, r2, c7, c5, 0
+#endif
+
 	eor r1, #0x00010000
 	tst r1, #0x00010000
 	mov r2, #0x80

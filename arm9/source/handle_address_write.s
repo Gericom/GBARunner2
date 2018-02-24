@@ -500,6 +500,12 @@ write_address_dma_control:
 	bxeq lr
 write_address_dma_control_cont2:
 	strh r11, [r9]
+
+#ifdef ENABLE_WRAM_ICACHE
+	mov r11, #0
+	mcr p15, 0, r11, c7, c5, 0
+#endif
+
 	bx lr
 
 write_address_dma_control_rom_src:
@@ -586,6 +592,12 @@ write_address_dma_size_control_cont:
 	bxeq lr
 write_address_dma_size_control_cont3:
 	str r11, [r9]
+
+#ifdef ENABLE_WRAM_ICACHE
+	mov r11, #0
+	mcr p15, 0, r11, c7, c5, 0
+#endif
+
 	bx lr
 
 
