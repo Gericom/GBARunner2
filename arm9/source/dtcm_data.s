@@ -186,6 +186,18 @@ read_table_8bit_dtcm_new:
 	.short 0
 .endr
 
+.global DISPCNT_copy
+DISPCNT_copy:
+	.word 0
+
+.global shadow_dispstat
+shadow_dispstat:
+	.word 0
+
+.global WAITCNT_copy
+WAITCNT_copy:
+	.word 0
+
 .global dma_shadow_regs_dtcm
 dma_shadow_regs_dtcm:
 .rept 4

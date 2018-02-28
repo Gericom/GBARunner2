@@ -121,6 +121,9 @@ FIELDS(address_dtcm,
 	address_read_table_32bit_dtcm, 0x108,
 	address_read_table_16bit_dtcm, 0x20C,
 	address_read_table_8bit_dtcm, 0x418,
+	address_DISPCNT_copy, 0x4,
+	address_shadow_dispstat, 0x4,
+	address_WAITCNT_copy, 0x4,
 	address_dma_shadow_regs_dtcm, 0x30
 )
 

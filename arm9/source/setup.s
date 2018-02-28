@@ -174,15 +174,17 @@ vram_setup_copyloop:
 	//orr r0, #(1 << 6)
 	//orr r1, #(1 << 6)
 	//orr r1, #(1 << 7)
+	mov r0, #((1 << 5) | (1 << 6))
+
+
 #ifdef ENABLE_WRAM_ICACHE
 	orr r0, #(1 << 0)
 	orr r0, #(1 << 7)
 #endif
 	mcr p15, 0, r0, c2, c0, 1	//instruction cache
 
-	//no write buffer
-	mov r0, #(1 << 5)
-	orr r0, #(1 << 6)
+	//write buffer
+	mov r0, #((1 << 5) | (1 << 6))
 	mcr p15, 0, r0, c3, c0, 0
 
 	//Copy GBA Bios in place
@@ -876,130 +878,6 @@ no_bkpt:
 
 	b .*/
 
-//inbetween to catch the current running function in usermode
-.global irq_handler
-irq_handler:
-	STMFD   SP!, {R0-R3,R12,LR}
-
-#ifdef ENABLE_WRAM_ICACHE
-	//mov r0, #0
-	//mcr p15, 0, r0, c7, c5, 0
-#endif
-
-	//check for arm7 interrupt
-
-	//make use of the backwards compatible version
-	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
-	mov r0, #0xFFFFFFFF
-	mcr p15, 0, r0, c5, c0, 0
-
-	mov r12, #0x04000000
-	ldr r1, [r12, #0x64]
-	tst r1, #0x80000000
-	beq cap_control
-irq_cont:
-	ldr r1, [r12, #0x214]
-	tst r1, #(1 << 16)
-	bne irq_handler_arm7_irq
-
-	ldr r1,= pu_data_permissions
-	mcr p15, 0, r1, c5, c0, 2
-
-	ADR     LR, loc_138
-	LDR     PC, [R12,#-4]
-loc_138:
-	LDMFD   SP!, {R0-R3,R12,LR}
-	SUBS    PC, LR, #4
-
-irq_handler_arm7_irq:
-	ldr r12,= sound_sound_emu_work
-	orr r12, #0x00800000
-1:
-	ldrb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 1)]
-	cmp r2, #SOUND_EMU_QUEUE_LEN
-	bge 4f
-
-	ldrb r2, [r12, #3]
-	add r3, r2, #1
-	cmp r3, #SOUND_EMU_QUEUE_LEN
-	subge r3, #SOUND_EMU_QUEUE_LEN
-	strb r3, [r12, #3]
-
-	add r3, r12, r2, lsl #2
-	ldr r1, [r3, #4]
-
-	ldrb lr, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)]
-	add r2, lr, #1
-	cmp r2, #SOUND_EMU_QUEUE_LEN
-	subge r2, #SOUND_EMU_QUEUE_LEN
-	strb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)]
-
-	ldmia r1, {r0, r1, r2, r3}
-
-	add lr, r12, lr, lsl #4
-	add lr, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 4)
-	stmia lr, {r0, r1, r2, r3}
-
-	mov r1, #1
-	add r3, r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4))
-2:
-	swpb r1, r1, [r3]
-	cmp r1, #0
-	bne 2b
-	ldrb r2, [r3, #1]
-	add r2, #1
-	strb r2, [r3, #1]
-	strb r1, [r3]
-
-	mov r1, #1
-3:
-	swpb r1, r1, [r12]
-	cmp r1, #0
-	bne 3b
-	ldrb r2, [r12, #1]
-	sub r2, #1
-	strb r2, [r12, #1]
-	strb r1, [r12]
-
-	cmp r2, #0
-	bgt 1b
-4:
-	ldr r0,= 0xAA5500F9
-	mov r1, #0x04000000
-	str r0, [r1, #0x188]
-
-	mov r12, #0x04000000
-	mov r1, #(1 << 16)
-	str r1, [r12, #0x214]
-
-	ldr r2,= fake_irq_flags
-	ldr r1, [r2]
-	orr r1, #(3 << 9)
-	str r1, [r2]
-
-	ldr r1,= pu_data_permissions
-	mcr p15, 0, r1, c5, c0, 2
-	LDMFD   SP!, {R0-R3,R12,LR}
-	SUBS    PC, LR, #4
-
-cap_control:
-#ifdef ENABLE_WRAM_ICACHE
-	//mov r2, #0
-	//mcr p15, 0, r2, c7, c5, 0
-#endif
-
-	eor r1, #0x00010000
-	tst r1, #0x00010000
-	mov r2, #0x80
-	streqb r2, [r12, #0x242]
-	strneb r2, [r12, #0x243]
-	mov r2, #0x84
-	strneb r2, [r12, #0x242]
-	streqb r2, [r12, #0x243]
-	orr r1, #0x80000000
-	str r1, [r12, #0x64]
-	b irq_cont
-
 //for is-nitro
 .global fiq_hook
 fiq_hook:
@@ -1037,56 +915,4 @@ fiq_hook_cp15_done:
 	SUBS    PC, LR, #4
 
 .align 4
-
-.global DISPCNT_copy
-DISPCNT_copy:
-	.word 0
-
-.global WAITCNT_copy
-WAITCNT_copy:
-	.word 0
-
-.global counter
-counter:
-	.word 0
-
-//TODO?
-//.global DMA0SAD_copy
-//DMA0SAD_copy:
-//	.word 0
-//.global DMA0DAD_copy
-//DMA0DAD_copy:
-//	.word 0
-//.global DMA0CNT_copy
-//DMA0CNT_copy:
-//	.word 0
-
-//.global DMA1SAD_copy
-//DMA1SAD_copy:
-//	.word 0
-//.global DMA1DAD_copy
-//DMA1DAD_copy:
-//	.word 0
-//.global DMA1CNT_copy
-//DMA1CNT_copy:
-//	.word 0
-
-//.global DMA2SAD_copy
-//DMA2SAD_copy:
-//	.word 0
-//.global DMA2DAD_copy
-//DMA2DAD_copy:
-//	.word 0
-//.global DMA2CNT_copy
-//DMA2CNT_copy:
-//	.word 0
-
-//.global DMA3SAD_copy
-//DMA3SAD_copy:
-//	.word 0
-//.global DMA3DAD_copy
-//DMA3DAD_copy:
-//	.word 0
-//.global DMA3CNT_copy
-//DMA3CNT_copy:
-//	.word 0
+.pool
