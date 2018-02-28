@@ -120,7 +120,8 @@ FIELDS(address_dtcm,
 	address_write_table_8bit_dtcm, 0x418,
 	address_read_table_32bit_dtcm, 0x108,
 	address_read_table_16bit_dtcm, 0x20C,
-	address_read_table_8bit_dtcm, 0x418
+	address_read_table_8bit_dtcm, 0x418,
+	address_dma_shadow_regs_dtcm, 0x30
 )
 
 #endif

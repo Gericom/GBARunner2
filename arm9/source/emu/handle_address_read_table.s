@@ -35,25 +35,25 @@ address_read_table_32bit:
 //0x040000B4
 .word read_address_undefined_memory_32
 //0x040000B8
-.word read_address_nomod_32
+.word read_dma_size_control
 //0x040000BC
 .word read_address_undefined_memory_32
 //0x040000C0
 .word read_address_undefined_memory_32
 //0x040000C4
-.word read_address_nomod_32
+.word read_dma_size_control
 //0x040000C8
 .word read_address_undefined_memory_32
 //0x040000CC
 .word read_address_undefined_memory_32
 //0x040000D0
-.word read_address_nomod_32
+.word read_dma_size_control
 //0x040000D4
 .word read_address_undefined_memory_32
 //0x040000D8
 .word read_address_undefined_memory_32
 //0x040000DC
-.word read_address_nomod_32
+.word read_dma_size_control
 //0x040000E0-0x040000FC
 .rept 8
 .word read_address_ignore
@@ -144,7 +144,7 @@ address_read_table_16bit:
 //0x040000B8
 .word read_address_undefined_memory_16
 //0x040000BA
-.word read_address_nomod_16
+.word read_dma_control
 //0x040000BC
 .word read_address_undefined_memory_16
 //0x040000BE
@@ -156,7 +156,7 @@ address_read_table_16bit:
 //0x040000C4
 .word read_address_undefined_memory_16
 //0x040000C6
-.word read_address_nomod_16
+.word read_dma_control
 //0x040000C8
 .word read_address_undefined_memory_16
 //0x040000CA
@@ -168,7 +168,7 @@ address_read_table_16bit:
 //0x040000D0
 .word read_address_undefined_memory_16
 //0x040000D2
-.word read_address_nomod_16
+.word read_dma_control
 //0x040000D4
 .word read_address_undefined_memory_16
 //0x040000D6
@@ -180,7 +180,7 @@ address_read_table_16bit:
 //0x040000DC
 .word read_address_undefined_memory_16
 //0x040000DE
-.word read_address_nomod_16
+.word read_dma_control
 //0x040000E0-0x040000FE
 .rept 16
 .word read_address_undefined_memory_16
@@ -253,10 +253,26 @@ address_read_table_8bit:
 .word read_address_ignore
 .endr
 //0x040000B0-0x040000DF
-//shouldn't dma access be implemented for 8 bit access aswell? This probably leads to bugs!
-.rept 48
-.word read_address_nomod_8
+.rept 10
+.word read_address_undefined_memory_8
 .endr
+.word read_dma_control_bot8
+.word read_dma_control_top8
+.rept 10
+.word read_address_undefined_memory_8
+.endr
+.word read_dma_control_bot8
+.word read_dma_control_top8
+.rept 10
+.word read_address_undefined_memory_8
+.endr
+.word read_dma_control_bot8
+.word read_dma_control_top8
+.rept 10
+.word read_address_undefined_memory_8
+.endr
+.word read_dma_control_bot8
+.word read_dma_control_top8
 //0x040000E0-0x040000FF
 .rept 32
 .word read_address_undefined_memory_8

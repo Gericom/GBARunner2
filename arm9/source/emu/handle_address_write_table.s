@@ -36,29 +36,29 @@ address_write_table_32bit:
 //0x040000AC
 .word write_address_ignore
 //0x040000B0
-.word write_address_dma_src
+.word write_dma_shadow_32 //write_address_dma_src
 //0x040000B4
-.word write_address_dma_dst
+.word write_dma_shadow_32 //write_address_dma_dst
 //0x040000B8
-.word write_address_dma_size_control
+.word write_dma_size_control //write_address_dma_size_control
 //0x040000BC
-.word write_address_dma_src
+.word write_dma_shadow_32 //write_address_dma_src
 //0x040000C0
-.word write_address_dma_dst
+.word write_dma_shadow_32 //write_address_dma_dst
 //0x040000C4
-.word write_address_dma_size_control
+.word write_dma_size_control //write_address_dma_size_control
 //0x040000C8
-.word write_address_dma_src
+.word write_dma_shadow_32 //write_address_dma_src
 //0x040000CC
-.word write_address_dma_dst
+.word write_dma_shadow_32 //write_address_dma_dst
 //0x040000D0
-.word write_address_dma_size_control
+.word write_dma_size_control //write_address_dma_size_control
 //0x040000D4
-.word write_address_dma_src
+.word write_dma_shadow_32 //write_address_dma_src
 //0x040000D8
-.word write_address_dma_dst
+.word write_dma_shadow_32 //write_address_dma_dst
 //0x040000DC
-.word write_address_dma_size_control
+.word write_dma_size_control
 //0x040000E0-0x040000FC
 .rept 8
 .word write_address_ignore
@@ -120,53 +120,53 @@ address_write_table_16bit:
 .word write_address_ignore
 .endr
 //0x040000B0
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000B2
-.word write_address_dma_src_top16
+.word write_dma_shadow_16 //write_address_dma_src_top16
 //0x040000B4
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000B6
-.word write_address_dma_dst_top16
+.word write_dma_shadow_16 //write_address_dma_dst_top16
 //0x040000B8
-.word write_address_dma_size
+.word write_dma_shadow_16 //write_address_dma_size
 //0x040000BA
-.word write_address_dma_control
+.word write_dma_control_2 //write_address_dma_control
 //0x040000BC
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000BE
-.word write_address_dma_src_top16
+.word write_dma_shadow_16 //write_address_dma_src_top16
 //0x040000C0
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000C2
-.word write_address_dma_dst_top16
+.word write_dma_shadow_16 //write_address_dma_dst_top16
 //0x040000C4
-.word write_address_dma_size
+.word write_dma_shadow_16 //write_address_dma_size
 //0x040000C6
-.word write_address_dma_control
+.word write_dma_control_2 //write_address_dma_control
 //0x040000C8
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000CA
-.word write_address_dma_src_top16
+.word write_dma_shadow_16 //write_address_dma_src_top16
 //0x040000CC
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000CE
-.word write_address_dma_dst_top16
+.word write_dma_shadow_16 //write_address_dma_dst_top16
 //0x040000D0
-.word write_address_dma_size
+.word write_dma_shadow_16 //write_address_dma_size
 //0x040000D2
-.word write_address_dma_control
+.word write_dma_control_2 //write_address_dma_control
 //0x040000D4
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000D6
-.word write_address_dma_src_top16
+.word write_dma_shadow_16 //write_address_dma_src_top16
 //0x040000D8
-.word write_address_nomod_16
+.word write_dma_shadow_16 //write_address_nomod_16
 //0x040000DA
-.word write_address_dma_dst_top16
+.word write_dma_shadow_16 //write_address_dma_dst_top16
 //0x040000DC
-.word write_address_dma_size
+.word write_dma_shadow_16 //write_address_dma_size
 //0x040000DE
-.word write_address_dma_control
+.word write_dma_control_2 //write_address_dma_control
 //0x040000E0-0x040000FE
 .rept 16
 .word write_address_ignore
@@ -232,10 +232,26 @@ address_write_table_8bit:
 .word write_address_ignore
 .endr
 //0x040000B0-0x040000DF
-//shouldn't dma access be implemented for 8 bit access aswell? This probably leads to bugs!
-.rept 48
-.word write_address_nomod_8
+.rept 10
+.word write_dma_shadow_8
 .endr
+.word write_dma_control_bot8
+.word write_dma_control_top8
+.rept 10
+.word write_dma_shadow_8
+.endr
+.word write_dma_control_bot8
+.word write_dma_control_top8
+.rept 10
+.word write_dma_shadow_8
+.endr
+.word write_dma_control_bot8
+.word write_dma_control_top8
+.rept 10
+.word write_dma_shadow_8
+.endr
+.word write_dma_control_bot8
+.word write_dma_control_top8
 //0x040000E0-0x040000FF
 .rept 32
 .word write_address_ignore

@@ -186,5 +186,14 @@ read_table_8bit_dtcm_new:
 	.short 0
 .endr
 
+.global dma_shadow_regs_dtcm
+dma_shadow_regs_dtcm:
+.rept 4
+	.word 0  //src
+	.word 0  //dst
+	.short 0 //count
+	.short 0 //control
+.endr
+
 //for some reason the file is ignored without this nop here
 nop
