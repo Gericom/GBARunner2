@@ -15,7 +15,7 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/emu
 INCLUDES	:=	include source
 DATA		:=	data
 
@@ -26,7 +26,7 @@ DATA		:=	data
 ARCH	:=	-marm -mthumb-interwork#-mthumb
 
 CFLAGS	:=	-g -Wall -O2 -nostdlib -nodefaultlibs \
- 			-march=armv5te -mtune=arm946e-s -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-tree-loop-distribute-patterns -fno-builtin -fomit-frame-pointer\
+ 			-march=armv5te -mtune=arm946e-s -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-tree-loop-distribute-patterns -fno-builtin -fomit-frame-pointer \
 			-ffast-math \
 			$(ARCH) 
 

@@ -644,6 +644,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	mbr_t* mbr = (mbr_t*)tmp_buf;
 	if(mbr->signature != 0xAA55)
 	{
+		*((vu32*)0x06202000) = 0x4E4D4252;//NMBR = no mbr found
 		while(1);
 	}
 	sec_t boot_sect = 0;

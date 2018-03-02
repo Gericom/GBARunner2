@@ -4,7 +4,7 @@
 
 .global address_read_table_32bit_dtcm_setup
 address_read_table_32bit_dtcm_setup:
-	ldr r10,= address_read_table_32bit_dtcm
+	ldr r10,= read_table_32bit_dtcm_new
 	ldr r11,= address_read_table_32bit
 	mov r12, #0x20C
 address_read_table_32bit_dtcm_setup_loop:
@@ -16,7 +16,7 @@ address_read_table_32bit_dtcm_setup_loop:
 
 .global address_read_table_16bit_dtcm_setup
 address_read_table_16bit_dtcm_setup:
-	ldr r10,= address_read_table_16bit_dtcm
+	ldr r10,= read_table_16bit_dtcm_new
 	ldr r11,= address_read_table_16bit
 	mov r12, #0x20C
 address_read_table_16bit_dtcm_setup_loop:
@@ -28,7 +28,7 @@ address_read_table_16bit_dtcm_setup_loop:
 
 .global address_read_table_8bit_dtcm_setup
 address_read_table_8bit_dtcm_setup:
-	ldr r10,= address_read_table_8bit_dtcm
+	ldr r10,= read_table_8bit_dtcm_new
 	ldr r11,= address_read_table_8bit
 	mov r12, #0x20C
 address_read_table_8bit_dtcm_setup_loop:
@@ -40,7 +40,7 @@ address_read_table_8bit_dtcm_setup_loop:
 
 .global address_write_table_32bit_dtcm_setup
 address_write_table_32bit_dtcm_setup:
-	ldr r10,= address_write_table_32bit_dtcm
+	ldr r10,= write_table_32bit_dtcm_new
 	ldr r11,= address_write_table_32bit
 	mov r12, #0x20C
 address_write_table_32bit_dtcm_setup_loop:
@@ -52,7 +52,7 @@ address_write_table_32bit_dtcm_setup_loop:
 
 .global address_write_table_16bit_dtcm_setup
 address_write_table_16bit_dtcm_setup:
-	ldr r10,= address_write_table_16bit_dtcm
+	ldr r10,= write_table_16bit_dtcm_new
 	ldr r11,= address_write_table_16bit
 	mov r12, #0x20C
 address_write_table_16bit_dtcm_setup_loop:
@@ -64,7 +64,7 @@ address_write_table_16bit_dtcm_setup_loop:
 
 .global address_write_table_8bit_dtcm_setup
 address_write_table_8bit_dtcm_setup:
-	ldr r10,= address_write_table_8bit_dtcm
+	ldr r10,= write_table_8bit_dtcm_new
 	ldr r11,= address_write_table_8bit
 	mov r12, #0x20C
 address_write_table_8bit_dtcm_setup_loop:
@@ -74,21 +74,21 @@ address_write_table_8bit_dtcm_setup_loop:
 	bne address_write_table_8bit_dtcm_setup_loop
 	bx lr
 
-.global thumb_table_dtcm_setup
-thumb_table_dtcm_setup:
-	ldr r10,= address_thumb_table_dtcm
-	ldr r11,= thumb_table
-	mov r12, #128
-1:
-	ldr r13, [r11], #4
-	str r13, [r10], #4
-	subs r12, #1
-	bne 1b
-	bx lr
+//.global thumb_table_dtcm_setup
+//thumb_table_dtcm_setup:
+//	ldr r10,= address_thumb_table_dtcm
+//	ldr r11,= thumb_table
+//	mov r12, #128
+//1:
+//	ldr r13, [r11], #4
+//	str r13, [r10], #4
+//	subs r12, #1
+//	bne 1b
+//	bx lr
 
 .global count_bits_initialize
 count_bits_initialize:
-	ldr r0,= address_count_bit_table
+	ldr r0,= count_bit_table_new
 	mov r1, #0
 count_bits_initialize_loop:
 	and	r3, r1, #0xAA
@@ -107,7 +107,7 @@ count_bits_initialize_loop:
 	bx lr
 
 count_bits_set_16_lookup:
-	ldr r2,= address_count_bit_table
+	ldr r2,= count_bit_table_new
 	and r1, r0, #0xFF
 	ldrb r1, [r2, r1]
 	ldrb r0, [r2, r0, lsr #8]
@@ -115,7 +115,7 @@ count_bits_set_16_lookup:
 	bx lr
 
 count_bits_set_8_lookup:
-	ldr r1,= address_count_bit_table
+	ldr r1,= count_bit_table_new
 	ldrb r0, [r1, r0]
 	bx lr
 
@@ -309,12 +309,12 @@ gba_start_bkpt_vram:
 	mov r0, #0x1C
 	str r1, [r0]
 
-	//set the abort mode stack
+	//set the abort mode r13
 	mrs r0, cpsr
 	and r0, r0, #0xE0
 	orr r1, r0, #0x17
 	msr cpsr_c, r1
-	ldr sp,= (address_dtcm + 0x4000) //0x10004000
+	ldr r13,= (address_dtcm - 1) //0x10004000
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
 	
