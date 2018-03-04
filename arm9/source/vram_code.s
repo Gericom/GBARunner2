@@ -317,7 +317,6 @@ gba_start_bkpt_vram:
 	ldr r13,= (address_dtcm - 1) //0x10004000
 	orr r1, r0, #0x13
 	msr cpsr_c, r1
-	
 
 	ldr r0,= count_bits_initialize
 	blx r0
@@ -338,6 +337,8 @@ gba_start_bkpt_vram:
 
 	//and data cache
 	mcr p15, 0, r0, c7, c6, 0
+
+	mcr	p15, 0, r0, c7, c10, 4
 
 	mov r0, #0
 	bx r0
