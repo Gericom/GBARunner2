@@ -17,6 +17,23 @@ gba_setup:
 	mov r1, #0xFFFFFFFF
 	str r1, [r0, #4]
 
+	ldr r1,= 0x8203
+	mov	r0, #0x04000000
+	add	r0, r0, #0x304
+	strh r1, [r0]
+
+	ldr r0,= 0x78//0x50078
+	mcr p15, 0, r0, c1, c0, 0
+
+	//setup dtcm
+	ldr r0,= (address_dtcm + 0xA)
+	mcr p15, 0, r0, c9, c1, 0
+
+	//setup itcm
+	mov	r0,#0x20
+	mcr	p15, 0, r0, c9, c1,1
+
+	//enable tcm
 	ldr r0,= 0x50078
 	mcr p15, 0, r0, c1, c0, 0
 
@@ -255,11 +272,6 @@ gba_setup_fill_sub_loop:
 	strh r1, [r0], #2
 	ldr r1,= 0x0000
 	strh r1, [r0]
-
-	//put the dtcm at 10000000 for the abort mode stack
-	//ldr r0,= 0x1000000A
-	ldr r0,= (address_dtcm + 0xA)
-	mcr p15, 0, r0, c9, c1, 0
 
 	ldr r0,= __dtcm2_lma
 	ldr r1,= (16 * 1024)
