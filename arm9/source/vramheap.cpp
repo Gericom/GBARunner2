@@ -1,4 +1,3 @@
-#include <nds.h>
 #include "vram.h"
 #include "sd_access.h"
 #include "vramheap.h"
@@ -176,4 +175,14 @@ PUT_IN_VRAM void vramheap_free(void* ptr)
 		newblock->prev = NULL;
 		newblock->next = NULL;
 	}
+}
+
+PUT_IN_VRAM void* operator new(size_t blocksize)
+{
+	return vramheap_alloc(blocksize);
+}
+
+PUT_IN_VRAM void operator delete(void* block, size_t blocksize) throw()
+{
+	vramheap_free(block);
 }

@@ -1,11 +1,14 @@
 #ifndef __SD_ACCESS_H__
 #define __SD_ACCESS_H__
 
+#include "vram.h"
 #include "../../common/sd_vram.h"
 #include "consts.s"
 
 #define READ_U16_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8))
 #define READ_U32_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8) | (((uint8_t*)(addr))[2] << 16) | (((uint8_t*)(addr))[3] << 24))
+
+void MI_WriteByte(void *address, uint8_t value);
 
 #define SCREEN_COLS 32
 #define SCREEN_ROWS 24
@@ -31,7 +34,7 @@ extern "C" void read_sd_sectors_safe(sec_t sector, sec_t numSectors, void* buffe
 
 //extern sd_info_t gSDInfo;
 
-extern "C" uint16_t *arm9_memcpy16(uint16_t *_dst, uint16_t *_src, size_t _count);
+extern "C" uint16_t *arm9_memcpy16(uint16_t *_dst, uint16_t *_src, int _count);
 
 uint32_t get_cluster_fat_value_simple(uint32_t cluster);
 

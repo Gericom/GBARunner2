@@ -1,65 +1,9 @@
-#include <nds.h>
 #include "vector.h"
 #include "vram.h"
 #include "vramheap.h"
 #include "sd_access.h"
+#include "string.h"
 #include "fat.h"
-
-
-PUT_IN_VRAM int strlen( char* str )
-{
-	char* ptr = str;
-	while ( *ptr != '\0' )
-		++ptr;
-	return ptr - str;
-}
-
-PUT_IN_VRAM char *strchr(const char *s, int c)
-{
-	while (*s != (char)c)
-		if (!*s++)
-			return 0;
-	return (char *)s;
-}
-
-PUT_IN_VRAM char *strrchr(const char *s, int c)
-{
-	char* ret=0;
-	do {
-		if( *s == (char)c )
-			ret=(char*)s;
-	} while(*s++);
-	return ret;
-}
-
-PUT_IN_VRAM char *strpbrk(const char *s1, const char *s2)
-{
-	while(*s1)
-		if(strchr(s2, *s1++))
-			return (char*)--s1;
-	return 0;
-}
-
-PUT_IN_VRAM inline int to_upper(const char c)
-{
-	return (c >= 'a' && c <= 'z')?(c - ('a'-'A')):c;
-}
-
-PUT_IN_VRAM int strcasecmp(const char* one,const char* another )
-{
-	for ( ; to_upper(*one) == to_upper(*another); ++one, ++another )
-		if ( *one == '\0' )
-			return 0;
-	return to_upper(*one) - to_upper(*another);
-}
-
-PUT_IN_VRAM int strcmp(const char* one,const char* another )
-{
-	for ( ; *one == *another; ++one, ++another )
-		if ( *one == '\0' )
-			return 0;
-	return *one - *another;
-}
 
 PUT_IN_VRAM uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
 {

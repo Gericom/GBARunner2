@@ -1,4 +1,4 @@
-#include <nds.h>
+#include "vram.h"
 
 uint8_t debugFont[16384] = 
 {

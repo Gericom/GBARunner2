@@ -82,7 +82,7 @@ static void gba_sound_update_ds_channels()
 void gba_sound_notify_reset()
 {
 	return;
-	if(sampleFreq <= 0)
+	/*if(sampleFreq <= 0)
 		return;
 	if(!(*((vu32*)0x04000136) & 1))
 		gba_sound_resync();
@@ -93,7 +93,7 @@ void gba_sound_notify_reset()
 	//reset
 	REG_TM[0].CNT_H = 0;
 	REG_TM[1].CNT_H = 0;
-	REG_TM[0].CNT_L = TIMER_FREQ(sampleFreq);///*10512);//*/13378);//10512);
+	REG_TM[0].CNT_L = TIMER_FREQ(sampleFreq);///*10512);///13378);//10512);
 	REG_TM[1].CNT_L = 0;
 	REG_TM[1].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_CH;
 	REG_TM[0].CNT_H = REG_TMXCNT_H_E;
@@ -103,7 +103,7 @@ void gba_sound_notify_reset()
 	//if(samplesPerBlock == 0)
 		samplesPerBlock = newSamplesPerBlock;
 	//else
-	//	samplesPerBlock = /*(((3 * samplesPerBlock + (*/(count + 8) & ~0xF;//)) / 4) + 8) & ~0xF;//(u32)(((u64)count * 598261ull + 298685ull) / 597370ull);
+	//	samplesPerBlock = /*(((3 * samplesPerBlock + (/(count + 8) & ~0xF;//)) / 4) + 8) & ~0xF;//(u32)(((u64)count * 598261ull + 298685ull) / 597370ull);
 	//append the block to the ringbuffer
 	if(samplesPerBlock == 0 || samplesPerBlock > SOUND_BUFFER_SIZE)
 	{
@@ -131,7 +131,7 @@ void gba_sound_notify_reset()
 	if(soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
 		soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
 	//soundBufferVirtualWriteOffset += samplesPerBlock;
-	gba_sound_update_ds_channels();
+	gba_sound_update_ds_channels();*/
 }
 
 void gba_sound_vblank()

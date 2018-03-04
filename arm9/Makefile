@@ -15,7 +15,7 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/emu
+SOURCES		:=	source source/emu source/gui source/fat
 INCLUDES	:=	include source
 DATA		:=	data
 

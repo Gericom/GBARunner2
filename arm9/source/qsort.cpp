@@ -1,4 +1,3 @@
-#include <nds.h>
 #include "vram.h"
 #include "qsort.h"
 
@@ -41,7 +40,7 @@ PUT_IN_VRAM static __inline char* med3(char *a, char *b, char *c, int (*cmp)(con
 	       (cmp(b, c) < 0 ? b : (cmp(a, c) < 0 ? c : a ))
               :(cmp(b, c) > 0 ? b : (cmp(a, c) < 0 ? a : c ));
 }
-PUT_IN_VRAM void qsort(void *aa, size_t n, size_t es, int (*cmp)(const void *, const void *))
+PUT_IN_VRAM void qsort(void *aa, int n, int es, int (*cmp)(const void *, const void *))
 {
 	es = 4;
 	char *pa, *pb, *pc, *pd, *pl, *pm, *pn;

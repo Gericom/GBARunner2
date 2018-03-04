@@ -1,6 +1,6 @@
-#include <nds.h>
-#include "vector.h"
 #include "vram.h"
+#include "vector.h"
+#include "string.h"
 #include "vramheap.h"
 #include "qsort.h"
 #include "sd_access.h"
@@ -10,11 +10,26 @@
 #define REG_SEND_FIFO	(*((vu32*)0x04000188))
 #define REG_RECV_FIFO	(*((vu32*)0x04100000))
 
-#define PUT_IN_VRAM	__attribute__((section(".vram")))
+typedef enum KEYPAD_BITS {
+	KEY_A = BIT(0),  //!< Keypad A button.
+	KEY_B = BIT(1),  //!< Keypad B button.
+	KEY_SELECT = BIT(2),  //!< Keypad SELECT button.
+	KEY_START = BIT(3),  //!< Keypad START button.
+	KEY_RIGHT = BIT(4),  //!< Keypad RIGHT button.
+	KEY_LEFT = BIT(5),  //!< Keypad LEFT button.
+	KEY_UP = BIT(6),  //!< Keypad UP button.
+	KEY_DOWN = BIT(7),  //!< Keypad DOWN button.
+	KEY_R = BIT(8),  //!< Right shoulder button.
+	KEY_L = BIT(9),  //!< Left shoulder button.
+	KEY_X = BIT(10), //!< Keypad X button.
+	KEY_Y = BIT(11), //!< Keypad Y button.
+	KEY_TOUCH = BIT(12), //!< Touchscreen pendown.
+	KEY_LID = BIT(13)  //!< Lid state.
+} KEYPAD_BITS;
 
 #define DONT_CREATE_SAVE_FILES
 
-ITCM_CODE __attribute__ ((noinline)) static void MI_WriteByte(void *address, uint8_t value)
+ITCM_CODE __attribute__ ((noinline)) void MI_WriteByte(void *address, uint8_t value)
 {
     uint16_t val = *(uint16_t *)((uint32_t)address & ~1);
 
@@ -337,6 +352,7 @@ PUT_IN_VRAM void get_game_first_cluster(uint32_t& cur_dir_cluster, dir_entry_t* 
 	int delay = KEY_HOLD_DELAY;
 	int start_at_position = 0;
 	int cursor_position = 0;
+
 	vector entries_names;
 	vector_init(&entries_names);
 	

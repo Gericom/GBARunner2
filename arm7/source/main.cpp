@@ -6,119 +6,6 @@
 #include "fifo.h"
 #include "../../common/common_defs.s"
 
-//#define SOUND_CHANNEL_0_SETTINGS	(REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) | REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(64) | REG_SOUNDXCNT_VOLUME(0x7F))	//0x0840007F;
-
-//#define CENTER_AND_MASK_ENABLED
-
-//static void timer_handler()
-//{
-	//if(*((vu16*)0x04000006) == 160)
-		//*((vu32*)0x04000180) = 1 << 13;
-		//*((vu16*)0x04000006) = 202;
-//}
-
-/*static void fifo_handler()
-{
-	//irqDisable(IRQ_FIFO_NOT_EMPTY);
-	//REG_IME = 0;
-	//u32 cmd = REG_RECV_FIFO;
-	//REG_IME = 0;
-	while(!(*((vu32*)0x04000184) & (1 << 8)))
-	{
-		u32 cmd = REG_RECV_FIFO;
-		vu32 val;
-		switch(cmd)
-		{
-			case 0xAA5500C4://fifo_start_sound_command
-				//REG_SOUND[0].CNT |= REG_SOUNDXCNT_E;
-				gba_sound_notify_reset();
-				break;
-			case 0x04000100:
-			case 0x04000102:
-				{
-					while(*((vu32*)0x04000184) & (1 << 8));
-					val = REG_RECV_FIFO;
-					gba_sound_timer_updated(val & 0xFFFF);
-					break;
-				}
-			case 0x04000104:
-			case 0x04000106:
-			case 0x04000108:
-			case 0x0400010A:
-			case 0x0400010C:
-			case 0x0400010E:
-				{
-					while(*((vu32*)0x04000184) & (1 << 8));
-					val = REG_RECV_FIFO;
-					break;
-				}
-			//case 0xC5://fifo_stop_sound_command
-				//REG_SOUND[0].CNT = SOUND_CHANNEL_0_SETTINGS;
-			//	break;
-		}
-	}
-	//REG_IME = 1;
-}
-
-void vblank_irq_handler()
-{
-
-}*/
-/*int frameOffset = 0;
-static void hblank_handler()
-{
-	if(!frameOffset && *((vu16*)0x04000006) == 15)
-	{
-		*((vu16*)0x04000006) = 0;
-		frameOffset = 1;
-	}
-	else if(frameOffset && *((vu16*)0x04000006) == 159)
-	{
-		*((vu16*)0x04000006) = 175;
-		frameOffset = 0;
-	}
-}*/
-
-static int vcount_state;
-
-/*extern "C" void hblank_irq()
-{
-	if(vcount_state == 0 && *((vu16*)0x04000006) >= 159 && *((vu16*)0x04000006) < 192)
-	{
-		REG_SEND_FIFO = 0xA5;
-		//invoke an irq on arm9
-		*((vu32*)0x04000180) |= (1 << 13);
-		vcount_state = 1;
-	}
-	else if(vcount_state == 1 && *((vu16*)0x04000006) >= 192)
-	{
-		REG_SEND_FIFO = 0xA6;
-		//invoke an irq on arm9
-		*((vu32*)0x04000180) |= (1 << 13);
-		vcount_state = 0;
-	}
-}*/
-
-/*extern "C" void vcount_irq()
-{
-	if(vcount_state == 0)
-	{
-		REG_SEND_FIFO = 0xA5;
-		//invoke an irq on arm9
-		*((vu32*)0x04000180) |= (1 << 13);
-		vcount_state = 1;
-		*((vu16*)0x04000004) = 0x20 | (192 << 8);
-	}
-	else
-	{
-		REG_SEND_FIFO = 0xA6;
-		//invoke an irq on arm9
-		*((vu32*)0x04000180) |= (1 << 13);
-		vcount_state = 0;
-		*((vu16*)0x04000004) = 0x20 | (160 << 8);
-	}
-}*/
-
 static void vblank_handler()
 {
 
@@ -160,10 +47,10 @@ int main()
 	//wait for the arm9 sync command
 	do
 	{
-		while(*((vu32*)0x04000184) & (1 << 8));
+		while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	} while(REG_RECV_FIFO != 0xAA5555AA);
 #ifdef ARM7_DLDI
-	while(*((vu32*)0x04000184) & (1 << 8));
+	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
 	memcpy((void*)0x03805000, dldi_src, 32 * 1024);
 	if(!dldi_handler_init())
@@ -191,18 +78,6 @@ int main()
 	//send done command to arm9
 	REG_SEND_FIFO = 0x55AAAA55;
 
-#ifdef CENTER_AND_MASK_ENABLED
-	REG_TM[2].CNT_H = 0;
-	REG_TM[3].CNT_H = 0;
-	REG_TM[2].CNT_L = -2130;//TIMER_FREQ(sampleFreq);
-	REG_TM[3].CNT_L = 0;
-	REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_CH;
-	while(*((vu16*)0x04000006) == 0);
-	while(*((vu16*)0x04000006) != 0);
-	REG_TM[2].CNT_H = REG_TMXCNT_H_E;
-#endif
-
-	vcount_state = 0;
 	//REG_IE |= 1 << 2; //enable vcount interrupt
 	//REG_IE |= 1 << 1; //enable hblank interrupt
 
@@ -221,122 +96,14 @@ int main()
 	//fifo loop
 	//vu32 val;
 	//int frameOffset = 0;
-	int frameState = 0;
-	int realLine = 0;
 	while(1)
 	{
-		//swiWaitForVBlank();
-		//while(*((vu16*)0x04000006) < 160);
-		//*((vu32*)0x04000180) = 1 << 13;
-		//while(*((vu16*)0x04000006) >= 160);
-		//if(!(*((vu32*)0x04000136) & 1))
-		//	*((vu32*)0x04000180) = 1 << 13;
-		//oldirq = enterCriticalSection();
-		/*if(*((vu16*)0x04000006) >= 160 && *((vu16*)0x04000006) < 192)
-		{
-			*((vu32*)0x04000180) = 1 << 13;
-			while(*((vu16*)0x04000006) < 192);
-		}*/
-		//leaveCriticalSection(oldirq);
-		/*while(*((vu32*)0x04000184) & (1 << 8))
-		{
-			//if(*((vu16*)0x04000006) == 160)
-			//	*((vu16*)0x04000006) = 192;
-			if(*((vu16*)0x04000006) == 160)
-			{
-				*((vu32*)0x04000180) = 1 << 13;
-				while(*((vu16*)0x04000006) == 160);
-			}
-		}*/
-#ifdef CENTER_AND_MASK_ENABLED
-		while(*((vu32*)0x04000184) & (1 << 8))
-		{
-			if(*((vu16*)0x04000004) & 2)
-			{
-				int line = REG_TM[3].CNT_L;
-				if(line == 263)
-				{
-					REG_TM[3].CNT_L = REG_TM[3].CNT_L % 263;
-					REG_TM[3].CNT_H = 0;
-					REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_CH;
-				}
-				line = line % 263;
-				//Line 262 seems to reset the lcd so it starts drawing from the top again. Thus, it's important to have line 262 executed at it's physical place
-				//This has a neasty side effect when centering; affine bgs are offset in that case :(
-				if(line == 262 || line < 15)
-					*((vu16*)0x04000006) = 192;
-				else if(line == 15)
-					*((vu16*)0x04000006) = 0;
-				else if(line >= 16 + 159 && line < 190)
-					*((vu16*)0x04000006) = 192;
-				else if(line == 190)
-					*((vu16*)0x04000006) = 191;
-				else
-					continue;
-				while(*((vu16*)0x04000004) & 2);
-			}
-		}
-#else
-		while(*((vu32*)0x04000184) & (1 << 8));
+		while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 		{
 			if(!(*((vu32*)0x04000136) & 1))
 				gba_sound_resync();
 		}
-		//{
-		//	if(!(*((vu32*)0x04000136) & 1))
-		//		*((vu32*)0x04000180) |= (1 << 13);
-		//}
-#endif
-		//{
-			/*if(frameState == 0 && *((vu16*)0x04000006) == 0)//*((vu16*)0x04000006) == 15)
-			{
-				*((vu16*)0x04000006) = 262;
-				frameState = 1;
-			}
-			else if(frameState == 1 && *((vu16*)0x04000006) == 0)//*((vu16*)0x04000006) == 15)
-			{
-				*((vu16*)0x04000006) = 2;//262;
-				frameState = 2;
-			}
-			else if(frameState == 2 && *((vu16*)0x04000006) == 15)
-			{
-				*((vu16*)0x04000006) = 0;
-				frameState = 3;
-			}
-			else if(frameState == 3 && *((vu16*)0x04000006) == 159)
-			{
-				*((vu16*)0x04000006) = 159 + 16;
-				frameState = 0;
-			}*/
 
-			/*if(frameOffset == 0 && *((vu16*)0x04000006) == 15)
-			{
-				*((vu16*)0x04000006) = 0;
-				frameOffset = 1;
-			}
-			else if(frameOffset && *((vu16*)0x04000006) == 159)
-			{
-				*((vu16*)0x04000006) = 175;
-				frameOffset = 0;
-			}*/
-		//}
-		/*{
-			if(!frameOffset && *((vu16*)0x04000006) == 15)
-			{
-				*((vu16*)0x04000006) = 0;
-				frameOffset = 1;
-			}
-			else if(frameOffset && *((vu16*)0x04000006) == 159)//176)
-			{
-				*((vu16*)0x04000006) = 175;//0;
-				frameOffset = 0;
-			}
-			/*if(*((vu16*)0x04000006) == 160)
-			{
-				*((vu16*)0x04000006) = 190;
-				while(*((vu16*)0x04000006) == 160);
-			}*/
-		//}
 		u32 cmd = REG_RECV_FIFO;
 		//if((cmd >> 16) != 0xAA55)
 		//	continue;
@@ -351,11 +118,11 @@ int main()
 #ifdef ARM7_DLDI
 		case 0xAA5500DF:
 			{
-				while(*((vu32*)0x04000184) & (1 << 8));
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				uint32_t sector = REG_RECV_FIFO;
-				while(*((vu32*)0x04000184) & (1 << 8));
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				uint32_t count = REG_RECV_FIFO;
-				while(*((vu32*)0x04000184) & (1 << 8));
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				uint8_t* dst = (uint8_t*)REG_RECV_FIFO;
 				dldi_handler_read_sectors(sector, count, dst);
 				REG_SEND_FIFO = 0x55AAAA55;
@@ -363,7 +130,7 @@ int main()
 			}
 #endif
 		case 0xAA5500F8:
-			while(*((vu32*)0x04000184) & (1 << 8));
+			while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 			val = REG_RECV_FIFO;
 			gba_sound_set_src(val);
 			break;
@@ -380,14 +147,14 @@ int main()
 			gba_sound_fifo_update();
 			break;
 		case 0x040000A0:
-			while(*((vu32*)0x04000184) & (1 << 8));
+			while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 			val = REG_RECV_FIFO;
 			gba_sound_fifo_write(val);
 			break;
 		case 0x04000100:
 		case 0x04000102:
 			{
-				while(*((vu32*)0x04000184) & (1 << 8));
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;
 				gba_sound_timer_updated(val & 0xFFFF);
 				break;
@@ -399,7 +166,7 @@ int main()
 		case 0x0400010C:
 		case 0x0400010E:
 			{
-				while(*((vu32*)0x04000184) & (1 << 8));
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;
 				break;
 			}
