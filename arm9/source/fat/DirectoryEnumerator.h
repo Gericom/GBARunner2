@@ -12,7 +12,7 @@ class DirectoryEnumerator
 	dir_entry_t* _dirBuf;
 	int _offset;
 public:
-	explicit DirectoryEnumerator(Directory* dir);
+	explicit DirectoryEnumerator(const Directory* dir);
 	~DirectoryEnumerator();
 
 	DirectoryEntry* GetNext();

@@ -1,6 +1,6 @@
 #pragma once
 
-int strlen(char* str);
+int strlen(const char* str);
 char *strchr(const char *s, int c);
 char *strrchr(const char *s, int c);
 char *strpbrk(const char *s1, const char *s2);

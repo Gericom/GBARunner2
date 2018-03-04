@@ -31,7 +31,6 @@ PUT_IN_VRAM DirectoryEntry* Directory::GetEntryByPath(const char* path)
 			}
 			else if(diff == '/')
 			{
-				delete enumerator;
 				if (d != this)
 					delete d;
 				if(!entry->GetIsDirectory())
@@ -44,6 +43,7 @@ PUT_IN_VRAM DirectoryEntry* Directory::GetEntryByPath(const char* path)
 			}
 			delete entry;
 		}
+		delete enumerator;
 		if (entry == NULL)
 			break;
 	}

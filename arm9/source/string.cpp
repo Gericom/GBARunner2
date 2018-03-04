@@ -1,9 +1,9 @@
 #include "vram.h"
 #include "string.h"
 
-PUT_IN_VRAM int strlen(char* str)
+PUT_IN_VRAM int strlen(const char* str)
 {
-	char* ptr = str;
+	const char* ptr = str;
 	while (*ptr != '\0')
 		++ptr;
 	return ptr - str;

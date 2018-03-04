@@ -182,6 +182,11 @@ PUT_IN_VRAM void* operator new(size_t blocksize)
 	return vramheap_alloc(blocksize);
 }
 
+PUT_IN_VRAM void operator delete(void* block) throw()
+{
+	vramheap_free(block);
+}
+
 PUT_IN_VRAM void operator delete(void* block, size_t blocksize) throw()
 {
 	vramheap_free(block);

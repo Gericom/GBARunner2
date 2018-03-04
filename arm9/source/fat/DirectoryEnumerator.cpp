@@ -6,7 +6,7 @@
 #include "File.h"
 #include "DirectoryEnumerator.h"
 
-PUT_IN_VRAM DirectoryEnumerator::DirectoryEnumerator(Directory* directory)
+PUT_IN_VRAM DirectoryEnumerator::DirectoryEnumerator(const Directory* directory)
 	: _curCluster(directory->GetFirstCluster()), _offset(0)
 {
 	_dirBuf = (dir_entry_t*)vramheap_alloc(vram_cd->sd_info.nr_sectors_per_cluster * 512);
@@ -96,7 +96,7 @@ PUT_IN_VRAM DirectoryEntry* DirectoryEnumerator::GetNext()
 				if ((cur_dir_entry->attrib & DIR_ATTRIB_DIRECTORY) == DIR_ATTRIB_DIRECTORY)
 					return new Directory(clusterNr, (char*)name_buffer);
 				else
-					return new File(clusterNr, (char*)name_buffer);
+					return new File(clusterNr, (char*)name_buffer, cur_dir_entry->regular_entry.file_size);
 			}
 		}
 		//follow the chain

@@ -134,7 +134,7 @@ PUT_IN_VRAM void find_dir_entry(uint32_t cur_dir_cluster, const char* given_name
 					}
 
 					name_buffer[255] = 0;
-					uint8_t* long_name_ptr = &name_buffer[strlen((char*)name_buffer)-1];
+					uint8_t* long_name_ptr = &name_buffer[strlen((const char*)name_buffer)-1];
 					while(long_name_ptr != name_buffer && (*long_name_ptr == '.' || *long_name_ptr == ' '))
 						long_name_ptr--;
 					long_name_ptr[1] = '\0';
@@ -296,10 +296,10 @@ PUT_IN_VRAM int gen_short_name(uint8_t* long_name, uint8_t* short_name, uint32_t
 	uint8_t char_to_insert;
 	int lossy_convertion = 0;
 
-	if(strlen((char*)long_name) > 256)
+	if(strlen((const char*)long_name) > 256)
 		return -1;
 
-	if(strpbrk((char*)long_name, "\\/:*?\"<>|")!=NULL)
+	if(strpbrk((const char*)long_name, "\\/:*?\"<>|")!=NULL)
 		return -1;
 
 	for(int i=0; i<11; i++)

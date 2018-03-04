@@ -3,7 +3,7 @@
 #include "vector.h"
 #include "FileBrowser.h"
 
-void FileBrowser::Run()
+PUT_IN_VRAM void FileBrowser::Run()
 {
 	
 }

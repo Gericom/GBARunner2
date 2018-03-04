@@ -9,7 +9,7 @@ protected:
 	DirectoryEntry(u32 cluster, int isDirectory, const char* name);
 
 public:
-	u32 GetFirstCluster() { return _firstCluster; }
-	u32 GetIsDirectory() { return _isDirectory; }
-	const char* GetName() { return _name; }
+	u32 GetFirstCluster() const { return _firstCluster; }
+	u32 GetIsDirectory() const { return _isDirectory; }
+	const char* GetName() const { return _name; }
 };
