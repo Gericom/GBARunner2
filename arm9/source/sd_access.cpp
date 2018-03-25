@@ -234,13 +234,9 @@ PUT_IN_VRAM File* get_game_first_cluster(Directory* root, Directory* &gbaDir)
 			{
 				countdown = KEY_REPEAT_FREQ;
 				if(delay > 0)
-				{
 					delay--;
-				}
-				else 
-				{
+				else
 					held_keys = new_keys;
-				}
 			}
 			
 			keys = held_keys;			
@@ -253,6 +249,11 @@ PUT_IN_VRAM File* get_game_first_cluster(Directory* root, Directory* &gbaDir)
 		//hide cursor
 		if(keys & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT))
 			MI_WriteByte((u8*)0x06202000 + 32*(cursor_position - start_at_position + ENTRIES_START_ROW), ' ');
+
+		if (keys & KEY_L)
+		{
+			*((vu16*)0x04000304) ^= 0x8000;
+		}
 
 		if(keys & KEY_UP)
 		{

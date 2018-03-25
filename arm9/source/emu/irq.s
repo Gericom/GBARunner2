@@ -187,6 +187,7 @@ irq_cont:
 	tst r1, #(1 << 16)
 	bne irq_handler_arm7_irq
 
+irq_cont_handle_gba:
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 
@@ -257,10 +258,25 @@ irq_handler_arm7_irq:
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]
 
+	ldr r3, [r12, #0x210]
+
 	ldr r2,= fake_irq_flags
 	ldr r1, [r2]
 	orr r1, #(3 << 9)
 	str r1, [r2]
+
+//enable icache by pressing the R button
+#if defined(ENABLE_WRAM_ICACHE) && defined(POSTPONED_ICACHE)
+	ldr r0, [r12, #0x130]
+	tst r0, #(1 << 8)
+
+	moveq r0, #((1 << 5) | (1 << 6) | (1 << 0) | (1 << 7))
+	mcreq p15, 0, r0, c2, c0, 1	//instruction cache
+#endif
+
+	ands r1, r3
+
+	bne irq_cont_handle_gba
 
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2

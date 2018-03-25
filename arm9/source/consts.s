@@ -37,6 +37,7 @@
 //self-modifying code for instance.
 //In general it's better to keep it off
 //#define ENABLE_WRAM_ICACHE
+//#define POSTPONED_ICACHE
 
 #ifdef __ASSEMBLER__
 @destroys r12, r13

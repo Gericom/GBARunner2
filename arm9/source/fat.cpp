@@ -8,11 +8,9 @@
 PUT_IN_VRAM uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
 {
 	uint32_t first_cluster = dir_entry->regular_entry.cluster_nr_bottom | (dir_entry->regular_entry.cluster_nr_top << 16);
-
 	if(first_cluster == 0)
-	{
 		return vram_cd->sd_info.root_directory_cluster;
-	}
+
 	return first_cluster;
 }
 
@@ -170,121 +168,6 @@ PUT_IN_VRAM void find_dir_entry(uint32_t cur_dir_cluster, const char* given_name
 	result->regular_entry.short_name[0] = 0x00;
 	result->regular_entry.cluster_nr_bottom  = 0x0000;
 	result->regular_entry.cluster_nr_top = 0x0000;
-}
-
-PUT_IN_VRAM void get_full_long_name(uint32_t cur_dir_cluster, const char* given_short_name, uint8_t* long_name)
-{
-	void* tmp_buf = (void*)vram_cd;
-	uint32_t cur_dir_sector = get_sector_from_cluster(cur_dir_cluster);
-	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
-
-	bool found_long_name = false;
-	uint8_t name_buffer[256];
-	for(int i = 0; i < 256; i++)
-		name_buffer[i] = 0;
-
-	while(true)
-	{
-		dir_entry_t* dir_entries = (dir_entry_t*)(tmp_buf + 512);
-		for(int i = 0; i < vram_cd->sd_info.nr_sectors_per_cluster * 512 / 32; i++)
-		{
-			dir_entry_t* cur_dir_entry = &dir_entries[i];
-
-			if(cur_dir_entry->regular_entry.record_type == 0xE5)
-			{
-				//erased
-			}
-			else if((cur_dir_entry->attrib & DIR_ATTRIB_LONG_FILENAME) == DIR_ATTRIB_LONG_FILENAME)
-			{
-				//construct name
-				int name_part_order = cur_dir_entry->long_name_entry.order & ~0x40;
-				if(name_part_order >= 1 && name_part_order <= 20)
-				{
-					store_long_name_part(name_buffer, cur_dir_entry, (name_part_order - 1) * 13);
-					if(name_part_order == 1)
-					{
-						found_long_name = true;
-					}
-				}
-			}
-			else if(cur_dir_entry->attrib & (DIR_ATTRIB_VOLUME_ID))
-			{
-				//skip VOLUME_ID
-				for(int j = 0; j < 128; j++)
-				{
-					*(uint16_t*)(name_buffer + j) = 0x2020;
-				}
-				name_buffer[255] = 0;
-			}
-			else if(cur_dir_entry->regular_entry.record_type == 0)
-			{
-				*(uint16_t*)long_name = 0x0000;
-				return;
-			}
-			else
-			{
-				if( cur_dir_entry->regular_entry.short_name[0] == given_short_name[0] &&
-					cur_dir_entry->regular_entry.short_name[1] == given_short_name[1] &&
-					cur_dir_entry->regular_entry.short_name[2] == given_short_name[2] &&
-					cur_dir_entry->regular_entry.short_name[3] == given_short_name[3] &&
-					cur_dir_entry->regular_entry.short_name[4] == given_short_name[4] &&
-					cur_dir_entry->regular_entry.short_name[5] == given_short_name[5] &&
-					cur_dir_entry->regular_entry.short_name[6] == given_short_name[6] &&
-					cur_dir_entry->regular_entry.short_name[7] == given_short_name[7] &&
-					cur_dir_entry->regular_entry.short_name[8] == given_short_name[8] &&
-					cur_dir_entry->regular_entry.short_name[9] == given_short_name[9] &&
-					cur_dir_entry->regular_entry.short_name[10] == given_short_name[10])
-				{
-					if(!found_long_name)
-					{
-						int len = 0;
-						for(int j = 0; j < 8; j++)
-						{
-							name_buffer[j] = cur_dir_entry->regular_entry.short_name[j];
-							if(name_buffer[j] != ' ')
-								len = j + 1;
-						}
-						if(cur_dir_entry->regular_entry.short_name[8] != ' ')
-						{
-							name_buffer[len++] = '.';
-							for(int j = 0; j < 3; j++)
-							{
-								if(cur_dir_entry->regular_entry.short_name[8 + j] == ' ')
-									break;
-								name_buffer[len++] = cur_dir_entry->regular_entry.short_name[8 + j];
-							}
-						}
-						name_buffer[len] = '\0';
-					}
-
-					for(int j = 0; j < 256/2; j++)
-					{
-						*(uint16_t*)(long_name + j) = *(uint16_t*)(name_buffer + j);
-					}
-					long_name[255] = 0;
-					return;
-				}
-				else
-				{
-					for(int j = 0; j < 256/2; j++)
-					{
-						*(uint16_t*)(name_buffer + j) = 0x2020;
-					}
-					name_buffer[255] = 0;
-					found_long_name = false;
-				}
-			}
-		}
-		//follow the chain
-		uint32_t next = get_cluster_fat_value_simple(cur_dir_cluster);
-		if(next >= 0x0FFFFFF8)
-		{
-			*((vu32*)0x06202000) = 0x5453414C; //LAST
-			while(1);//last
-		}
-		cur_dir_cluster = next;
-		read_sd_sectors_safe(get_sector_from_cluster(cur_dir_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
-	}
 }
 
 PUT_IN_VRAM int gen_short_name(uint8_t* long_name, uint8_t* short_name, uint32_t cur_dir_cluster)
@@ -503,9 +386,7 @@ PUT_IN_VRAM int write_entries_to_sd(
 					else if(index==0)
 					{
 						for(int j=0; j<11; j++)
-						{
 							cur_entry.regular_entry.short_name[j] = short_name[j];
-						}
 
 						cur_entry.regular_entry.attrib = attribute;
 						cur_entry.regular_entry.reserved = 0x00;
@@ -542,9 +423,7 @@ PUT_IN_VRAM int write_entries_to_sd(
 		//follow the chain
 		uint32_t next = get_cluster_fat_value_simple(cur_cluster);
 		if(next >= 0x0FFFFFF8)
-		{
 			next = allocate_clusters(cur_cluster, vram_cd->sd_info.nr_sectors_per_cluster*512);
-		}
 		cur_cluster = next;
 		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	}
@@ -554,6 +433,7 @@ PUT_IN_VRAM int write_entries_to_sd(
 
 PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 {
+#ifndef ARM7_DLDI
 	void* tmp_buf = (void*)vram_cd;
 
 	int cluster_size = vram_cd->sd_info.nr_sectors_per_cluster * 512;
@@ -562,9 +442,7 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 	uint32_t nr_clusters = file_size + cluster_size - 1;
 	
 	for(int i = cluster_size; i != 1; i >>= 1)
-	{
 		nr_clusters >>= 1;
-	}
 	
 	uint32_t* table_ptr = (uint32_t*)vramheap_alloc(sizeof(uint32_t) * (nr_clusters + 1));
 	uint32_t* cluster_table = table_ptr;
@@ -665,7 +543,7 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 		}
 		cur_sector++;
 	}
-
+#endif
 	*((vu32*)0x06202000) = 0x4C4C5546; //FULL No space available
 	while(1);
 }

@@ -50,6 +50,14 @@ itcm_setup_copyloop:
 	subs r1, #0x20
 	bne itcm_setup_copyloop
 
+	ldr r0,= fiq_hook
+	sub r0, #0x1C	//relative to source address
+	sub r0, #8	//pc + 8 compensation
+	mov r1, #0xEA000000
+	orr r1, r0, lsr #2
+	mov r0, #0x1C
+	str r1, [r0]
+	
 	//map the gba cartridge to the arm7 and nds card too
 	ldr r0,= 0x4000204
 	ldrh r1, [r0]
@@ -194,7 +202,7 @@ vram_setup_copyloop:
 	mov r0, #((1 << 5) | (1 << 6))
 
 
-#ifdef ENABLE_WRAM_ICACHE
+#if defined(ENABLE_WRAM_ICACHE) && !defined(POSTPONED_ICACHE)
 	orr r0, #(1 << 0)
 	orr r0, #(1 << 7)
 #endif
@@ -420,7 +428,7 @@ dldi_name_copy:
 	ldr r0,= 0x04000304
 	ldrh r1, [r0]
 	bic r1, #0xC
-	bic r1, #0x8000
+	eor r1, #0x8000
 	strh r1, [r0]
 
 	//turn off the main engine display using masterbright

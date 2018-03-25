@@ -1,5 +1,6 @@
 #include "vram.h"
 #include "vramheap.h"
+#include "sd_access.h"
 #include "string.h"
 #include "DirectoryEnumerator.h"
 #include "File.h"
