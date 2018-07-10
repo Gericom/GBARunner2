@@ -30,7 +30,7 @@ typedef enum KEYPAD_BITS {
 	KEY_LID = BIT(13)  //!< Lid state.
 } KEYPAD_BITS;
 
-#define DONT_CREATE_SAVE_FILES
+//#define DONT_CREATE_SAVE_FILES
 
 ITCM_CODE __attribute__ ((noinline)) void MI_WriteByte(void *address, uint8_t value)
 {
@@ -77,6 +77,36 @@ extern "C" ITCM_CODE __attribute__ ((noinline)) void read_sd_sectors_safe(sec_t 
 	dc_invalidate_range(buffer, numSectors * 512);
 	//dc_invalidate_all();
 }
+
+//buffer should be in main memory
+extern "C" ITCM_CODE __attribute__((noinline)) void write_sd_sectors_safe(sec_t sector, sec_t numSectors, const void* buffer)
+{
+	//remote procedure call on arm7
+	//assume buffer is in the vram cd block
+	//uint32_t arm7_address = ((uint32_t)buffer) - ((uint32_t)vram_cd) + 0x06000000;
+	//dc_wait_write_buffer_empty();
+	//dc_invalidate_all();
+	//dc_flush_range(vram_cd, 256 * 1024);
+	//dc_flush_all();
+	//map cd to arm7
+	//REG_VRAMCNT_CD = VRAM_CD_ARM7;
+	//REG_VRAMCNT_C = VRAM_C_ARM7;
+	dc_flush_range((void*)buffer, numSectors * 512);
+	REG_SEND_FIFO = 0xAA5500F0;
+	REG_SEND_FIFO = sector;
+	REG_SEND_FIFO = numSectors;
+	REG_SEND_FIFO = (uint32_t)buffer;//arm7_address;
+									 //wait for response
+	do
+	{
+		while (*((vu32*)0x04000184) & (1 << 8));
+	} while (REG_RECV_FIFO != 0x55AAAA55);
+	//REG_VRAMCNT_C = VRAM_C_ARM9;
+	//REG_VRAMCNT_CD = VRAM_CD_ARM9;
+	//invalidate
+	//dc_invalidate_range(buffer, numSectors * 512);
+	//dc_invalidate_all();
+}
 #endif
 
 //sd_info_t gSDInfo;
@@ -87,7 +117,7 @@ PUT_IN_VRAM uint32_t get_cluster_fat_value_simple(uint32_t cluster)
 	uint32_t fat_offset = cluster * 4;
 	uint32_t fat_sector = vram_cd->sd_info.first_fat_sector + (fat_offset >> 9); //sector_size);
 	uint32_t ent_offset = fat_offset & 0x1FF;//% sector_size;
-	void* tmp_buf = (void*)vram_cd;
+	void* tmp_buf = (void*)vram_cd->tmp_cluster;
 	read_sd_sectors_safe(fat_sector, 1, tmp_buf);//_DLDI_readSectors_ptr(fat_sector, 1, tmp_buf);
 	return *((uint32_t*)(((uint8_t*)tmp_buf) + ent_offset)) & 0x0FFFFFFF;
 }
@@ -128,6 +158,8 @@ PUT_IN_VRAM void initialize_cache()
 	vram_cd->sound_emu_work.resp_size = 0;
 	vram_cd->sound_emu_work.resp_write_ptr = 0;
 	vram_cd->sound_emu_work.resp_read_ptr = 0;
+	//vram_cd->save_work.save_enabled = 0;
+	//vram_cd->save_work.save_state = SAVE_WORK_STATE_CLEAN;
 }
 
 PUT_IN_VRAM void clear_rows(int from_row, int to_row)
@@ -377,7 +409,7 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst, File* biosFile)
 	uint32_t data_read = 0;
 	*((vu32*)0x06202000) = 0x59504F43; //COPY
 	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > 16 * 1024) ? 16 * 1024 / 512 : vram_cd->sd_info.nr_sectors_per_cluster;
-	void* tmp_buf = (void*)vram_cd;
+	void* tmp_buf = (void*)vram_cd->tmp_cluster;
 	while(cur_cluster < 0x0FFFFFF8 && (data_read + toread * 512) <= data_max)
 	{
 		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toread, tmp_buf);//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(bios_dst + data_read));
@@ -390,6 +422,9 @@ PUT_IN_VRAM void copy_bios(uint8_t* bios_dst, File* biosFile)
 
 PUT_IN_VRAM void get_save(Directory* romDir, File* romFile)
 {	
+	vram_cd->save_work.save_state = SAVE_WORK_STATE_CLEAN;
+	vram_cd->save_work.reserved = 0;
+
 	char nameBuf[256];
 	const char* name = romFile->GetName();
 	for (int i = 0; i < 256; i++)
@@ -413,12 +448,14 @@ PUT_IN_VRAM void get_save(Directory* romDir, File* romFile)
 #ifdef DONT_CREATE_SAVE_FILES
 		for (int i = 0; i < 64 * 1024 / 4; i++)
 		{
-			((uint32_t*)0x23F0000)[i] = 0;
+			((uint32_t*)MAIN_MEMORY_ADDRESS_SAVE_DATA)[i] = 0;
 		}
+		vram_cd->save_work.save_enabled = 0;
 		return;
 #else
 		int entries_count;
-		int is_lossy = gen_short_name(long_name_buff, short_name_buff, cur_cluster);
+		uint8_t short_name_buff[11];
+		int is_lossy = gen_short_name((uint8_t*)nameBuf, short_name_buff, romDir->GetFirstCluster());
 		
 		if(is_lossy < 0)
 		{
@@ -427,7 +464,14 @@ PUT_IN_VRAM void get_save(Directory* romDir, File* romFile)
 		}
 		else if(is_lossy == 1)
 		{
-			entries_count = (strlen((char*)long_name_buff) + 12)/13 + 1;
+			entries_count = 1;
+			int totlen = strlen(nameBuf);
+			while (totlen > 0)
+			{
+				entries_count++;
+				totlen -= 13;
+			}
+			//entries_count = (strlen(nameBuf) + 12)/13 + 1;
 		}
 		else
 		{
@@ -436,20 +480,21 @@ PUT_IN_VRAM void get_save(Directory* romDir, File* romFile)
 		
 		*((vu32*)0x06202000) = 0x56415343;//CSAV Creating save file
 		
-		uint32_t first_cluster = allocate_clusters(0, 64*1024);
+		uint32_t first_cluster = allocate_clusters(0, SAVE_DATA_SIZE);
 		write_entries_to_sd(
-				long_name_buff, 
+				(uint8_t*)nameBuf,
 				short_name_buff, 
 				entries_count, 
 				DIR_ATTRIB_ARCHIVE, 
-				cur_cluster, 
+				romDir->GetFirstCluster(),
 				first_cluster,
-				64*1024);
+				SAVE_DATA_SIZE);
+		saveFile = (File*)romDir->GetEntryByPath(nameBuf);
 #endif
 	}
 	
 	//call to function to read the save file
-	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	uint32_t* cluster_table = &vram_cd->save_work.save_fat_table[0];
 	u32 cur_cluster = saveFile->GetFirstCluster();
 	while (cur_cluster < 0x0FFFFFF8)
 	{
@@ -458,26 +503,46 @@ PUT_IN_VRAM void get_save(Directory* romDir, File* romFile)
 		cur_cluster = get_cluster_fat_value_simple(cur_cluster);
 	}
 	*cluster_table = cur_cluster;
-	cluster_table = &vram_cd->gba_rom_cluster_table[0];
+	cluster_table = &vram_cd->save_work.save_fat_table[0];
 	cur_cluster = *cluster_table++;
-	uint32_t data_max = 64 * 1024;
 	uint32_t data_read = 0;
 	*((vu32*)0x06202000) = 0x59504F43; //COPY
-	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > 64 * 1024) ? 64 * 1024 / 512 : vram_cd->sd_info.nr_sectors_per_cluster;
-	while (cur_cluster < 0x0FFFFFF8 && (data_read + toread * 512) <= data_max)
+	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > SAVE_DATA_SIZE) ? SAVE_DATA_SIZE / 512 : vram_cd->sd_info.nr_sectors_per_cluster;
+	while (cur_cluster < 0x0FFFFFF8 && (data_read + toread * 512) <= SAVE_DATA_SIZE)
 	{
-		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toread, (void*)(0x23F0000 + data_read));//_DLDI_readSectors_ptr(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, (void*)(bios_dst + data_read));
+		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toread, (void*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + data_read));
 		data_read += toread * 512;
 		cur_cluster = *cluster_table++;
 	}
 	delete saveFile;
+	vram_cd->save_work.save_enabled = 1;
+}
+
+extern "C" PUT_IN_VRAM void sd_write_save()
+{
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	if (!vramcd_uncached->save_work.save_enabled || vramcd_uncached->save_work.save_state != SAVE_WORK_STATE_SDSAVE)
+		return;
+	//count number times we 'saved' for debugging
+	vramcd_uncached->save_work.reserved++; //0x02BE0936
+	u32* cluster_table = &vram_cd->save_work.save_fat_table[0];
+	u32 cur_cluster = *cluster_table++;
+	uint32_t data_read = 0;
+	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > SAVE_DATA_SIZE) ? SAVE_DATA_SIZE / 512 : vram_cd->sd_info.nr_sectors_per_cluster;
+	while (cur_cluster < 0x0FFFFFF8 && (data_read + toread * 512) <= SAVE_DATA_SIZE)
+	{
+		write_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toread, (void*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + data_read));
+		data_read += toread * 512;
+		cur_cluster = *cluster_table++;
+	}
+	vramcd_uncached->save_work.save_state = SAVE_WORK_STATE_CLEAN;
 }
 
 //to be called after dldi has been initialized (with the appropriate init function)
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
 	vramheap_init();
-	void* tmp_buf = (void*)vram_cd;//vram block d, mapped to the arm 7
+	void* tmp_buf = (void*)vram_cd->tmp_cluster;
 	read_sd_sectors_safe(0, 1, tmp_buf);//read mbr
 	mbr_t* mbr = (mbr_t*)tmp_buf;
 	if(mbr->signature != 0xAA55)

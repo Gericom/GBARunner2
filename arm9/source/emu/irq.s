@@ -198,8 +198,12 @@ loc_138:
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
-	ldr r12,= sound_sound_emu_work
-	orr r12, #0x00800000
+	ldr r12,= save_save_work_state_uncached
+	ldrb r12, [r12]
+	cmp r12, #3 //sdsave request
+	beq sdsave_request
+
+	ldr r12,= sound_sound_emu_work_uncached
 1:
 	ldrb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 1)]
 	cmp r2, #SOUND_EMU_QUEUE_LEN
@@ -277,6 +281,19 @@ irq_handler_arm7_irq:
 	ands r1, r3
 
 	bne irq_cont_handle_gba
+
+	ldr r1,= pu_data_permissions
+	mcr p15, 0, r1, c5, c0, 2
+	LDMFD   SP!, {R0-R3,R12,LR}
+	SUBS    PC, LR, #4
+
+sdsave_request:
+	mov r12, #0x04000000
+	mov r1, #(1 << 16)
+	str r1, [r12, #0x214]
+
+	ldr r12,= sd_write_save
+	blx r12
 
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2

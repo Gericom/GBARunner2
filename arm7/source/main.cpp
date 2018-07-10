@@ -2,6 +2,7 @@
 #include <string.h>
 #include "timer.h"
 #include "sound.h"
+#include "save.h"
 #include "dldi_handler.h"
 #include "fifo.h"
 #include "../../common/common_defs.s"
@@ -64,6 +65,7 @@ int main()
 	//irqSet(IRQ_HBLANK, hblank_handler);
 
 	gba_sound_init();
+	gba_save_init();
 
 
 	//irqSet(IRQ_VBLANK, vblank_irq_handler);
@@ -128,6 +130,18 @@ int main()
 				REG_SEND_FIFO = 0x55AAAA55;
 				break;
 			}
+		case 0xAA5500F0:
+		{
+			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+			uint32_t sector = REG_RECV_FIFO;
+			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+			uint32_t count = REG_RECV_FIFO;
+			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+			uint8_t* src = (uint8_t*)REG_RECV_FIFO;
+			dldi_handler_write_sectors(sector, count, src);
+			REG_SEND_FIFO = 0x55AAAA55;
+			break;
+		}
 #endif
 		case 0xAA5500F8:
 			while(REG_FIFO_CNT & FIFO_CNT_EMPTY);

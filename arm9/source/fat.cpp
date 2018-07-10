@@ -332,13 +332,12 @@ PUT_IN_VRAM int write_entries_to_sd(
 			const uint32_t first_cluster,
 			uint32_t file_size)
 {
-#ifndef ARM7_DLDI
 	dir_entry_t cur_entry;
 	uint16_t lnf_buffer[13];
 	bool pad = false;
 	bool entries_inserted = false;
 
-	void* tmp_buf = (void*)vram_cd;
+	void* tmp_buf = (void*)vram_cd->tmp_cluster;
 	uint32_t cur_cluster = cur_dir_cluster;
 	uint32_t cur_dir_sector = get_sector_from_cluster(cur_cluster);
 	read_sd_sectors_safe(cur_dir_sector, vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
@@ -427,14 +426,12 @@ PUT_IN_VRAM int write_entries_to_sd(
 		cur_cluster = next;
 		read_sd_sectors_safe(get_sector_from_cluster(cur_cluster), vram_cd->sd_info.nr_sectors_per_cluster, tmp_buf + 512);
 	}
-#endif
 	return 0;
 }
 
 PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 {
-#ifndef ARM7_DLDI
-	void* tmp_buf = (void*)vram_cd;
+	void* tmp_buf = (void*)vram_cd->tmp_cluster;
 
 	int cluster_size = vram_cd->sd_info.nr_sectors_per_cluster * 512;
 	int to_allocate = (cluster_size >= file_size) ? cluster_size : file_size;
@@ -529,12 +526,12 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 
 			for(int i=0; i<toclean*512/4; i++)
 			{
-				((uint32_t*)0x23F0000)[i] = 0;
+				((uint32_t*)MAIN_MEMORY_ADDRESS_SAVE_DATA)[i] = 0;
 			}
 
 			while (cur_cluster < 0x0FFFFFF8)
 			{
-				write_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toclean, (void*)(0x23F0000));
+				write_sd_sectors_safe(get_sector_from_cluster(cur_cluster), toclean, (void*)(MAIN_MEMORY_ADDRESS_SAVE_DATA));
 				cur_cluster = *cluster_table++;
 			}
 			
@@ -543,7 +540,6 @@ PUT_IN_VRAM uint32_t allocate_clusters(uint32_t first_cluster, int file_size)
 		}
 		cur_sector++;
 	}
-#endif
 	*((vu32*)0x06202000) = 0x4C4C5546; //FULL No space available
 	while(1);
 }

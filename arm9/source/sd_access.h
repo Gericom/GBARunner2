@@ -25,12 +25,13 @@ extern uint8_t _io_dldi;
 
 #ifdef ARM7_DLDI
 extern "C" void read_sd_sectors_safe(sec_t sector, sec_t numSectors, void* buffer);
+extern "C" void write_sd_sectors_safe(sec_t sector, sec_t numSectors, const void* buffer);
 #else
 #define _DLDI_readSectors_ptr ((FN_MEDIUM_READSECTORS)(*((uint32_t*)(&_io_dldi + 0x10))))
 #define read_sd_sectors_safe(sector,numSectors,buffer)	_DLDI_readSectors_ptr((sector),(numSectors),(buffer))
+#define write_sd_sectors_safe	((FN_MEDIUM_WRITESECTORS)(*((uint32_t*)(&_io_dldi + 0x14))))
 #endif
 
-#define write_sd_sectors_safe	((FN_MEDIUM_WRITESECTORS)(*((uint32_t*)(&_io_dldi + 0x14))))
 
 //extern sd_info_t gSDInfo;
 

@@ -4,6 +4,7 @@
 #include "common_defs.s"
 
 #include "sound_emu.h"
+#include "save_work.h"
 
 #define vram_cd		((vram_cd_t*)sd_cluster_cache)
 
@@ -218,6 +219,8 @@ typedef struct
 	cluster_cache_info_t cluster_cache_info;
 	sd_info_t sd_info;
 	sound_emu_work_t sound_emu_work;
+	uint8_t tmp_cluster[32 * 1024];
+	save_work_t save_work;
 } vram_cd_t;
 
 #endif

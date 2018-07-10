@@ -15,8 +15,13 @@ my_irq_handler:
 	//ands r2, r1, #(1 << 2)
 	//bne my_irq_handler_vcount
 
+	//timer used for sound
 	ands r2, r1, #(1 << 6)
 	bne my_irq_handler_timer3
+
+	//timer used for saving
+	ands r2, r1, #(1 << 4)
+	bne my_irq_handler_timer1
 
 	pop {lr}
 	bx lr
@@ -32,6 +37,12 @@ my_irq_handler:
 //	bl vcount_irq
 //	pop {lr}
 //	bx lr
+
+my_irq_handler_timer1:
+	str r2, [r0, #0x214]
+	bl timer1_overflow_irq
+	pop {lr}
+	bx lr
 
 my_irq_handler_timer3:
 	str r2, [r0, #0x214]

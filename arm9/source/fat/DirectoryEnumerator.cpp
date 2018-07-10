@@ -9,7 +9,7 @@
 PUT_IN_VRAM DirectoryEnumerator::DirectoryEnumerator(const Directory* directory)
 	: _curCluster(directory->GetFirstCluster()), _offset(0)
 {
-	_dirBuf = (dir_entry_t*)vram_cd;//vramheap_alloc(vram_cd->sd_info.nr_sectors_per_cluster * 512);
+	_dirBuf = (dir_entry_t*)vram_cd->tmp_cluster;//vramheap_alloc(vram_cd->sd_info.nr_sectors_per_cluster * 512);
 }
 
 PUT_IN_VRAM DirectoryEnumerator::~DirectoryEnumerator()

@@ -62,6 +62,9 @@ write_address_from_handler_sram_32:
 	mov r11, r11, ror r12
 	bic r10, r10, #3
 	strb r11, [r10]
+	ldr r12,= save_save_work_state_uncached
+	mov r11, #1
+	strb r11, [r12]
 	bx lr
 
 .global write_address_from_handler_16bit
@@ -122,6 +125,9 @@ write_address_from_handler_sram_16:
 	movne r11, r11, ror #8
 	bic r10, r10, #1
 	strb r11, [r10]
+	ldr r12,= save_save_work_state_uncached
+	mov r11, #1
+	strb r11, [r12]
 	bx lr
 
 .global write_address_from_handler_8bit
@@ -175,6 +181,9 @@ write_address_from_handler_sram_8:
 	sub r10, r10, #0x0BC00000
 	sub r10, r10, #0x00010000
 	strb r11, [r10]
+	ldr r12,= save_save_work_state_uncached
+	mov r11, #1
+	strb r11, [r12]
 	bx lr
 
 .global write_address_nomod_8
