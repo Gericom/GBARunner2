@@ -40,6 +40,7 @@ PUT_IN_VRAM DirectoryEntry* Directory::GetEntryByPath(const char* path)
 					return NULL;
 				}
 				d = (Directory*)entry;
+				path += strlen(entry->GetName()) + 1;
 				break;
 			}
 			delete entry;

@@ -51,17 +51,6 @@ __secure_area__ = .;
 
 	__text_end = . ;
 
-	.rodata :
-	{
-		*(.rodata)
-		*all.rodata*(*)
-		*(.roda)
-		*(.rodata.*)
-		*(.gnu.linkonce.r*)
-		SORT(CONSTRUCTORS)
-		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >ewram = 0xff
-
 	.ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >ewram
  	__exidx_start = .;
 	ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } >ewram
@@ -189,6 +178,12 @@ __secure_area__ = .;
 	{
 		*(.vram)
 		*vram.*(.text)
+		*(.rodata)
+		*all.rodata*(*)
+		*(.roda)
+		*(.rodata.*)
+		*(.gnu.linkonce.r*)
+		SORT(CONSTRUCTORS)
 		. = ALIGN(32);
 		__vram_end = ABSOLUTE(.);
 	} >vram = 0xff

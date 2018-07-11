@@ -10,7 +10,8 @@ typedef enum
 uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry);
 void store_long_name_part(uint8_t* buffer, dir_entry_t* cur_dir_entry, int position);
 
-int gen_short_name(uint8_t*, uint8_t*, uint32_t);
+class Directory;
+int gen_short_name(uint8_t*, uint8_t*, Directory*);
 int write_entries_to_sd(const uint8_t*, const uint8_t*, const int, uint8_t, const uint32_t, const uint32_t, uint32_t);
 void find_dir_entry(uint32_t, const char*, dir_entry_t*, SEARCH_TYPE);
 uint32_t allocate_clusters(uint32_t first_cluster, int file_size);

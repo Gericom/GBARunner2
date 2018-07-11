@@ -11,7 +11,7 @@ typedef struct
 	uint32_t save_fat_table[128 * 1024 / 512];
 	uint8_t save_enabled;
 	uint8_t save_state;
-	uint16_t reserved;
+	uint16_t fat_table_crc;
 } save_work_t;
 
 #endif

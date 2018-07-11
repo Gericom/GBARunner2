@@ -3,6 +3,7 @@
 #include "vramheap.h"
 #include "sd_access.h"
 #include "string.h"
+#include "fat/Directory.h"
 #include "fat.h"
 
 PUT_IN_VRAM uint32_t get_entrys_first_cluster(dir_entry_t* dir_entry)
@@ -170,7 +171,7 @@ PUT_IN_VRAM void find_dir_entry(uint32_t cur_dir_cluster, const char* given_name
 	result->regular_entry.cluster_nr_top = 0x0000;
 }
 
-PUT_IN_VRAM int gen_short_name(uint8_t* long_name, uint8_t* short_name, uint32_t cur_dir_cluster)
+PUT_IN_VRAM int gen_short_name(uint8_t* long_name, uint8_t* short_name, Directory* directory)
 {
 	uint8_t short_name_buff[11];
 	uint8_t* long_name_ptr = long_name;
@@ -299,7 +300,7 @@ PUT_IN_VRAM int gen_short_name(uint8_t* long_name, uint8_t* short_name, uint32_t
 				}
 			}
 
-			find_dir_entry(cur_dir_cluster, (char*)short_name_buff, &file, SHORT_NAME);
+			find_dir_entry(directory->GetFirstCluster(), (char*)short_name_buff, &file, SHORT_NAME);
 
 			if(file.regular_entry.short_name[0] == 0)
 			{
