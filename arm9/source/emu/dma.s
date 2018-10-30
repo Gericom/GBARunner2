@@ -75,6 +75,8 @@ write_dma_control_\offs:
 	and r12, #3
 	bic r11, r11, #0x3800
 	orr r11, r11, r12, lsl #11
+	tst r11, #0x8000
+	beq 6f
 	//fix dst for vram
 	ldr r13,= DISPCNT_copy
 	ldrh r13, [r13]
@@ -127,6 +129,7 @@ write_dma_control_\offs:
 	and r12, #3
 	cmp r12, #3
 	beq dma_special_mode_\offs
+6:
 	//carry out the transfer
 	strh r11, [r9, #(2 - \offs)]
 	bx lr
