@@ -75,6 +75,8 @@ write_dma_control_\offs:
 	and r12, #3
 	bic r11, r11, #0x3800
 	orr r11, r11, r12, lsl #11
+	tst r11, #0x8000
+	beq 6f
 	//fix dst for vram
 	ldr r13,= DISPCNT_copy
 	ldrh r13, [r13]
@@ -106,6 +108,7 @@ write_dma_control_\offs:
 	ldr r13, [r10, #-0xA]
 	cmp r13, #0x08000000
 	bge dma_rom_src_\offs
+
 	//fix src for vram
 	ldr r12,= DISPCNT_copy
 	ldrh r12, [r12]
@@ -126,6 +129,7 @@ write_dma_control_\offs:
 	and r12, #3
 	cmp r12, #3
 	beq dma_special_mode_\offs
+6:
 	//carry out the transfer
 	strh r11, [r9, #(2 - \offs)]
 	bx lr
@@ -151,12 +155,17 @@ dma_rom_src_\offs:
 	cmp r13, #0x0E000000
 	bge 3b
 	bic r13, #0x07000000
+
+	tst r11, #(3 << 11)
+	bne 5f
+
 	tst r11, #(1 << 10)
 	moveq r12, r12, lsl #1
 	movne r12, r12, lsl #2
 	add r12, r13
 	cmp r12, #ROM_ADDRESS_MAX
 	bgt dma_rom_from_sd_\offs
+5:
 	//fix the address and perform the dma normally
 	sub r13, #0x05000000
 	sub r13, #0x00FC0000
