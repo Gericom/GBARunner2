@@ -207,5 +207,11 @@ dma_shadow_regs_dtcm:
 	.short 0 //control
 .endr
 
+.global timer_shadow_regs_dtcm
+timer_shadow_regs_dtcm:
+.rept 4
+	.short 0 //reload value
+.endr
+
 //for some reason the file is ignored without this nop here
 nop
