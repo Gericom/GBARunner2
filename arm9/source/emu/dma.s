@@ -77,14 +77,19 @@ write_dma_control_\offs:
 	orr r11, r11, r12, lsl #11
 	tst r11, #0x8000
 	beq 6f
-	//fix dst for vram
+	//fix and check dst
+	ldr r12, [r10, #-6]
+	//dst invalid
+	cmp r12, #0x02000000
+	biclt r11, r11, #0x8000
+	blt 6f
+	//dst vram
 	ldr r13,= DISPCNT_copy
 	ldrh r13, [r13]
 	and r13, #7
 	cmp r13, #3
 	ldrlt r13,= 0x06010000
 	ldrge r13,= 0x06014000
-	ldr r12, [r10, #-6]
 	cmp r12, r13
 	blt 1f
 	ldr r13,= 0x06018000

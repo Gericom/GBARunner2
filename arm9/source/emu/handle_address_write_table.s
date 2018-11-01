@@ -174,19 +174,19 @@ address_write_table_16bit:
 //0x04000100
 .word write_address_timer_counter
 //0x04000102
-.word write_address_nomod_16
+.word write_address_timer_control
 //0x04000104
 .word write_address_timer_counter
 //0x04000106
-.word write_address_nomod_16
+.word write_address_timer_control
 //0x04000108
 .word write_address_timer_counter
 //0x0400010A
-.word write_address_nomod_16
+.word write_address_timer_control
 //0x0400010C
 .word write_address_timer_counter
 //0x0400010E
-.word write_address_nomod_16
+.word write_address_timer_control
 //0x04000110-0x0400012E
 .rept 16
 .word write_address_ignore
