@@ -35,8 +35,8 @@ thumb6_address_calc:
 thumb7_address_calc_\l\bw:
 	and r12, r10, #(7 << 3)
 	and r13, r10, #(7 << 6)
-	orr r8, r12, r13, lsl #13
 	ldr r9,= 0xE0809000
+	orr r8, r12, r13, lsl #13
 	orr r8, r9, r8, lsr #3
 	str r8, 1f
 	and r8, r10, #7
@@ -85,8 +85,8 @@ create_thumb7_variant 1,1
 thumb8_address_calc_\x\y:
 	and r12, r10, #(7 << 3)
 	and r13, r10, #(7 << 6)
-	orr r8, r12, r13, lsl #13
 	ldr r9,= 0xE0809000
+	orr r8, r12, r13, lsl #13
 	orr r8, r9, r8, lsr #3
 	str r8, 1f
 	and r8, r10, #7
@@ -237,8 +237,8 @@ thumb15_address_calc_0:
 	mov r9, r0
 	bic r9, r9, #3
 
-	andeq r8, r10, #0xFF
 	ldreq r12,= count_bit_table_new
+	andeq r8, r10, #0xFF
 	ldreqb r13, [r12, r8]
 	mov r8, r10
 2:
@@ -321,8 +321,8 @@ thumb15_address_calc_1:
 	mov r9, r0
 	bic r9, r9, #3
 
-	and r8, r10, #0xFF
 	ldr r12,= count_bit_table_new
+	and r8, r10, #0xFF
 	ldrb r13, [r12, r8]
 2:
 	add r0, r9, r13, lsl #2

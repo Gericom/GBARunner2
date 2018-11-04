@@ -265,15 +265,13 @@ create_all_ldr_str_variants
 .macro create_ldm_stm_variant p, u, s, w, l
 .global ldm_stm_address_calc_\p\u\s\w\l
 ldm_stm_address_calc_\p\u\s\w\l:
-	bic r9, r9, #3
-	//and r8, r10, #(0xF << 16)
-	//ldr r9, [r11, r8, lsr #14]
 	mov r1, r10, lsl #16
 	//count nr bits
 	ldr r11,= count_bit_table_new
 	and r13, r1, #0xFF0000
 	ldrb r13, [r11, r13, lsr #16]
 	ldrb r11, [r11, r1, lsr #24]
+	bic r9, r9, #3
 	add r11, r11, r13
 .if \w
 	.ifeq \u

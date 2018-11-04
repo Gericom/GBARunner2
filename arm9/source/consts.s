@@ -30,6 +30,8 @@
 #define CPSR_IRQ_FIQ_BITS	0xC0
 #endif
 
+//#define ABT_NO_FIQ
+
 //enabling the wram icache can significantly improve
 //speed in some games (dk3, rayman3, riviera), however
 //it may lead to crashes depending on the game.
