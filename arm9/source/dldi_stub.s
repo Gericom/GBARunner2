@@ -45,8 +45,8 @@ _dldi_start:
 @ Offsets to important sections within the data	-- 32 bytes
 	.align	6
 #ifdef ARM7_DLDI
-	.word   0x03805000 //_dldi_start		@ data start
-	.word   0x0380D000 //_dldi_end		@ data end
+	.word   0x03806800 //_dldi_start		@ data start
+	.word   0x0380E800 //_dldi_end		@ data end
 #else
 	.word   _dldi_start		@ data start
 	.word   _dldi_end		@ data end

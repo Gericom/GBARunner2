@@ -2,56 +2,123 @@
 
 #include "consts.s"
 
-.global write_address_sound_cnt_top16
-write_address_sound_cnt_top16:
-	//ldr r10,= 0x04000188
-	//ldr r13,= 0xAA5500C8
-	//mov r12, #0
-	//str r13, [r10]
-	//str r11, [r10]
-	//str r12, [r10]
-	bx lr
-
-//	mov r12, #0
-//	str r11, [r10]
-//	tst r11, #0x300
-//	beq write_address_sound_cnt_top16_disable_A
-//	tst r11, #(1 << 11)
-//	bne write_address_sound_cnt_top16_reset
-//write_address_sound_cnt_top16_enable_A:
-//	ldr r10,= 0x04000188
-//	ldr r11,= 0xAA5500C4
-//	mov r12, #0
-//	str r11, [r10]
-//	str r12, [r10]
-//	bx lr
-
-//write_address_sound_cnt_top16_disable_A:
-//	ldr r10,= 0x04000188
-//	ldr r11,= 0xAA5500C5
-//	mov r12, #0
-//	str r11, [r10]
-//	str r12, [r10]
-//	bx lr
-
-//write_address_sound_cnt_top16_reset:
-//	ldr r10,= 0x04000188
-//	ldr r11,= 0xAA5500C5
-//	ldr r13,= 0xAA5500C4
-//	mov r12, #0
-//	str r11, [r10]
-//	str r13, [r10]
-//	str r12, [r10]
-//	bx lr
-
-.global write_address_sound_cnt
-write_address_sound_cnt:
-	mov r11, r11, lsr #16
-	b write_address_sound_cnt_top16
-
 .global write_address_snd_fifo_A
 write_address_snd_fifo_A:
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]
+	bx lr
+
+.global read_address_snd_32
+read_address_snd_32:
+	//store register value into shadow register
+	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	and r12, r9, #0xFF
+	ldr r10, [r13, r12]
+	//todo: mask out the unreadable parts somehow
+	bx lr
+
+.global read_address_snd_16
+read_address_snd_16:
+	//store register value into shadow register
+	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	and r12, r9, #0xFF
+	ldrh r10, [r13, r12]
+	//todo: mask out the unreadable parts somehow
+	bx lr
+
+.global read_address_snd_8
+read_address_snd_8:
+	//store register value into shadow register
+	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	and r12, r9, #0xFF
+	ldrb r10, [r13, r12]
+	//todo: mask out the unreadable parts somehow
+	bx lr
+
+.global write_address_snd_32
+write_address_snd_32:
+	//store register value into shadow register
+	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	and r12, r9, #0xFF
+
+	//clear reset bit for NRx4 registers
+	cmp r12, #0x64
+	cmpne r12, #0x6C
+	cmpne r12, #0x74
+	cmpne r12, #0x7C
+	biceq r10, r11, #0x8000
+	movne r10, r11
+
+	str r10, [r13, r12]
+
+	orr r12, #(4 << 8) //4 bytes
+
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
+	ldr r10,= 0xAA5500FA //update gb sound reg command
+	str r10, [r13] //command
+	str r12, [r13] //reg + len
+	str r11, [r13] //val
+	bx lr
+
+.global write_address_snd_16
+write_address_snd_16:
+	//store register value into shadow register
+	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	and r12, r9, #0xFF
+
+	//clear reset bit for NRx4 registers
+	cmp r12, #0x64
+	cmpne r12, #0x6C
+	cmpne r12, #0x74
+	cmpne r12, #0x7C
+	biceq r10, r11, #0x8000
+	movne r10, r11
+
+	strh r10, [r13, r12]
+
+	orr r12, #(2 << 8) //4 bytes
+
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
+	ldr r10,= 0xAA5500FA //update gb sound reg command
+	str r10, [r13] //command
+	str r12, [r13]  //reg + len
+	str r11, [r13] //val
+	bx lr
+
+.global write_address_snd_8
+write_address_snd_8:
+	//store register value into shadow register
+	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	and r12, r9, #0xFF
+
+	//clear reset bit for NRx4 registers
+	cmp r12, #0x65
+	cmpne r12, #0x6D
+	cmpne r12, #0x75
+	cmpne r12, #0x7D
+	biceq r10, r11, #0x80
+	movne r10, r11
+
+	strb r10, [r13, r12]
+
+	orr r12, #(1 << 8) //4 bytes
+
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
+	ldr r10,= 0xAA5500FA //update gb sound reg command
+	str r10, [r13] //command
+	str r12, [r13]  //reg + len
+	str r11, [r13] //val
 	bx lr

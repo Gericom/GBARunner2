@@ -188,7 +188,7 @@ extern "C" void timer3_overflow_irq()
 		sampcnter = 0;
 }
 
-void gba_sound_timer_updated(uint16_t reloadVal)
+void gbas_soundTimerUpdated(int timer, uint16_t reloadVal)
 {
 	if(reloadVal == 0)
 		return;

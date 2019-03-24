@@ -26,8 +26,12 @@ address_read_table_32bit:
 .word read_address_undefined_memory_32
 //0x0400005C
 .word read_address_undefined_memory_32
-//0x04000060-0x040000AC
-.rept 20
+//0x04000060-0x04000084
+.rept 10
+.word read_address_snd_32
+.endr
+//0x04000088-0x040000AC
+.rept 10
 .word read_address_ignore
 .endr
 //0x040000B0
@@ -129,8 +133,12 @@ address_read_table_16bit:
 .word read_address_undefined_memory_16
 //0x0400005E
 .word read_address_undefined_memory_16
-//0x04000060-0x040000AE
-.rept 40
+//0x04000060-0x04000084
+.rept 19
+.word read_address_snd_16
+.endr
+//0x04000086-0x040000AE
+.rept 21
 .word read_address_ignore
 .endr
 //0x040000B0
@@ -248,8 +256,12 @@ address_read_table_8bit:
 .rept 88
 .word read_address_nomod_8
 .endr
-//0x04000060-0x040000AF
-.rept 80
+//0x04000060-0x04000084
+.rept 37
+.word read_address_snd_8
+.endr
+//0x04000085-0x040000AF
+.rept 43
 .word read_address_ignore
 .endr
 //0x040000B0-0x040000DF

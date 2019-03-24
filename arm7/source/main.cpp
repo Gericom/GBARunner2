@@ -2,6 +2,7 @@
 #include <string.h>
 #include "timer.h"
 #include "sound.h"
+#include "gbsound.h"
 #include "dldi_handler.h"
 #include "fifo.h"
 #include "../../common/common_defs.s"
@@ -64,6 +65,7 @@ int main()
 	//irqSet(IRQ_HBLANK, hblank_handler);
 
 	gba_sound_init();
+	gbs_init();
 
 
 	//irqSet(IRQ_VBLANK, vblank_irq_handler);
@@ -146,6 +148,25 @@ int main()
 			gba_sound_fifo_write16((uint8_t*)&vals[0]);*/
 			gba_sound_fifo_update();
 			break;
+		case 0xAA5500FA://gb sound update
+		{
+			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+			val = REG_RECV_FIFO;
+			int reg = val & 0xFF;
+			int len = (val >> 8) & 0x7;
+			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+			val = REG_RECV_FIFO;
+			for(int i = 0; i < len; i++)
+			{
+				if(reg == 0x82)
+					gbs_setMixVolume(val & 3);
+				else
+					gbs_writeReg(reg, val & 0xFF);
+				reg++;
+				val >>= 8;
+			}
+			break;
+		}
 		case 0x040000A0:
 			while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 			val = REG_RECV_FIFO;
@@ -156,11 +177,17 @@ int main()
 			{
 				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;
-				gba_sound_timer_updated(val & 0xFFFF);
+				gbas_soundTimerUpdated(0, val & 0xFFFF);
 				break;
 			}
 		case 0x04000104:
 		case 0x04000106:
+			{
+				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+				val = REG_RECV_FIFO;
+				gbas_soundTimerUpdated(1, val & 0xFFFF);
+				break;
+			}
 		case 0x04000108:
 		case 0x0400010A:
 		case 0x0400010C:
