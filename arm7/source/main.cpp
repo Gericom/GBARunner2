@@ -53,7 +53,7 @@ int main()
 #ifdef ARM7_DLDI
 	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
-	memcpy((void*)0x03805000, dldi_src, 32 * 1024);
+	memcpy((void*)0x03806800, dldi_src, 32 * 1024);
 	if(!dldi_handler_init())
 	{
 		REG_SEND_FIFO = 0x46494944;
