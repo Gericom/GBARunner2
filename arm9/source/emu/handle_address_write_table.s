@@ -173,16 +173,26 @@ address_write_table_16bit:
 .word write_address_timer_counter
 //0x0400010E
 .word write_address_timer_control
-//0x04000110-0x0400012E
-.rept 16
+//0x04000110-0x04000126
+.rept 12
+.word write_address_ignore
+.endr
+//0x04000128
+.word write_address_sio_16
+//0x0400012A
+.word write_address_sio_16
+//0x0400012C-0x0400012E
+.rept 2
 .word write_address_ignore
 .endr
 //0x04000130
 .word write_address_ignore
 //0x04000132
 .word write_address_nomod_16
-//0x04000134-0x040001FE
-.rept 102
+//0x04000134
+.word write_address_sio_rcnt_16
+//0x04000136-0x040001FE
+.rept 101
 .word write_address_ignore
 .endr
 //0x04000200
@@ -263,8 +273,12 @@ address_write_table_8bit:
 .word write_address_nomod_8
 //0x04000133
 .word write_address_nomod_8
-//0x04000134-0x040001FF
-.rept 204
+//0x04000134
+.word write_address_ignore
+//0x04000135
+.word write_address_sio_rcnt_8_hi
+//0x04000136-0x040001FF
+.rept 202
 .word write_address_ignore
 .endr
 //0x04000200

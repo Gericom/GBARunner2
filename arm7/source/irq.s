@@ -21,6 +21,9 @@ my_irq_handler:
 	ands r2, r1, #(1 << 4)
 	bne my_irq_handler_timer1
 
+	ands r2, r1, #(1 << 24)
+	bne my_irq_handler_wifi
+
 	pop {lr}
 	bx lr
 
@@ -45,5 +48,11 @@ my_irq_handler_timer1:
 my_irq_handler_timer3:
 	str r2, [r0, #0x214]
 	bl timer3_overflow_irq
+	pop {lr}
+	bx lr
+
+my_irq_handler_wifi:
+	str r2, [r0, #0x214]
+	bl wifi_irq
 	pop {lr}
 	bx lr

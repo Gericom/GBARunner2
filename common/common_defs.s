@@ -22,6 +22,8 @@
 
 #define sound_sound_emu_work (sd_sd_info + 36)
 
+#define sio_work (sound_sound_emu_work + 4 + SOUND_EMU_QUEUE_LEN * 4 + 4 + SOUND_EMU_QUEUE_LEN * 4 * 4 + 40)
+
 #define CACHE_LINKED_LIST_NIL	4096 //0x8000
 
 #endif

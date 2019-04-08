@@ -6,6 +6,9 @@
 #include "dldi_handler.h"
 #include "fifo.h"
 #include "../../common/common_defs.s"
+#include "wifi/wifi.h"
+#include "wifi/wifi_tx.h"
+#include "sio/sio.h"
 
 static void vblank_handler()
 {
@@ -30,6 +33,38 @@ int main()
 
 	REG_IME = 1;
 
+	//try wifi
+	wifi_init();
+	wifi_start();
+	sio_init();
+
+	
+	/*struct{wifi_pkt_tx_t packet; u8 payload[8];} sTestPacket =
+	{
+		{
+			{
+				0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 8
+			},
+			{
+				{0,0,0,0,0,0,0,0,0,0,0}, 0, {0}, WIFI_RAM->firmData.wifiData.macAddress, {0}, {0,0}
+			}
+		},
+		{
+			//payload
+			0x01, 0xAA, 0x55, 0xFF,
+			//checksum
+			0x00, 0x00, 0x00, 0x00
+		}
+	};
+	while(true)
+	{
+		dmaCopyWords(3, &sTestPacket, (void*)&WIFI_RAM->txBuf[0], sizeof(sTestPacket));
+		REG_WIFI_TXREQ_LOC3 = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
+		REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;
+		while(*((vu16*)&WIFI_RAM->txBuf[0]) == 0 && *((vu16*)&WIFI_RAM->txBuf[2]) == 0);
+		swiDelay(500 * 0x20BA); 
+	}*/
+
 	//*((vu16*)0x04000004) = 0x20 | (160 << 8);
 	//*((vu16*)0x04000004) = 0x10;
 
@@ -53,7 +88,7 @@ int main()
 #ifdef ARM7_DLDI
 	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
-	memcpy((void*)0x03806800, dldi_src, 32 * 1024);
+	memcpy((void*)0x0380A800, dldi_src, 16 * 1024);
 	if(!dldi_handler_init())
 	{
 		REG_SEND_FIFO = 0x46494944;
@@ -195,6 +230,27 @@ int main()
 			{
 				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;
+				break;
+			}
+		case 0x04000128:
+			{
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
+				val = REG_RECV_FIFO;
+				sio_writeReg16(0x128, val);
+				break;
+			}		
+		case 0x0400012A:
+			{
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
+				val = REG_RECV_FIFO;
+				sio_writeReg16(0x12A, val);
+				break;
+			}
+		case 0x04000134:
+			{
+				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
+				val = REG_RECV_FIFO;
+				sio_writeReg16(0x134, val);
 				break;
 			}
 		//case 0xC5://fifo_stop_sound_command

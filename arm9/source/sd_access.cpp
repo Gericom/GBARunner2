@@ -128,6 +128,16 @@ PUT_IN_VRAM void initialize_cache()
 	vram_cd->sound_emu_work.resp_size = 0;
 	vram_cd->sound_emu_work.resp_write_ptr = 0;
 	vram_cd->sound_emu_work.resp_read_ptr = 0;
+
+	vram_cd->sioWork.sioMulti[0] = 0xFFFF;
+	vram_cd->sioWork.sioMulti[1] = 0xFFFF;
+	vram_cd->sioWork.sioMulti[2] = 0xFFFF;
+	vram_cd->sioWork.sioMulti[3] = 0xFFFF;
+	vram_cd->sioWork.sioCnt = 0;
+	vram_cd->sioWork.sioMultiSend = 0;
+	vram_cd->sioWork.rcnt = 0;
+	vram_cd->sioWork.sioCntRead = 0;
+	vram_cd->sioWork.sioIrqFlag = 0;
 }
 
 PUT_IN_VRAM void clear_rows(int from_row, int to_row)

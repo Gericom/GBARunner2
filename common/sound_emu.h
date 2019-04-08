@@ -1,5 +1,4 @@
-#ifndef __SOUND_EMU_H__
-#define __SOUND_EMU_H__
+#pragma once
 
 #include "common_defs.s"
 
@@ -36,5 +35,3 @@ typedef struct
 
 	u32 reg_gb_nr52;
 } sound_emu_work_t;
-
-#endif

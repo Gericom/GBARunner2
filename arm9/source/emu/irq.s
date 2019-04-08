@@ -198,8 +198,22 @@ loc_138:
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
-	ldr r12,= sound_sound_emu_work
-	orr r12, #0x00800000
+	//check for sio irq
+	ldr r12,= ((sio_work + 16) | 0x00800000)
+	ldrb r2, [r12]
+	cmp r2, #0
+	beq irq_handler_arm7_irq_snd
+	//reset sio irq flag
+	mov r2, #0
+	strb r2, [r12]
+	//set fake irq flag
+	ldr r2,= fake_irq_flags
+	ldr r1, [r2]
+	orr r1, #(1 << 7)
+	str r1, [r2]
+
+irq_handler_arm7_irq_snd:
+	ldr r12,= (sound_sound_emu_work | 0x00800000)
 1:
 	ldrb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 1)]
 	cmp r2, #SOUND_EMU_QUEUE_LEN

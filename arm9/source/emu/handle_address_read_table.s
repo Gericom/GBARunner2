@@ -70,10 +70,18 @@ address_read_table_32bit:
 .word read_address_timer
 //0x0400010C
 .word read_address_timer
-//0x04000110-0x0400012C
-.rept 8
+//0x04000110-0x0400011C
+.rept 4
 .word read_address_undefined_memory_32
 .endr
+//0x04000120
+.word read_address_sio_32
+//0x04000124
+.word read_address_sio_32
+//0x04000128
+.word read_address_sio_cnt_32
+//0x0400012C
+.word read_address_undefined_memory_32
 //0x04000130
 .word read_address_nomod_32
 //0x04000134-0x040001FC
@@ -209,8 +217,24 @@ address_read_table_16bit:
 .word read_address_timer_counter
 //0x0400010E
 .word read_address_nomod_16
-//0x04000110-0x0400012E
-.rept 16
+//0x04000110-0x0400011E
+.rept 8
+.word write_address_ignore
+.endr
+//0x04000120
+.word read_address_sio_16
+//0x04000122
+.word read_address_sio_16
+//0x04000124
+.word read_address_sio_16
+//0x04000126
+.word read_address_sio_16
+//0x04000128
+.word read_address_sio_cnt_16
+//0x0400012A
+.word read_address_ignore
+//0x0400012C-0x0400012E
+.rept 2
 .word read_address_ignore
 .endr
 //0x04000130
@@ -294,8 +318,16 @@ address_read_table_8bit:
 .rept 16
 .word read_address_nomod_8
 .endr
-//0x04000110-0x0400012F
-.rept 32
+//0x04000110-0x0400011F
+.rept 16
+.word read_address_ignore
+.endr
+//0x04000120-0x04000127
+.rept 8
+.word read_address_sio_8
+.endr
+//0x04000128-0x0400012F
+.rept 8
 .word read_address_ignore
 .endr
 //0x04000130
