@@ -367,7 +367,7 @@ void wifi_init()
 	wifi_setActiveZoneTime(0xFFFF);
 	wifi_setShortPreamble(true);
 
-	wifi_setChannel(13);
+	wifi_setChannel(14);//13);
 
 	wifi_setReceiveMode(WIFI_BB_CCA_MODE_CS, 0x1F);
 	//wifi_shutdown();

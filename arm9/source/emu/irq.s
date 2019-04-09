@@ -10,6 +10,8 @@ fake_irq_flags:
 read_address_ie:
 	ldr r13,= 0x4000210
 	ldrh r10, [r13]
+	ldrh r11, fake_irq_enable
+	orr r10, r11
 	//ldrb r11, [r13, #2]
 	//tst r11, #1
 	//orrne r10, #1
@@ -19,6 +21,8 @@ read_address_ie:
 read_address_ie_bottom8:
 	ldr r13,= 0x4000000
 	ldrb r10, [r13, #0x210]
+	ldrb r11, fake_irq_enable
+	orr r10, r11
 	//ldrb r11, [r13, #0x212]
 	//tst r11, #1
 	//orrne r10, #1
@@ -28,6 +32,8 @@ read_address_ie_bottom8:
 read_address_ie_top8:
 	ldr r13,= 0x4000000
 	ldrb r10, [r13, #0x211]
+	ldrb r11, (fake_irq_enable + 1)
+	orr r10, r11
 	bx lr
 
 .global read_address_if
@@ -50,6 +56,9 @@ read_address_if_bottom8:
 	//orrne r10, #1
 	bx lr
 
+fake_irq_enable:
+	.word 0
+
 .global read_address_if_top8
 read_address_if_top8:
 	ldr r13,= 0x4000000
@@ -62,6 +71,10 @@ read_address_if_top8:
 read_address_ie_if:
 	ldr r13,= 0x4000210
 	ldrh r12, [r13]
+
+	ldrh r11, fake_irq_enable
+	orr r12, r11
+
 	//ldrb r11, [r13, #2]
 	//tst r11, #1
 	//orrne r12, #1
@@ -78,6 +91,7 @@ read_address_ie_if:
 .global write_address_ie
 write_address_ie:
 	ldr r13,= 0x4000210
+	strh r11, fake_irq_enable
 	//tst r11, #1
 	//bic r11, #1
 	//orrne r11, r11, #(1 << 16)	//fifo sync as early vblank
@@ -89,6 +103,7 @@ write_address_ie_bottom8:
 	ldr r13,= 0x4000210
 	//tst r11, #1
 	//bic r11, #1
+	strb r11, fake_irq_enable
 	strb r11, [r13]
 	//ldrb r11, [r13, #2]
 	//biceq r11, r11, #1	//fifo sync as early vblank
@@ -99,6 +114,7 @@ write_address_ie_bottom8:
 .global write_address_ie_top8
 write_address_ie_top8:
 	ldr r13,= 0x4000211
+	strb r11, (fake_irq_enable + 1)
 	strb r11, [r13]
 	bx lr
 
@@ -152,6 +168,7 @@ write_address_ie_if:
 	//orrne r12, r11, #(1 << 16)	//fifo sync as early vblank
 	//bic r12, //#0x3E0000
 	//str r12, [r13]
+	strh r11, fake_irq_enable
 	strh r11, [r13]
 	mov r11, r11, lsr #16
 	//tst r11, #1
@@ -273,6 +290,8 @@ irq_handler_arm7_irq_snd:
 	str r1, [r12, #0x214]
 
 	ldr r3, [r12, #0x210]
+	ldr r2, fake_irq_enable
+	orr r3, r2
 
 	ldr r2,= fake_irq_flags
 	ldr r1, [r2]

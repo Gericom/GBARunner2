@@ -60,8 +60,9 @@ write_address_sio_16:
 	orr r10, #0x80
 	strh r10, [r13, #6]
 
-	strh r11, [r13, r12]
 1:
+	strh r11, [r13, r12]
+
 
 	ldr r13,= 0x04000188
 2:
