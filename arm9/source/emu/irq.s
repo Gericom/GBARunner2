@@ -209,6 +209,10 @@ irq_handler_arm7_irq:
 	cmp r2, #SOUND_EMU_QUEUE_LEN
 	bge 4f
 
+	ldrb r2, [r12, #1]
+	cmp r2, #0
+	beq 5f
+
 	ldrb r2, [r12, #3]
 	add r3, r2, #1
 	cmp r3, #SOUND_EMU_QUEUE_LEN
@@ -258,6 +262,7 @@ irq_handler_arm7_irq:
 	mov r1, #0x04000000
 	str r0, [r1, #0x188]
 
+5:
 	mov r12, #0x04000000
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]

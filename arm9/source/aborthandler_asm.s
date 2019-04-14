@@ -12,6 +12,10 @@
 
 .global data_abort_handler
 data_abort_handler:
+#ifdef ABT_NO_FIQ
+	msr cpsr_c, #0xD7	//immediately disable fiqs
+#endif
+
 	//we assume r13_abt contains the address of the dtcm - 1 (0x04EFFFFF)
 	//this makes it possible to use the bottom 16 bits for unlocking the memory protection
 
@@ -64,12 +68,12 @@ data_abort_handler_cont:
 	ldr r10, [r12, #(4 * 15)]
 
 	ldr r10, [r10, #-8]
+	add r11, r12, #(address_arm_table_dtcm - reg_table)
 	and r10, r10, #0x0FFFFFFF
 
 	and r8, r10, #(0xF << 16)
 	ldr r9, [r12, r8, lsr #14]
 
-	add r11, r12, #(address_arm_table_dtcm - reg_table)
 	ldr pc, [r11, r10, lsr #18]
 
 .global data_abort_handler_cont_finish

@@ -634,6 +634,9 @@ gba_setup_loop:
 
 .global instruction_abort_handler
 instruction_abort_handler:
+#ifdef ABT_NO_FIQ
+	msr cpsr_c, #0xD7	//immediately disable fiqs
+#endif
 	cmp lr, #0x08000000
 	blt instruction_abort_handler_error
 	cmp lr, #0x0E000000
@@ -666,6 +669,9 @@ instruction_abort_handler_error_cont:
 	ldrlt r12, [r13, #1]
 	blt instruction_abort_handler_cont
 instruction_abort_handler_error_2:
+#ifdef ABT_NO_FIQ
+	msr cpsr_c, #0x97	//enable fiqs
+#endif
 	mrc p15, 0, r0, c1, c0, 0
 	bic r0, #(1 | (1 << 2))	//disable pu and data cache
 	bic r0, #(1 << 12) //and cache
