@@ -7,10 +7,27 @@
 #include "sio.h"
 #include "sio_multi.h"
 
+//#define SIO_MULTI_PRESEND
+
 //static u16 sMultiData[4];
 static bool sTransfering;
+static u64 sStartTime;
 
-static void finishTransfer()
+#ifdef SIO_MULTI_PRESEND
+static u16 sSlaveData;
+static bool sReceivedSlaveData;
+#endif
+
+static u64 getUsCounter()
+{
+	u64 time = REG_WIFI_US_COUNT3 << 48;
+	time |= REG_WIFI_US_COUNT2 << 32;
+	time |= REG_WIFI_US_COUNT1 << 16;
+	time |= REG_WIFI_US_COUNT0;
+	return time;
+}
+
+static void finishTransfer(bool error)
 {
 	//vram_cd->sioWork.sioMulti[0] = sMultiData[0];
 	//sMultiData[0] = 0xFFFF;
@@ -20,7 +37,7 @@ static void finishTransfer()
 	//sMultiData[2] = 0xFFFF;
 	//vram_cd->sioWork.sioMulti[3] = sMultiData[3];
 	//sMultiData[3] = 0xFFFF;
-	vram_cd->sioWork.sioCntRead &= ~SIO_MULTI_CNT_START_BUSY;
+	vram_cd->sioWork.sioCntRead = (vram_cd->sioWork.sioCntRead & ~SIO_MULTI_CNT_START_BUSY) | (error ? SIO_MULTI_CNT_ERROR : 0);
 	sTransfering = false;
 	//raise irq
 	if (vram_cd->sioWork.sioCnt & SIO_MULTI_CNT_IRQ)
@@ -36,21 +53,24 @@ static void txDoneCallback(void* arg)
 	if (gSioWork.mode != SIO_MODE_MULTI)
 		return;
 
-	if(gSioWork.id == SIO_ID_SLAVE_0 && sTransfering)
-	{
-		if (!(REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3))
-		{
-			finishTransfer();
-		}
-	}
-
-	/*if (gSioWork.id == SIO_ID_MASTER && sTransfering)
+	/*if(gSioWork.id == SIO_ID_SLAVE_0 && sTransfering)
 	{
 		if (!(REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3))
 		{
 			finishTransfer();
 		}
 	}*/
+
+#ifdef SIO_MULTI_PRESEND
+	if (gSioWork.id == SIO_ID_MASTER && sTransfering)
+	{
+		if (!(REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3))
+		{
+			vram_cd->sioWork.sioMulti[1] = sSlaveData;
+			finishTransfer(false);
+		}
+	}
+#endif
 }
 
 static u32 wrapRxPtr(u32 ptr)
@@ -85,79 +105,55 @@ static void rxDoneCallback(void* arg)
 			//rxRamRead(base + 12 + 6) == WIFI_RAM->firmData.wifiData.macAddress.address16[1] &&
 			//rxRamRead(base + 12 + 8) == WIFI_RAM->firmData.wifiData.macAddress.address16[2])
 		{			
-			u16 data = rxRamRead(base + 12 + 24);
+			u16 data = rxRamRead(base + 12 + 16);
 			if (gSioWork.id == SIO_ID_MASTER)
 			{
+			#ifdef SIO_MULTI_PRESEND
+				sSlaveData = data;
+				sReceivedSlaveData = true;
+			#else
 				vram_cd->sioWork.sioMulti[SIO_ID_SLAVE_0] = data;
-				finishTransfer();
-
-				/*struct { wifi_pkt_tx_t packet; u8 payload[6]; } packet =
-				{
-					{
-						{
-							0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 6
-						},
-						{
-							{0,2,0,0,0,0,0,0,0,0,0}, 0,
-							{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
-							{0, 0, 0, 0, 0, 0}, //source ds
-							WIFI_RAM->firmData.wifiData.macAddress,
-							//gSioWork.multiMacs[0], //mac address of master ds for ap filtering
-							{0,0}
-						}
-					},
-					{
-						//payload
-						data & 0xFF, data >> 8,
-						//checksum
-						0x00, 0x00, 0x00, 0x00
-					}
-				};
-				while (REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3);
-				dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
-				wifi_setRetryLimit(7);
-				REG_WIFI_TXREQ_LOC3 = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
-				REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;*/
-
+				finishTransfer(false);
+			#endif				
 			}
 			else
 			{
 				vram_cd->sioWork.sioMulti[SIO_ID_MASTER] = data;
 				vram_cd->sioWork.sioMulti[SIO_ID_SLAVE_0] = vram_cd->sioWork.sioMultiSend;
 
+			#ifndef SIO_MULTI_PRESEND
 				sTransfering = true;
+				sStartTime = getUsCounter();
 				vram_cd->sioWork.sioCntRead |= SIO_MULTI_CNT_START_BUSY;
 
 				//send data to master
-				struct { wifi_pkt_tx_t packet; u8 payload[6]; } packet =
+				static struct { wifi_pkt_tx_t packet; u32 checksum; } packet =
 				{
 					{
 						{
-							0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 6
+							0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 4
 						},
 						{
 							{0,2,0,0,0,0,0,0,0,0,0}, 0,
-							//gSioWork.multiMacs[0],
-							{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
+							gSioWork.multiMacs[0],
+							//{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
 							WIFI_RAM->firmData.wifiData.macAddress, //source ds
-							WIFI_RAM->firmData.wifiData.macAddress,
+							{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},//WIFI_RAM->firmData.wifiData.macAddress,
 							//gSioWork.multiMacs[0], //mac address of master ds for ap filtering
 							{0,0}
 						}
 					},
-					{
-						//payload
-						vram_cd->sioWork.sioMultiSend & 0xFF, vram_cd->sioWork.sioMultiSend >> 8,
-						//checksum
-						0x00, 0x00, 0x00, 0x00
-					}
+					0
 				};
+				packet.packet.ieeeHeader.addr3.address[0] = vram_cd->sioWork.sioMultiSend & 0xFF;
+				packet.packet.ieeeHeader.addr3.address[1] = vram_cd->sioWork.sioMultiSend >> 8;
 				while (REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3);
 				dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
 				wifi_setRetryLimit(7);
 				REG_WIFI_TXREQ_LOC3 = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
 				REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;
-
+			#endif
+				finishTransfer(false);
 				//sio_multiSendWrite(sMultiData[SIO_ID_MASTER]);
 				//if(sMultiData[SIO_ID_MASTER] == 0x6200)
 				//{
@@ -217,16 +213,18 @@ void sio_multiStart()
     wifi_setTxDoneCallback(txDoneCallback, NULL);
 	wifi_setRxDoneCallback(rxDoneCallback, NULL);
 	REG_WIFI_RXFILTER = 0x0FFF;//0x381;
-	REG_WIFI_RXFILTER2 = 0x8;
+	REG_WIFI_RXFILTER2 = 8;
 }
 
 void sio_multiSendWrite(u16 data)
 {
     //sMultiData[gSioWork.id] = data;
-    //if(gSioWork.id == SIO_ID_MASTER)
-    //    return;
-    //slaves immediately distribute data to the other dses
-    /*struct{wifi_pkt_tx_t packet; u8 payload[6];} packet =
+#ifdef SIO_MULTI_PRESEND
+    if(gSioWork.id == SIO_ID_MASTER)
+        return;
+
+	//slaves immediately distribute data to the other dses
+	static struct { wifi_pkt_tx_t packet; u8 payload[6]; } packet =
 	{
 		{
 			{
@@ -235,63 +233,64 @@ void sio_multiSendWrite(u16 data)
 			{
 				{0,2,0,0,0,0,0,0,0,0,0}, 0,
 				gSioWork.multiMacs[0],
-                //{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
-                WIFI_RAM->firmData.wifiData.macAddress, //source ds
-				WIFI_RAM->firmData.wifiData.macAddress,
-                //gSioWork.multiMacs[0], //mac address of master ds for ap filtering
-                {0,0}
+				//{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
+				WIFI_RAM->firmData.wifiData.macAddress, //source ds
+				{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},//WIFI_RAM->firmData.wifiData.macAddress,
+				//gSioWork.multiMacs[0], //mac address of master ds for ap filtering
+				{0,0}
 			}
 		},
 		{
 			//payload
-			data & 0xFF, data >> 8,
+			0, 0,
 			//checksum
 			0x00, 0x00, 0x00, 0x00
 		}
 	};
-    while(REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3);
-    dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
-	wifi_setRetryLimit(1);
-    REG_WIFI_TXREQ_LOC3 = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
-    REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;*/
+	packet.payload[0] = data & 0xFF;
+	packet.payload[1] = data >> 8;
+	while (REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3);
+	dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
+	wifi_setRetryLimit(7);
+	REG_WIFI_TXREQ_LOC3 = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
+	REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;
+#endif
 }
 
 void sio_multiCntWrite(u16 val)
 {
-	if (gSioWork.id == SIO_ID_MASTER && sTransfering)
-		finishTransfer();
+	if (gSioWork.id == SIO_ID_MASTER && sTransfering && (getUsCounter() - sStartTime > 16000))
+		finishTransfer(true);
     if(val & SIO_MULTI_CNT_START_BUSY && gSioWork.id == SIO_ID_MASTER && !sTransfering)
     {
         //start transfer
         sTransfering = true;
-        vram_cd->sioWork.sioCntRead |= SIO_MULTI_CNT_START_BUSY;
+		sStartTime = getUsCounter();
+        vram_cd->sioWork.sioCntRead = (vram_cd->sioWork.sioCntRead & ~SIO_MULTI_CNT_ERROR) | SIO_MULTI_CNT_START_BUSY;
 		vram_cd->sioWork.sioMulti[0] = vram_cd->sioWork.sioMultiSend;// 0xFFFF;
-        vram_cd->sioWork.sioMulti[1] = 0xFFFF;
+		vram_cd->sioWork.sioMulti[1] = 0xFFFF;
         vram_cd->sioWork.sioMulti[2] = 0xFFFF;
 		vram_cd->sioWork.sioMulti[3] = 0xFFFF;
-        struct{wifi_pkt_tx_t packet; u8 payload[6];} packet =
+		static struct { wifi_pkt_tx_t packet; u32 checksum; } packet =
         {
             {
                 {
-                    0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 6
+                    0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 4
                 },
                 {
                     {0,2,0,0,0,0,0,0,0,0,0}, 0, 
-                    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
-					//gSioWork.multiMacs[1],
+                    //{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
+					gSioWork.multiMacs[1],
                     WIFI_RAM->firmData.wifiData.macAddress, //source ds
-					WIFI_RAM->firmData.wifiData.macAddress,
+					{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},//WIFI_RAM->firmData.wifiData.macAddress,
                     //WIFI_RAM->firmData.wifiData.macAddress, //mac address of master ds for ap filtering
                     {0,0}
                 }
             },
-            {
-                //payload
-				vram_cd->sioWork.sioMultiSend & 0xFF, vram_cd->sioWork.sioMultiSend >> 8,
-                //checksum
-                0x00, 0x00, 0x00, 0x00
-            }
+            0
         };
+		packet.packet.ieeeHeader.addr3.address[0] = vram_cd->sioWork.sioMultiSend & 0xFF;
+		packet.packet.ieeeHeader.addr3.address[1] = vram_cd->sioWork.sioMultiSend >> 8;
 		while (REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3);
         dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
 		wifi_setRetryLimit(7);

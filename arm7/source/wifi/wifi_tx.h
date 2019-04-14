@@ -57,6 +57,12 @@ struct wifi_pkt_tx_t
 #define REG_WIFI_TXREQ_BUSY			(*(vu16*)0x48080B6)
 #define REG_WIFI_TXREQ_RESULT		(*(vu16*)0x48080B8)
 
+#define WIFI_TX_HEADER_CNT_FC_DUR_OFF	(1 << 0)
+#define WIFI_TX_HEADER_CNT_CRC_OFF		(1 << 1)
+#define WIFI_TX_HEADER_CNT_SEQ_OFF		(1 << 2)
+
+#define REG_WIFI_TX_HEADER_CNT		(*(vu16*)0x4808194)
+
 
 void wifi_irqTxStart();
 void wifi_irqTxEnd();

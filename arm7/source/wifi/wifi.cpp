@@ -350,7 +350,7 @@ void wifi_init()
 	//enable power
 	(*(vu32*)0x04000304) |= 2;
 	//set waitstates
-	(*(vu16*)0x04000206) = 0x30;
+	(*(vu16*)0x04000206) = 0x30; //wifi0 first = 9, second = 5; wifi1 first = 17, second = 9
 
 	wifi_initFlashData();
 

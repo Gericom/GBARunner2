@@ -1,5 +1,6 @@
 #pragma once
 
+#define SIO_MULTI_CNT_ERROR			(1 << 6)
 #define SIO_MULTI_CNT_START_BUSY    (1 << 7)
 #define SIO_MULTI_CNT_IRQ		    (1 << 14)
 

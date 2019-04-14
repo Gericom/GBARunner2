@@ -720,10 +720,6 @@ instruction_abort_handler_error_2:
 //undef_inst_handler:
 //	ldr pc,= undef_inst_handler_vram
 
-.global nibble_to_char
-nibble_to_char:
-	.byte	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46
-
 .align 4
 
 .global undef_inst_handler
@@ -761,14 +757,14 @@ is_bkpt:
 	b fiq_hook_cp15_done
 
 no_bkpt:
-	mrc p15, 0, r0, c1, c0, 0
-	bic r0, #(1 | (1 << 2))	//disable pu and data cache
-	bic r0, #(1 << 12) //and cache
-	mcr p15, 0, r0, c1, c0, 0
+	//mrc p15, 0, r0, c1, c0, 0
+	//bic r0, #(1 | (1 << 2))	//disable pu and data cache
+	//bic r0, #(1 << 12) //and cache
+	//mcr p15, 0, r0, c1, c0, 0
 
-	ldr r0,= 0x06202000
-	ldr r1,= 0x46444E55
-	str r1, [r0]
+	//ldr r0,= 0x06202000
+	//ldr r1,= 0x46444E55
+	//str r1, [r0]
 
 /*	mov r0, lr
 	ldr r1,= nibble_to_char

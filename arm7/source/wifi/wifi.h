@@ -121,12 +121,16 @@ static_assert(sizeof(wifi_ram_t) == WIFI_RAM_SIZE, "Invalid wifi ram length!");
 
 #define REG_WIFI_PREAMBLE			(*(vu16*)0x48080BC)
 
+#define WIFI_RXFILTER_BSSID			(1 << 10)
+
 #define REG_WIFI_RXFILTER			(*(vu16*)0x48080D0)
 
 #define REG_WIFI_80D4				(*(vu16*)0x48080D4)
 #define REG_WIFI_80D8				(*(vu16*)0x48080D8)
 
 #define REG_WIFI_RX_LEN_CROP		(*(vu16*)0x48080DA)
+
+#define WIFI_RXFILTER2_DATA_IGNORE	(1 << 0)
 
 #define REG_WIFI_RXFILTER2			(*(vu16*)0x48080E0)
 
