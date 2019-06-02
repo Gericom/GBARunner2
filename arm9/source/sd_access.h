@@ -8,7 +8,17 @@
 #define READ_U16_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8))
 #define READ_U32_SAFE(addr)		(((uint8_t*)(addr))[0] | (((uint8_t*)(addr))[1] << 8) | (((uint8_t*)(addr))[2] << 16) | (((uint8_t*)(addr))[3] << 24))
 
-void MI_WriteByte(void *address, uint8_t value);
+//void MI_WriteByte(void *address, uint8_t value);
+
+static inline void MI_WriteByte(void* address, uint8_t value)
+{
+	u16 val = *((vu16*)((u32)address & ~1));
+
+	if ((u32)address & 1)
+		*((vu16*)((u32)address & ~1)) = (u16)(((value & 0xff) << 8) | (val & 0xff));
+	else
+		*((vu16*)((u32)address & ~1)) = (u16)((val & 0xff00) | (value & 0xff));
+}
 
 #define SCREEN_COLS 32
 #define SCREEN_ROWS 24
@@ -32,15 +42,6 @@ extern "C" void read_sd_sectors_safe(sec_t sector, sec_t numSectors, void* buffe
 
 #define write_sd_sectors_safe	((FN_MEDIUM_WRITESECTORS)(*((uint32_t*)(&_io_dldi + 0x14))))
 
-//extern sd_info_t gSDInfo;
-
 extern "C" uint16_t *arm9_memcpy16(uint16_t *_dst, uint16_t *_src, int _count);
-
-uint32_t get_cluster_fat_value_simple(uint32_t cluster);
-
-ITCM_CODE static inline uint32_t get_sector_from_cluster(uint32_t cluster)
-{
-	return vram_cd->sd_info.first_cluster_sector + (cluster - 2) * vram_cd->sd_info.nr_sectors_per_cluster;
-}
 
 #endif

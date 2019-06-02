@@ -16,7 +16,9 @@ uint16_t* vramheap_alloc(int size);
 uint16_t* vramheap_realloc(void* ptr, int size);
 void vramheap_free(void* ptr);
 void* operator new(size_t blocksize);
+void* operator new[](size_t blocksize);
 void operator delete(void* block);
+void operator delete[](void* block);
 void operator delete(void* block, size_t blocksize);
 
 #endif

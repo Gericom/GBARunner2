@@ -10,22 +10,22 @@
 //static uint32_t ram_size = 0;
 
 extern "C" uint32_t __vram_start;
-extern "C" uint32_t __vram_end;
+extern "C" uint32_t __bss_end__;
 
 #define VRAM_START ((uint32_t)&__vram_start)
-#define VRAM_END ((uint32_t)&__vram_end)
+#define VRAM_END ((uint32_t)&__bss_end__)
 
 static heap_block_t* first_block = NULL;
 
 #define ram_start ((uint16_t*)VRAM_END)
-#define ram_size ((VRAM_START + 128 * 1024) - VRAM_END)
+#define ram_size ((VRAM_START + 256 * 1024) - VRAM_END)
 
-PUT_IN_VRAM void vramheap_init()
+void vramheap_init()
 {
 	
 }
 
-PUT_IN_VRAM static heap_block_t* vramheap_findfreeblock(heap_block_t** last, int size)
+static heap_block_t* vramheap_findfreeblock(heap_block_t** last, int size)
 {
 	heap_block_t* cur = first_block;
 	while (cur && !(cur->tag == HEAP_TAG_FREE && cur->size >= size)) {
@@ -35,7 +35,7 @@ PUT_IN_VRAM static heap_block_t* vramheap_findfreeblock(heap_block_t** last, int
 	return cur;
 }
 
-PUT_IN_VRAM static heap_block_t* vramheap_addblock(heap_block_t* prev, int size)
+static heap_block_t* vramheap_addblock(heap_block_t* prev, int size)
 {
 	uint8_t* newblock = ((uint8_t*)&prev->data[0]) + prev->size;
 	while(((uint32_t)newblock % 32) != 0) newblock++;
@@ -53,7 +53,7 @@ PUT_IN_VRAM static heap_block_t* vramheap_addblock(heap_block_t* prev, int size)
 	return block;
 }
 
-PUT_IN_VRAM static heap_block_t* vramheap_mergeblocks(heap_block_t* a, heap_block_t* b)
+static heap_block_t* vramheap_mergeblocks(heap_block_t* a, heap_block_t* b)
 {
 	if(a->tag != HEAP_TAG_FREE || b->tag != HEAP_TAG_FREE)
 	{
@@ -77,7 +77,7 @@ PUT_IN_VRAM static heap_block_t* vramheap_mergeblocks(heap_block_t* a, heap_bloc
 	return first;
 }
 
-PUT_IN_VRAM static heap_block_t* vramheap_expandblock(heap_block_t* block)
+static heap_block_t* vramheap_expandblock(heap_block_t* block)
 {
 	if(block->tag != HEAP_TAG_FREE) return NULL;
 	if(block->prev && block->prev->tag == HEAP_TAG_FREE) block = vramheap_mergeblocks(block->prev, block);
@@ -85,7 +85,7 @@ PUT_IN_VRAM static heap_block_t* vramheap_expandblock(heap_block_t* block)
 	return block;
 }
 
-PUT_IN_VRAM static void vramheap_splitblock(heap_block_t* block, int size)
+static void vramheap_splitblock(heap_block_t* block, int size)
 {
 	//Don't split if we can not create another block after it
 	if(block->size - size <= 0x10) return;
@@ -106,7 +106,7 @@ PUT_IN_VRAM static void vramheap_splitblock(heap_block_t* block, int size)
 	vramheap_expandblock(block2);
 }
 
-PUT_IN_VRAM uint16_t* vramheap_alloc(int size)
+uint16_t* vramheap_alloc(int size)
 {
 	//16 bit alignment
 	if(size & 1) size++;
@@ -130,7 +130,7 @@ PUT_IN_VRAM uint16_t* vramheap_alloc(int size)
 	return &block->data[0];
 }
 
-PUT_IN_VRAM uint16_t* vramheap_realloc(void* ptr, int size)
+uint16_t* vramheap_realloc(void* ptr, int size)
 {
 	if(ptr == NULL)
 		return vramheap_alloc(size);
@@ -158,7 +158,7 @@ PUT_IN_VRAM uint16_t* vramheap_realloc(void* ptr, int size)
 	return newblock;
 }
 
-PUT_IN_VRAM void vramheap_free(void* ptr)
+void vramheap_free(void* ptr)
 {
 	if(ptr == NULL)
 		return;
@@ -177,17 +177,28 @@ PUT_IN_VRAM void vramheap_free(void* ptr)
 	}
 }
 
-PUT_IN_VRAM void* operator new(size_t blocksize)
+void* operator new(size_t blocksize)
 {
 	return vramheap_alloc(blocksize);
 }
 
-PUT_IN_VRAM void operator delete(void* block) throw()
+void* operator new[](size_t blocksize)
+{
+	return vramheap_alloc(blocksize);
+}
+
+void operator delete(void* block) throw()
 {
 	vramheap_free(block);
 }
 
-PUT_IN_VRAM void operator delete(void* block, size_t blocksize) throw()
+void operator delete[](void* block) throw()
+{
+	vramheap_free(block);
+}
+
+
+void operator delete(void* block, size_t blocksize) throw()
 {
 	vramheap_free(block);
 }

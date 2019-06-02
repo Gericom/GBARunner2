@@ -42,7 +42,7 @@ gba_setup:
 
 	//copy the itcm in place
 	ldr r0,= __itcm_lma
-	ldr r1,= (32 * 1024)
+	ldr r1,= (16 * 1024)
 	ldr r2,= __itcm_start
 itcm_setup_copyloop:
 	ldmia r0!, {r3-r10}
@@ -94,13 +94,22 @@ itcm_setup_copyloop:
 
 	//copy the vram code to a
 	ldr r0,= __vram_lma
-	ldr r1,= (128 * 1024)
+	ldr r1,= (256 * 1024)
 	ldr r2,= __vram_start
 vram_setup_copyloop:
 	ldmia r0!, {r3-r10}
 	stmia r2!, {r3-r10}
 	subs r1, #0x20
 	bne vram_setup_copyloop
+	
+	//fill bss
+	mov r0, #0
+	ldr r1,= __bss_start
+	ldr r2,= __bss_end__
+1:
+	str r0, [r1], #4
+	cmp r1, r2
+	bls 1b
 
 #ifdef ISNITRODEBUG
 	//this enables debug printing on IS-NITRO-EMULATOR
@@ -227,41 +236,16 @@ vram_setup_copyloop:
 	ldr r0,= 0x04000248
 	mov r1, #0x81
 	strb r1, [r0]
+
+	ldr r0,= 0x04000249
+	mov r1, #0x82
+	strb r1, [r0]
 	//decompress debugFont to 0x06200000
 	//ldr r0,= debugFont
 	//ldr r1,= 0x06200000
 	//ldr r2,=0x1194
 	//blx r2
 	//svc 0x120000
-
-	//Copy debug font
-	ldr r0,= debugFont
-	mov r1, #0x4000
-	ldr r2,= 0x06200000
-font_setup_copyloop:
-	ldmia r0!, {r3-r10}
-	stmia r2!, {r3-r10}
-	subs r1, #0x20
-	bne font_setup_copyloop
-
-	ldr r0,= 0x04001000
-	ldr r1,= 0x10801
-	str r1, [r0]
-
-	ldr r0,= 0x0400100E
-	ldr r1,= 0x4400
-	strh r1, [r0]
-
-	ldr r0,= 0x04001030
-	ldr r1,= 0x100
-	strh r1, [r0]
-	strh r1, [r0, #6]
-
-	ldr r1,= 0x00
-	strh r1, [r0, #2]
-	strh r1, [r0, #4]
-
-	str r1, [r0, #0xC]
 
 	mov r0, #0
 	ldr r1,= 0x06202000
@@ -369,6 +353,25 @@ dldi_name_copy:
 	mov r0, #0x01000000
 	bl sd_init
 
+	ldr r0,= 0x04001000
+	ldr r1,= 0x10801
+	str r1, [r0]
+
+	ldr r0,= 0x0400100E
+	ldr r1,= 0x4400
+	strh r1, [r0]
+
+	ldr r0,= 0x04001030
+	ldr r1,= 0x100
+	strh r1, [r0]
+	strh r1, [r0, #6]
+
+	ldr r1,= 0x00
+	strh r1, [r0, #2]
+	strh r1, [r0, #4]
+
+	str r1, [r0, #0xC]
+
 	//more displaycap stuff
 	ldr r0,= 0x04001000
 	ldr r1,= 0x13823
@@ -419,10 +422,11 @@ dldi_name_copy:
 	cmp r1, #192
 	blt 1b
 
-	//disable vram h
+	//disable vram h and i
 	ldr r0,= 0x04000248
 	mov r1, #0x00
 	strb r1, [r0]
+	strb r1, [r0, #1]
 
 	//disable the 3d geometry and render engine and swap the screens
 	ldr r0,= 0x04000304

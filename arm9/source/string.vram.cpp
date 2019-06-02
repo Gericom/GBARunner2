@@ -1,7 +1,7 @@
 #include "vram.h"
 #include "string.h"
 
-PUT_IN_VRAM int strlen(const char* str)
+int strlen(const char* str)
 {
 	const char* ptr = str;
 	while (*ptr != '\0')
@@ -9,7 +9,7 @@ PUT_IN_VRAM int strlen(const char* str)
 	return ptr - str;
 }
 
-PUT_IN_VRAM char *strchr(const char *s, int c)
+char *strchr(const char *s, int c)
 {
 	while (*s != (char)c)
 		if (!*s++)
@@ -17,7 +17,7 @@ PUT_IN_VRAM char *strchr(const char *s, int c)
 	return (char *)s;
 }
 
-PUT_IN_VRAM char *strrchr(const char *s, int c)
+char *strrchr(const char *s, int c)
 {
 	char* ret = 0;
 	do {
@@ -27,7 +27,7 @@ PUT_IN_VRAM char *strrchr(const char *s, int c)
 	return ret;
 }
 
-PUT_IN_VRAM char *strpbrk(const char *s1, const char *s2)
+char *strpbrk(const char *s1, const char *s2)
 {
 	while (*s1)
 		if (strchr(s2, *s1++))
@@ -35,7 +35,7 @@ PUT_IN_VRAM char *strpbrk(const char *s1, const char *s2)
 	return 0;
 }
 
-PUT_IN_VRAM int strcasecmp(const char* one, const char* another)
+int strcasecmp(const char* one, const char* another)
 {
 	for (; to_upper(*one) == to_upper(*another); ++one, ++another)
 		if (*one == '\0')
@@ -43,7 +43,7 @@ PUT_IN_VRAM int strcasecmp(const char* one, const char* another)
 	return to_upper(*one) - to_upper(*another);
 }
 
-PUT_IN_VRAM int strcmp(const char* one, const char* another)
+int strcmp(const char* one, const char* another)
 {
 	for (; *one == *another; ++one, ++another)
 		if (*one == '\0')

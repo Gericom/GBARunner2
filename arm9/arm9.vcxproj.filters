@@ -1,0 +1,238 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\init.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\qsort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sd_access.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\string.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\Toolbar.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\core\UIManager.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\core\OamManager.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\core\NtftFont.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\FileBrowserListEntry.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\uiutil.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\FileBrowser.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fat\ff.vram.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fat\ffsystem.vram.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fat\ffunicode.vram.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\math.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fat\diskio.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\core\PaletteManager.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\core\InputRepeater.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\Dialog.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vramheap.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\core\ListRecycler.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="build\BarShadow_nbfc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\BarShadow_nbfp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\BarShadow_nbfs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\IconArrowLeft_nbfc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\IconFolder_nbfc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\IconGamepadVariant_nbfc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\IconSettings_nbfc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\ListCircle_nbfc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\RobotoMedium13_ntft.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\RobotoRegular10_ntft.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="build\SettingsIcon_nbfc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\LinkedList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\qsort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sd_access.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vramheap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\FileBrowser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\Toolbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\VramManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\UIManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\UIElement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\OamManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\NtftFont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\FileBrowserListEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\uiutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\FileBrowserListAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fat\diskio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fat\ff.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fat\ffconf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\PaletteManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\InputRepeater.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\Dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\ListAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\ListEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\core\ListRecycler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="source\aborthandler_asm.s" />
+    <None Include="source\bios_patches.s" />
+    <None Include="source\consts.s" />
+    <None Include="source\dldi_stub.s" />
+    <None Include="source\dtcm_data.s" />
+    <None Include="source\emu\dma.s" />
+    <None Include="source\emu\gfx.s" />
+    <None Include="source\emu\handle_address_read.s" />
+    <None Include="source\emu\handle_address_read_table.s" />
+    <None Include="source\emu\handle_address_write.s" />
+    <None Include="source\emu\handle_address_write_table.s" />
+    <None Include="source\emu\handle_instructions_arm.s" />
+    <None Include="source\emu\handle_instructions_thumb.s" />
+    <None Include="source\emu\irq.s" />
+    <None Include="source\emu\snd.s" />
+    <None Include="source\emu\timer.s" />
+    <None Include="crt0\ds_gbarunner_arm9_crt0.s" />
+    <None Include="source\sd_access_asm_itcm.s" />
+    <None Include="source\setup.s" />
+    <None Include="source\vram_code.s" />
+    <None Include="ds_arm9_gbarunner.ld" />
+    <None Include="ds_arm9_gbarunner.mem" />
+    <None Include="ds_arm9_gbarunner.specs" />
+    <None Include="Makefile" />
+    <None Include="crt0\Makefile" />
+    <None Include="data\BarShadow.nbfc" />
+    <None Include="data\BarShadow.nbfp" />
+    <None Include="data\BarShadow.nbfs" />
+    <None Include="data\IconArrowLeft.nbfc" />
+    <None Include="data\IconFolder.nbfc" />
+    <None Include="data\IconGamepadVariant.nbfc" />
+    <None Include="data\IconSettings.nbfc" />
+    <None Include="data\ListCircle.nbfc" />
+    <None Include="data\RobotoMedium13.ntft" />
+    <None Include="data\RobotoRegular10.ntft" />
+  </ItemGroup>
+</Project>

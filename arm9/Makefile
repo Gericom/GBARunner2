@@ -15,7 +15,7 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/emu source/gui source/fat
+SOURCES		:=	source source/emu source/gui source/gui/core source/fat
 INCLUDES	:=	include source
 DATA		:=	data
 
@@ -74,7 +74,7 @@ export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.bin)))
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
  
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -125,10 +125,32 @@ $(ARM9ELF)	:	$(OFILES)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data 
 #---------------------------------------------------------------------------------
-%.bin.o	:	%.bin
+%.ntft.o	:	%.ntft
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+
+#---------------------------------------------------------------------------------
+%.nbfc.o	:	%.nbfc
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+
+#---------------------------------------------------------------------------------
+%.nbfs.o	:	%.nbfs
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+
+#---------------------------------------------------------------------------------
+%.nbfp.o	:	%.nbfp
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
 
 -include $(DEPSDIR)/*.d
  
