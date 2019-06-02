@@ -24,7 +24,7 @@
 
 #define sound_sound_emu_work (sd_sd_info + 36)
 #define sound_sound_emu_work_uncached (sound_sound_emu_work | 0x00800000)
-#define save_save_work (sound_sound_emu_work + 0x508 + (32 * 1024))
+#define save_save_work (sound_sound_emu_work + 0x508)
 #define save_save_work_uncached (save_save_work | 0x00800000)
 #define save_save_work_state_uncached (save_save_work_uncached + ((128 * 1024 / 512) * 4) + 1)
 

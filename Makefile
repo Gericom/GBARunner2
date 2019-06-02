@@ -20,7 +20,7 @@ all: $(TARGET).nds
 
 #---------------------------------------------------------------------------------
 $(TARGET).nds	:	arm7/$(TARGET).elf arm9/$(TARGET).elf
-	ndstool	-c $(TARGET).nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf
+	ndstool	-c $(TARGET).nds -b icon.bmp "GBARunner2;Gericom" -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf
 
 #---------------------------------------------------------------------------------
 arm7/$(TARGET).elf:

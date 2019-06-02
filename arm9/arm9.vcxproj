@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="IS-NITRO|Win32">
+      <Configuration>IS-NITRO</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="IS-NITRO|x64">
+      <Configuration>IS-NITRO</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Retail|Win32">
+      <Configuration>Retail</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Retail|x64">
+      <Configuration>Retail</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{D2B0AC18-9989-4A4C-BC73-E3CF199D35EF}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='IS-NITRO|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='IS-NITRO|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Retail|x64'">
+    <PlatformToolset>v141</PlatformToolset>
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='IS-NITRO|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='IS-NITRO|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='IS-NITRO|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='IS-NITRO|x64'">
+    <IncludePath>$(ProjectDir)source;$(ProjectDir)build;f:\devkitPro\libnds\include\</IncludePath>
+    <LibraryPath>
+    </LibraryPath>
+    <NMakePreprocessorDefinitions>ARM9</NMakePreprocessorDefinitions>
+    <LibraryWPath />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|x64'">
+    <IncludePath>$(ProjectDir)source;$(ProjectDir)build;f:\devkitPro\libnds\include\</IncludePath>
+    <LibraryPath />
+    <LibraryWPath />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='IS-NITRO|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>ARM9;ISNITRODEBUG</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Retail|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>ARM9</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="source\crc16.vram.cpp" />
+    <ClCompile Include="source\fat\diskio.vram.cpp" />
+    <ClCompile Include="source\fat\ff.vram.c" />
+    <ClCompile Include="source\fat\ffsystem.vram.c" />
+    <ClCompile Include="source\fat\ffunicode.vram.c" />
+    <ClCompile Include="source\gui\core\InputRepeater.vram.cpp" />
+    <ClCompile Include="source\gui\core\PaletteManager.vram.cpp" />
+    <ClCompile Include="source\gui\Dialog.vram.cpp" />
+    <ClCompile Include="source\gui\FileBrowser.vram.cpp" />
+    <ClCompile Include="source\gui\core\NtftFont.vram.cpp" />
+    <ClCompile Include="source\gui\core\OamManager.vram.cpp" />
+    <ClCompile Include="source\gui\FileBrowserListAdapter.vram.cpp" />
+    <ClCompile Include="source\gui\FileBrowserListEntry.vram.cpp" />
+    <ClCompile Include="source\gui\core\ListRecycler.vram.cpp" />
+    <ClCompile Include="source\gui\Toolbar.vram.cpp" />
+    <ClCompile Include="source\gui\core\UIManager.vram.cpp" />
+    <ClCompile Include="source\gui\uiutil.vram.cpp" />
+    <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\math.vram.c" />
+    <ClCompile Include="source\qsort.vram.cpp" />
+    <ClCompile Include="source\sd_access.cpp" />
+    <ClCompile Include="source\string.vram.cpp" />
+    <ClCompile Include="source\vector.vram.cpp" />
+    <ClCompile Include="source\vramheap.vram.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="build\BarShadow_nbfc.h" />
+    <ClInclude Include="build\BarShadow_nbfp.h" />
+    <ClInclude Include="build\BarShadow_nbfs.h" />
+    <ClInclude Include="build\IconArrowLeft_nbfc.h" />
+    <ClInclude Include="build\IconFolder_nbfc.h" />
+    <ClInclude Include="build\IconGamepadVariant_nbfc.h" />
+    <ClInclude Include="build\IconSettings_nbfc.h" />
+    <ClInclude Include="build\ListCircle_nbfc.h" />
+    <ClInclude Include="build\RobotoMedium13_ntft.h" />
+    <ClInclude Include="build\RobotoRegular10_ntft.h" />
+    <ClInclude Include="build\SettingsIcon_nbfc.h" />
+    <ClInclude Include="source\crc16.h" />
+    <ClInclude Include="source\fat\diskio.h" />
+    <ClInclude Include="source\fat\ff.h" />
+    <ClInclude Include="source\fat\ffconf.h" />
+    <ClInclude Include="source\gui\core\InputRepeater.h" />
+    <ClInclude Include="source\gui\core\PaletteManager.h" />
+    <ClInclude Include="source\gui\Dialog.h" />
+    <ClInclude Include="source\gui\FileBrowser.h" />
+    <ClInclude Include="source\gui\FileBrowserListAdapter.h" />
+    <ClInclude Include="source\gui\FileBrowserListEntry.h" />
+    <ClInclude Include="source\gui\core\ListEntry.h" />
+    <ClInclude Include="source\gui\core\ListAdapter.h" />
+    <ClInclude Include="source\gui\core\NtftFont.h" />
+    <ClInclude Include="source\gui\core\OamManager.h" />
+    <ClInclude Include="source\gui\core\ListRecycler.h" />
+    <ClInclude Include="source\gui\Toolbar.h" />
+    <ClInclude Include="source\gui\core\UIElement.h" />
+    <ClInclude Include="source\gui\core\UIManager.h" />
+    <ClInclude Include="source\gui\core\VramManager.h" />
+    <ClInclude Include="source\gui\uiutil.h" />
+    <ClInclude Include="source\LinkedList.h" />
+    <ClInclude Include="source\math.h" />
+    <ClInclude Include="source\qsort.h" />
+    <ClInclude Include="source\sd_access.h" />
+    <ClInclude Include="source\string.h" />
+    <ClInclude Include="source\vector.h" />
+    <ClInclude Include="source\vram.h" />
+    <ClInclude Include="source\vramheap.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="crt0\ds_gbarunner_arm9_crt0.s" />
+    <None Include="crt0\Makefile" />
+    <None Include="data\BarShadow.nbfc" />
+    <None Include="data\BarShadow.nbfp" />
+    <None Include="data\BarShadow.nbfs" />
+    <None Include="data\IconArrowLeft.nbfc" />
+    <None Include="data\IconFolder.nbfc" />
+    <None Include="data\IconGamepadVariant.nbfc" />
+    <None Include="data\IconSettings.nbfc" />
+    <None Include="data\ListCircle.nbfc" />
+    <None Include="data\RobotoMedium13.ntft" />
+    <None Include="data\RobotoRegular10.ntft" />
+    <None Include="ds_arm9_gbarunner.ld" />
+    <None Include="ds_arm9_gbarunner.mem" />
+    <None Include="ds_arm9_gbarunner.specs" />
+    <None Include="Makefile" />
+    <None Include="source\aborthandler_asm.s" />
+    <None Include="source\bios_patches.s" />
+    <None Include="source\consts.s" />
+    <None Include="source\dldi_stub.s" />
+    <None Include="source\dtcm_data.s" />
+    <None Include="source\emu\dma.s" />
+    <None Include="source\emu\gfx.s" />
+    <None Include="source\emu\handle_address_read.s" />
+    <None Include="source\emu\handle_address_read_table.s" />
+    <None Include="source\emu\handle_address_write.s" />
+    <None Include="source\emu\handle_address_write_table.s" />
+    <None Include="source\emu\handle_instructions_arm.s" />
+    <None Include="source\emu\handle_instructions_thumb.s" />
+    <None Include="source\emu\irq.s" />
+    <None Include="source\emu\snd.s" />
+    <None Include="source\emu\timer.s" />
+    <None Include="source\sd_access_asm_itcm.s" />
+    <None Include="source\setup.s" />
+    <None Include="source\vram_code.s" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

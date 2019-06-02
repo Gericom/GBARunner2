@@ -323,9 +323,7 @@ ensure_cluster_cached_asm:
 	ldr r12,= sd_data_base
 	sub r0, #9
 	mov r2, r3, lsr r0
-	ldr r2, [r12, r2, lsl #2]
-	sub r2, #2
-	add r0, lr, r2, lsl r0
+	ldr r0, [r12, r2, lsl #2]
 	and r2, r3, r1, lsr #9
 	add r0, r2
 	mov r1, #1
