@@ -39,9 +39,10 @@ void FileBrowser::LoadBios()
 	if (vram_cd->fil.obj.objsize != 16 * 1024)
 		FatalError("Invalid bios size!");
 	UINT br;
-	if (f_read(&vram_cd->fil, (void*)0, 16 * 1024, &br) != FR_OK || br != 16 * 1024)
+	if (f_read(&vram_cd->fil, (void*)vram_cd->cluster_cache, 16 * 1024, &br) != FR_OK || br != 16 * 1024)
 		FatalError("Error while loading bios!");
 	f_close(&vram_cd->fil);
+	arm9_memcpy16((u16*)0, (u16*)vram_cd->cluster_cache, (16 * 1024) >> 1);
 }
 
 void FileBrowser::LoadFolder(const char* path)
