@@ -3202,6 +3202,7 @@ static BYTE check_fs (	/* 0:FAT, 1:exFAT, 2:Valid BS but not FAT, 3:Not a BS, 4:
 	if (!mem_cmp(fs->win + BS_JmpBoot, "\xEB\x76\x90" "EXFAT   ", 11)) return 1;	/* Check if exFAT VBR */
 #endif
 	if (fs->win[BS_JmpBoot] == 0xE9 || fs->win[BS_JmpBoot] == 0xEB || fs->win[BS_JmpBoot] == 0xE8) {	/* Valid JumpBoot code? */
+		if (!mem_cmp(fs->win + BS_FilSysType, "FAT16", 5)) return 0x40;		/* Is it an FAT VBR? */
 		if (!mem_cmp(fs->win + BS_FilSysType, "FAT", 3)) return 0;		/* Is it an FAT VBR? */
 		if (!mem_cmp(fs->win + BS_FilSysType32, "FAT32", 5)) return 0x80;	/* Is it an FAT32 VBR? */
 	}
@@ -3274,8 +3275,12 @@ static FRESULT find_volume (	/* FR_OK(0): successful, !=0: an error occurred */
 	/* Find an FAT partition on the drive. Supports only generic partitioning rules, FDISK (MBR) and SFD (w/o partition). */
 	bsect = 0;
 	fmt = check_fs(fs, bsect);			/* Load sector 0 and check if it is an FAT-VBR as SFD */
-	fatFmtAct = fmt == 0x80 ? 0xB : 0;
-	fmt &= 0x7F;
+	fatFmtAct = 0;
+	if(fmt & 0x80)
+		fatFmtAct = 0xB;
+	else if(fmt & 0x40)
+		fatFmtAct = 0x4;
+	fmt &= 0x3F;
 	if (fmt == 2 || (fmt < 2 && LD2PT(vol) != 0)) {	/* Not an FAT-VBR or forced partition number */
 		for (i = 0; i < 4; i++) {		/* Get partition offset */
 			pt = fs->win + (MBR_Table + i * SZ_PTE);
@@ -3288,7 +3293,11 @@ static FRESULT find_volume (	/* FR_OK(0): successful, !=0: an error occurred */
 			bsect = br[i];
 			fatFmtAct = fatFmt[i];
 			fmt = bsect ? check_fs(fs, bsect) : 3;	/* Check the partition */
-			fmt &= 0x7F;
+			if(fmt & 0x80)
+				fatFmtAct = 0xB;
+			else if(fmt & 0x40)
+				fatFmtAct = 0x4;
+			fmt &= 0x3F;
 		} while (LD2PT(vol) == 0 && fmt >= 2 && ++i < 4);
 	}
 	if (fmt == 4) return FR_DISK_ERR;		/* An error occured in the disk I/O layer */
