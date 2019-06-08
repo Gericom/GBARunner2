@@ -87,6 +87,9 @@
     <ClCompile Include="source\gui\FileBrowserListAdapter.vram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\save\FlashSave.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="build\BarShadow_nbfc.h">
@@ -204,6 +207,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\crc16.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\save\FlashSave.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

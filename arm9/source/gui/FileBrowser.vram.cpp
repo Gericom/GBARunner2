@@ -18,6 +18,7 @@
 #include "core/InputRepeater.h"
 #include "qsort.h"
 #include "crc16.h"
+#include "save/FlashSave.h"
 #include "FileBrowser.h"
 
 static int compDirEntries(const FILINFO*& dir1, const FILINFO*& dir2)
@@ -115,7 +116,7 @@ void FileBrowser::CreateLoadSave(const char* path)
 
 	uint32_t* cluster_table = &vram_cd->save_work.save_fat_table[0];
 	uint32_t  cur_cluster = vram_cd->fil.obj.sclust;
-	while (cur_cluster > 2 && cur_cluster < 0x0FFFFFF8)
+	while (cur_cluster >= 2 && cur_cluster != 0xFFFFFFFF)
 	{
 		*cluster_table = f_clst2sect(&vram_cd->fatFs, cur_cluster);
 		cluster_table++;
@@ -143,7 +144,7 @@ void FileBrowser::LoadGame(const char* path)
 	vram_cd->sd_info.gba_rom_size = vram_cd->fil.obj.objsize;
 	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
 	uint32_t  cur_cluster = vram_cd->fil.obj.sclust;
-	while (cur_cluster > 2 && cur_cluster < 0x0FFFFFF8)
+	while (cur_cluster >= 2 && cur_cluster != 0xFFFFFFFF)
 	{
 		*cluster_table = f_clst2sect(&vram_cd->fatFs, cur_cluster);
 		cluster_table++;
@@ -153,6 +154,8 @@ void FileBrowser::LoadGame(const char* path)
 	if (f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, ROM_DATA_LENGTH, &br) != FR_OK)
 		FatalError("Error while reading rom!");
 	f_close(&vram_cd->fil);
+
+	flash_tryPatch();
 
 	char nameBuf[256];
 	for (int i = 0; i < 256; i++)
@@ -226,7 +229,8 @@ void FileBrowser::Run()
 
 	LoadBios();
 	f_chdir("/");
-	f_chdir("gba");
+	if(f_stat("gba", NULL) == FR_OK)
+		f_chdir("gba");
 	LoadFolder(".");
 	while (1)
 	{

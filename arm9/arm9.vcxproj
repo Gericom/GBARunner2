@@ -177,6 +177,7 @@
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\math.vram.c" />
     <ClCompile Include="source\qsort.vram.cpp" />
+    <ClCompile Include="source\save\FlashSave.vram.cpp" />
     <ClCompile Include="source\sd_access.cpp" />
     <ClCompile Include="source\string.vram.cpp" />
     <ClCompile Include="source\vector.vram.cpp" />
@@ -217,6 +218,7 @@
     <ClInclude Include="source\LinkedList.h" />
     <ClInclude Include="source\math.h" />
     <ClInclude Include="source\qsort.h" />
+    <ClInclude Include="source\save\FlashSave.h" />
     <ClInclude Include="source\sd_access.h" />
     <ClInclude Include="source\string.h" />
     <ClInclude Include="source\vector.h" />

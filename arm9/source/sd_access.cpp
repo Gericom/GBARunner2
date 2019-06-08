@@ -67,6 +67,7 @@ extern "C" ITCM_CODE __attribute__ ((noinline)) void read_sd_sectors_safe(sec_t 
 //map cd to arm7
 //REG_VRAMCNT_CD = VRAM_CD_ARM7;
 	//REG_VRAMCNT_C = VRAM_C_ARM7;
+	dc_invalidate_range(buffer, numSectors * 512);
 	REG_SEND_FIFO = 0xAA5500DF;
 	REG_SEND_FIFO = sector;
 	REG_SEND_FIFO = numSectors;
@@ -79,7 +80,7 @@ extern "C" ITCM_CODE __attribute__ ((noinline)) void read_sd_sectors_safe(sec_t 
 	//REG_VRAMCNT_C = VRAM_C_ARM9;
 //REG_VRAMCNT_CD = VRAM_CD_ARM9;
 	//invalidate
-	dc_invalidate_range(buffer, numSectors * 512);
+	
 	//dc_invalidate_all();
 }
 
@@ -97,6 +98,7 @@ extern "C" ITCM_CODE __attribute__((noinline)) void write_sd_sectors_safe(sec_t 
 	//REG_VRAMCNT_CD = VRAM_CD_ARM7;
 	//REG_VRAMCNT_C = VRAM_C_ARM7;
 	dc_flush_range((void*)buffer, numSectors * 512);
+	dc_wait_write_buffer_empty();
 	REG_SEND_FIFO = 0xAA5500F0;
 	REG_SEND_FIFO = sector;
 	REG_SEND_FIFO = numSectors;
