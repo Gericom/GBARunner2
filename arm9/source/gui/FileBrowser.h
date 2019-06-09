@@ -4,6 +4,7 @@
 #include "core/InputRepeater.h"
 #include "core/ListRecycler.h"
 #include "fat/ff.h"
+#include "save/Save.h"
 class NtftFont;
 
 class FileBrowser
@@ -29,7 +30,7 @@ class FileBrowser
 
 	void LoadBios();
 	void LoadFolder(const char* path);
-	void CreateLoadSave(const char* path);
+	void CreateLoadSave(const char* path, const save_type_t* saveType);
 	void LoadGame(const char* path);
 	void FatalError(const char* error);
 public:

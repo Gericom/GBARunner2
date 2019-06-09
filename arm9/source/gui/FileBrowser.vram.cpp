@@ -18,7 +18,7 @@
 #include "core/InputRepeater.h"
 #include "qsort.h"
 #include "crc16.h"
-#include "save/FlashSave.h"
+#include "save/Save.h"
 #include "FileBrowser.h"
 
 static int compDirEntries(const FILINFO*& dir1, const FILINFO*& dir2)
@@ -87,13 +87,21 @@ void FileBrowser::LoadFolder(const char* path)
 	_uiManager.AddElement(_listRecycler);
 }
 
-void FileBrowser::CreateLoadSave(const char* path)
+void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 {
 	vram_cd->save_work.save_state = SAVE_WORK_STATE_CLEAN;
 	if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
 	{
-		for (int i = 0; i < 64 * 1024 / 4; i++)
-			((uint32_t*)MAIN_MEMORY_ADDRESS_SAVE_DATA)[i] = 0;
+		if((saveType->type & SAVE_TYPE_TYPE_MASK) == SAVE_TYPE_FLASH)
+		{
+			for (int i = 0; i < 64 * 1024 / 4; i++)
+				((uint32_t*)MAIN_MEMORY_ADDRESS_SAVE_DATA)[i] = 0xFFFFFFFF;
+		}
+		else
+		{
+			for (int i = 0; i < 64 * 1024 / 4; i++)
+				((uint32_t*)MAIN_MEMORY_ADDRESS_SAVE_DATA)[i] = 0;
+		}
 
 #ifdef ISNITRODEBUG
 		vram_cd->save_work.save_enabled = 0;
@@ -153,9 +161,15 @@ void FileBrowser::LoadGame(const char* path)
 	UINT br;
 	if (f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, ROM_DATA_LENGTH, &br) != FR_OK)
 		FatalError("Error while reading rom!");
-	f_close(&vram_cd->fil);
 
-	flash_tryPatch();
+	const save_type_t* saveType = save_findTag();
+	if(saveType != NULL)
+	{
+		if (saveType->patchFunc != NULL)
+			saveType->patchFunc(saveType);
+	}
+
+	f_close(&vram_cd->fil);
 
 	char nameBuf[256];
 	for (int i = 0; i < 256; i++)
@@ -172,7 +186,7 @@ void FileBrowser::LoadGame(const char* path)
 	long_name_ptr[3] = 'v';
 	long_name_ptr[4] = '\0';
 
-	CreateLoadSave(nameBuf);
+	CreateLoadSave(nameBuf, saveType);
 }
 
 void FileBrowser::FatalError(const char* error)
