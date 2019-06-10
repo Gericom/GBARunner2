@@ -93,6 +93,9 @@
     <ClCompile Include="source\save\Save.vram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\save\EepromSave.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="build\BarShadow_nbfc.h">
@@ -216,6 +219,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\save\Save.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\save\EepromSave.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

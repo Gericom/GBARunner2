@@ -69,8 +69,6 @@ static const u8 sVerifyFlash512V130Sig[0x10] =
 static const u8 sVerifyFlashSector512V130Sig[0x10] =
 	{0x30, 0xB5, 0xC0, 0xB0, 0x0D, 0x1C, 0x03, 0x04, 0x1C, 0x0C, 0x0F, 0x4A, 0x10, 0x88, 0x0F, 0x49};
 
-#define CP15_SET_DATA_PROT(x)		do { asm volatile("mcr p15, 0, %0, c5, c0, 2" :: "r"((x))); } while(0)
-
 static u16 eraseFlashChip()
 {
 	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
@@ -196,70 +194,15 @@ static bool loadDataV120(const save_type_t* type)
 	return true;
 }
 
-static u32* findSignature(const u8* signature)
-{
-	u32* pRom = (u32*)MAIN_MEMORY_ADDRESS_ROM_DATA;
-	bool found = false;
-	for (int i = 0; i < ROM_DATA_LENGTH; i += 4)
-	{
-		if (pRom[0] == ((u32*)signature)[0] && pRom[1] == ((u32*)signature)[1] &&
-			pRom[2] == ((u32*)signature)[2] && pRom[3] == ((u32*)signature)[3])
-		{
-			found = true;
-			break;
-		}
-		pRom++;
-	}
-	if (!found)
-		return NULL;
-	return pRom;
-}
-
 static bool patchIdentify(const u8* identifySig)
 {
 	//find the identify flash function
-	u32* pRom = findSignature(identifySig);
+	u32* pRom = save_findSignature(identifySig);
 	if (!pRom)
 		return false;
 
-	pRom[0] = 0x47104A00; //ldr r2, [pc]; bx r2
-	pRom[1] = (u32)&identifyFlash;
+	save_injectJump(pRom, (void*)identifyFlash);
 	return true;
-}
-
-static void patchRead(u32* readFunc)
-{
-	if (((u32)readFunc & 2) != 0)
-	{
-		*(u16*)readFunc = 0x0000;
-		readFunc = (u32*)((u32)readFunc + 2);
-	}
-	readFunc[0] = 0x00004778; //bx pc; nop
-	readFunc[1] = 0xE51FF004; //ldr pc,= address
-	readFunc[2] = (u32)&readFlash;
-}
-
-static void patchVerifySector(u32* verifyFunc)
-{
-	if (((u32)verifyFunc & 2) != 0)
-	{
-		*(u16*)verifyFunc = 0x0000;
-		verifyFunc = (u32*)((u32)verifyFunc + 2);
-	}
-	verifyFunc[0] = 0x47104A00; //ldr r2, [pc]; bx r2
-	verifyFunc[1] = (u32)&verifyFlashSector;
-}
-
-static void patchVerify(u32* verifyFunc)
-{
-	if (((u32)verifyFunc & 2) != 0)
-	{
-		*(u16*)verifyFunc = 0x0000;
-		verifyFunc = (u32*)((u32)verifyFunc + 2);
-	}
-	verifyFunc[0] = 0x00004778; //bx pc; nop
-	verifyFunc[1] = 0xE51FF004; //ldr pc,= address
-	verifyFunc[2] = (u32)&verifyFlash;
 }
 
 bool flash_patchV120(const save_type_t* type)
@@ -270,11 +213,11 @@ bool flash_patchV120(const save_type_t* type)
 	if (!patchIdentify(sIdentifyFlashV120Sig))
 		return false;
 
-	patchRead((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 +
-		MAIN_MEMORY_ADDRESS_ROM_DATA));
+	save_injectJump((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 +
+		                MAIN_MEMORY_ADDRESS_ROM_DATA), (void*)readFlash);
 
-	patchVerifySector((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 +
-		MAIN_MEMORY_ADDRESS_ROM_DATA));
+	save_injectJump((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 +
+		                MAIN_MEMORY_ADDRESS_ROM_DATA), (void*)verifyFlashSector);
 	return true;
 }
 
@@ -286,11 +229,11 @@ bool flash_patchV123(const save_type_t* type)
 	if (!patchIdentify(sIdentifyFlashV123Sig))
 		return false;
 
-	patchRead((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 +
-		MAIN_MEMORY_ADDRESS_ROM_DATA));
+	save_injectJump((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 +
+		                MAIN_MEMORY_ADDRESS_ROM_DATA), (void*)readFlash);
 
-	patchVerifySector((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 +
-		MAIN_MEMORY_ADDRESS_ROM_DATA));
+	save_injectJump((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 +
+		                MAIN_MEMORY_ADDRESS_ROM_DATA), (void*)verifyFlashSector);
 	return true;
 }
 
@@ -302,16 +245,16 @@ bool flash_patchV126(const save_type_t* type)
 	if (!patchIdentify(sIdentifyFlashV123Sig))
 		return false;
 
-	patchRead((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 +
-		MAIN_MEMORY_ADDRESS_ROM_DATA));
+	save_injectJump((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_READ) & ~1) - 0x08000000 +
+		                MAIN_MEMORY_ADDRESS_ROM_DATA), (void*)readFlash);
 
-	patchVerifySector((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 +
-		MAIN_MEMORY_ADDRESS_ROM_DATA));
+	save_injectJump((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 +
+		                MAIN_MEMORY_ADDRESS_ROM_DATA), (void*)verifyFlashSector);
 
-	u32* verify = findSignature(sVerifyFlashV126Sig);
+	u32* verify = save_findSignature(sVerifyFlashV126Sig);
 	if (!verify)
 		return false;
-	patchVerify(verify);
+	save_injectJump(verify, (void*)verifyFlash);
 	return true;
 }
 
@@ -333,19 +276,19 @@ bool flash_patch512V130(const save_type_t* type)
 	if (!patchIdentify(sIdentifyFlashV123Sig))
 		return false;
 
-	u32* readFUnc = findSignature(sReadFlash512V130Sig);
-	if (!readFUnc)
+	u32* readFunc = save_findSignature(sReadFlash512V130Sig);
+	if (!readFunc)
 		return false;
-	patchRead(readFUnc);
+	save_injectJump(readFunc, (void*)readFlash);
 
-	u32* verifySector = findSignature(sVerifyFlashSector512V130Sig);
+	u32* verifySector = save_findSignature(sVerifyFlashSector512V130Sig);
 	if (!verifySector)
 		return false;
-	patchVerifySector(verifySector);
+	save_injectJump(verifySector, (void*)verifyFlashSector);
 
-	u32* verify = findSignature(sVerifyFlash512V130Sig);
+	u32* verify = save_findSignature(sVerifyFlash512V130Sig);
 	if (!verify)
 		return false;
-	patchVerify(verify);
+	save_injectJump(verify, (void*)verifyFlash);
 	return true;
 }

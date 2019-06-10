@@ -1,18 +1,20 @@
 #include "vram.h"
 #include "sd_access.h"
+#include "EepromSave.h"
 #include "FlashSave.h"
 #include "Save.h"
 
-#define SAVE_TYPE_COUNT		23
+#define SAVE_TYPE_COUNT		24
 
 static const save_type_t sSaveTypes[SAVE_TYPE_COUNT] =
 {
-	{"EEPROM_V111", 12, SAVE_TYPE_EEPROM_V111, 8 * 1024, NULL},
-	{"EEPROM_V120", 12, SAVE_TYPE_EEPROM_V120, 8 * 1024, NULL},
-	{"EEPROM_V121", 12, SAVE_TYPE_EEPROM_V121, 8 * 1024, NULL},
-	{"EEPROM_V122", 12, SAVE_TYPE_EEPROM_V122, 8 * 1024, NULL},
-	{"EEPROM_V124", 12, SAVE_TYPE_EEPROM_V124, 8 * 1024, NULL},
-	{"EEPROM_V125", 12, SAVE_TYPE_EEPROM_V125, 8 * 1024, NULL},
+	{"EEPROM_V111", 12, SAVE_TYPE_EEPROM_V111, 512, eeprom_patchV111},
+	{"EEPROM_V120", 12, SAVE_TYPE_EEPROM_V120, 8 * 1024, eeprom_patchV120},
+	{"EEPROM_V121", 12, SAVE_TYPE_EEPROM_V121, 8 * 1024, eeprom_patchV120},
+	{"EEPROM_V122", 12, SAVE_TYPE_EEPROM_V122, 8 * 1024, eeprom_patchV120},
+	{"EEPROM_V124", 12, SAVE_TYPE_EEPROM_V124, 8 * 1024, eeprom_patchV124},
+	{"EEPROM_V125", 12, SAVE_TYPE_EEPROM_V125, 8 * 1024, eeprom_patchV124},
+	{"EEPROM_V126", 12, SAVE_TYPE_EEPROM_V126, 8 * 1024, eeprom_patchV126},
 
 	{"FLASH_V120", 11, SAVE_TYPE_FLASH_V120, 64 * 1024, flash_patchV120},
 	{"FLASH_V121", 11, SAVE_TYPE_FLASH_V121, 64 * 1024, flash_patchV120},
@@ -100,4 +102,35 @@ const save_type_t* save_findTag()
 		curAddr += 4;
 	}
 	return NULL;
+}
+
+u32* save_findSignature(const u8* signature)
+{
+	u32* pRom = (u32*)MAIN_MEMORY_ADDRESS_ROM_DATA;
+	bool found = false;
+	for (int i = 0; i < ROM_DATA_LENGTH; i += 4)
+	{
+		if (pRom[0] == ((u32*)signature)[0] && pRom[1] == ((u32*)signature)[1] &&
+			pRom[2] == ((u32*)signature)[2] && pRom[3] == ((u32*)signature)[3])
+		{
+			found = true;
+			break;
+		}
+		pRom++;
+	}
+	if (!found)
+		return NULL;
+	return pRom;
+}
+
+void save_injectJump(u32* location, void* jumpTarget)
+{
+	if (((u32)location & 2) != 0)
+	{
+		*(u16*)location = 0x0000;
+		location = (u32*)((u32)location + 2);
+	}
+	location[0] = 0x00004778; //bx pc; nop
+	location[1] = 0xE51FF004; //ldr pc,= address
+	location[2] = (u32)jumpTarget;
 }

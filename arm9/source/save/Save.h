@@ -11,6 +11,7 @@ enum SaveType : u16
 	SAVE_TYPE_EEPROM_V122,
 	SAVE_TYPE_EEPROM_V124,
 	SAVE_TYPE_EEPROM_V125,
+	SAVE_TYPE_EEPROM_V126,
 
 	SAVE_TYPE_FLASH = (2 << 14),
 	SAVE_TYPE_FLASH512 = SAVE_TYPE_FLASH | (0 << 13),
@@ -48,4 +49,8 @@ struct save_type_t
 	bool (*  patchFunc)(const save_type_t* type);
 };
 
+#define CP15_SET_DATA_PROT(x)		do { asm volatile("mcr p15, 0, %0, c5, c0, 2" :: "r"((x))); } while(0)
+
 const save_type_t* save_findTag();
+u32*               save_findSignature(const u8* signature);
+void               save_injectJump(u32* location, void* jumpTarget);
