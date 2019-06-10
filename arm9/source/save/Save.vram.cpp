@@ -2,6 +2,7 @@
 #include "sd_access.h"
 #include "EepromSave.h"
 #include "FlashSave.h"
+#include "SramSave.h"
 #include "Save.h"
 
 #define SAVE_TYPE_COUNT		24
@@ -27,13 +28,15 @@ static const save_type_t sSaveTypes[SAVE_TYPE_COUNT] =
 	{"FLASH1M_V102", 13, SAVE_TYPE_FLASH1M_V102, 128 * 1024, NULL},
 	{"FLASH1M_V103", 13, SAVE_TYPE_FLASH1M_V103, 128 * 1024, NULL},
 
+	//Fast sram does not require patching
 	{"SRAM_F_V100", 12, SAVE_TYPE_SRAM_F_V100, 32 * 1024, NULL},
 	{"SRAM_F_V102", 12, SAVE_TYPE_SRAM_F_V102, 32 * 1024, NULL},
 	{"SRAM_F_V103", 12, SAVE_TYPE_SRAM_F_V103, 32 * 1024, NULL},
-	{"SRAM_V110", 10, SAVE_TYPE_SRAM_V110, 32 * 1024, NULL},
-	{"SRAM_V111", 10, SAVE_TYPE_SRAM_V111, 32 * 1024, NULL},
-	{"SRAM_V112", 10, SAVE_TYPE_SRAM_V112, 32 * 1024, NULL},
-	{"SRAM_V113", 10, SAVE_TYPE_SRAM_V113, 32 * 1024, NULL},
+
+	{"SRAM_V110", 10, SAVE_TYPE_SRAM_V110, 32 * 1024, sram_patchV110},
+	{"SRAM_V111", 10, SAVE_TYPE_SRAM_V111, 32 * 1024, sram_patchV111},
+	{"SRAM_V112", 10, SAVE_TYPE_SRAM_V112, 32 * 1024, sram_patchV111},
+	{"SRAM_V113", 10, SAVE_TYPE_SRAM_V113, 32 * 1024, sram_patchV111},
 };
 
 const save_type_t* save_findTag()

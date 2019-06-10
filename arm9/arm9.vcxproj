@@ -180,6 +180,7 @@
     <ClCompile Include="source\save\EepromSave.vram.cpp" />
     <ClCompile Include="source\save\FlashSave.vram.cpp" />
     <ClCompile Include="source\save\Save.vram.cpp" />
+    <ClCompile Include="source\save\SramSave.vram.cpp" />
     <ClCompile Include="source\sd_access.cpp" />
     <ClCompile Include="source\string.vram.cpp" />
     <ClCompile Include="source\vector.vram.cpp" />
@@ -223,6 +224,7 @@
     <ClInclude Include="source\save\EepromSave.h" />
     <ClInclude Include="source\save\FlashSave.h" />
     <ClInclude Include="source\save\Save.h" />
+    <ClInclude Include="source\save\SramSave.h" />
     <ClInclude Include="source\sd_access.h" />
     <ClInclude Include="source\string.h" />
     <ClInclude Include="source\vector.h" />

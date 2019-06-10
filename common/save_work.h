@@ -12,6 +12,7 @@ typedef struct
 	uint8_t save_enabled;
 	uint8_t save_state;
 	uint16_t fat_table_crc;
+	uint32_t saveSize;
 } save_work_t;
 
 #endif

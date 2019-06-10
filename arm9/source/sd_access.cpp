@@ -171,11 +171,12 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 	u32* cluster_table = &vram_cd->save_work.save_fat_table[0];
 	u32 cur_cluster = *cluster_table++;
 	uint32_t data_read = 0;
-	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > SAVE_DATA_SIZE) ? SAVE_DATA_SIZE / 512 : vram_cd->sd_info.nr_sectors_per_cluster;
-	while (cur_cluster != 0 && (data_read + toread * 512) <= SAVE_DATA_SIZE)
+	int toread = (vram_cd->sd_info.nr_sectors_per_cluster * 512 > vram_cd->save_work.saveSize) ? 
+		vram_cd->save_work.saveSize >> 9 : vram_cd->sd_info.nr_sectors_per_cluster;
+	while (cur_cluster != 0 && (data_read + (toread << 9)) <= vram_cd->save_work.saveSize)
 	{
 		write_sd_sectors_safe(cur_cluster, toread, (void*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + data_read));
-		data_read += toread * 512;
+		data_read += toread << 9;
 		cur_cluster = *cluster_table++;
 	}
 	vramcd_uncached->save_work.save_state = SAVE_WORK_STATE_CLEAN;

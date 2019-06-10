@@ -89,17 +89,21 @@ void FileBrowser::LoadFolder(const char* path)
 
 void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 {
+	if (saveType)
+		vram_cd->save_work.saveSize = saveType->size;
+	else
+		vram_cd->save_work.saveSize = 64 * 1024;
 	vram_cd->save_work.save_state = SAVE_WORK_STATE_CLEAN;
 	if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
 	{
-		if((saveType->type & SAVE_TYPE_TYPE_MASK) == SAVE_TYPE_FLASH)
+		if (saveType && (saveType->type & SAVE_TYPE_TYPE_MASK) == SAVE_TYPE_FLASH)
 		{
-			for (int i = 0; i < 64 * 1024 / 4; i++)
+			for (int i = 0; i < vram_cd->save_work.saveSize >> 2; i++)
 				((uint32_t*)MAIN_MEMORY_ADDRESS_SAVE_DATA)[i] = 0xFFFFFFFF;
 		}
 		else
 		{
-			for (int i = 0; i < 64 * 1024 / 4; i++)
+			for (int i = 0; i < vram_cd->save_work.saveSize >> 2; i++)
 				((uint32_t*)MAIN_MEMORY_ADDRESS_SAVE_DATA)[i] = 0;
 		}
 
@@ -111,7 +115,8 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 			FatalError("Error creating save file!");
 
 		UINT bw;
-		if (f_write(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_SAVE_DATA, 64 * 1024, &bw) != FR_OK || bw != 64 * 1024)
+		if (f_write(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_SAVE_DATA, vram_cd->save_work.saveSize, &bw) != FR_OK ||
+			bw != vram_cd->save_work.saveSize)
 			FatalError("Error creating save file!");
 		f_close(&vram_cd->fil);
 		if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
@@ -119,8 +124,11 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 #endif
 	}
 
-	if (vram_cd->fil.obj.objsize != 64 * 1024)
-		FatalError("Save file size invalid!\nShould be 64 kb.");
+	if (saveType && (saveType->type & SAVE_TYPE_TYPE_MASK) == SAVE_TYPE_EEPROM && vram_cd->fil.obj.objsize == 512)
+		vram_cd->save_work.saveSize = 512;
+
+	if (vram_cd->fil.obj.objsize < vram_cd->save_work.saveSize)
+		FatalError("Save file too small!");
 
 	uint32_t* cluster_table = &vram_cd->save_work.save_fat_table[0];
 	uint32_t  cur_cluster = vram_cd->fil.obj.sclust;
@@ -130,9 +138,11 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 		cluster_table++;
 		cur_cluster = f_getFat(&vram_cd->fil, cur_cluster);
 	}
+	*cluster_table = 0;
 
 	UINT br;
-	if (f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_SAVE_DATA, 64 * 1024, &br) != FR_OK || br != 64 * 1024)
+	if (f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_SAVE_DATA, vram_cd->save_work.saveSize, &br) != FR_OK ||
+		br != vram_cd->save_work.saveSize)
 		FatalError("Error while reading save file!");
 	f_close(&vram_cd->fil);
 
@@ -163,7 +173,7 @@ void FileBrowser::LoadGame(const char* path)
 		FatalError("Error while reading rom!");
 
 	const save_type_t* saveType = save_findTag();
-	if(saveType != NULL)
+	if (saveType != NULL)
 	{
 		if (saveType->patchFunc != NULL)
 			saveType->patchFunc(saveType);
@@ -243,7 +253,7 @@ void FileBrowser::Run()
 
 	LoadBios();
 	f_chdir("/");
-	if(f_stat("gba", NULL) == FR_OK)
+	if (f_stat("gba", NULL) == FR_OK)
 		f_chdir("gba");
 	LoadFolder(".");
 	while (1)
