@@ -193,10 +193,6 @@ vram_setup_copyloop:
 	//mcr p15, 0, r0, c6, c7, 0
 
 	ldr r0,= pu_data_permissions
-	//mov r0, #3
-	//orr r0, r0, #(0x6 << (4 * 4))
-	//orr r0, r0, #(0x36 << (4 * 5))
-	//orr r0, r0, #(0x3 << (4 * 7))
 	mcr p15, 0, r0, c5, c0, 2
 	ldr r0,= 0x33660303
 	mcr p15, 0, r0, c5, c0, 3
@@ -350,8 +346,36 @@ dldi_name_copy:
 	subs r2, #4
 	bne dldi_name_copy
 
+	ldr r0,= 0x33333333
+	mcr p15, 0, r0, c5, c0, 2
+	
+	mrc p15, 0, r0, c1, c0, 0
+	orr r0, #(1 | (1 << 2))	//enable pu and data cache
+	orr r0, #(1 << 12) //and cache
+	orr r0, #(1 << 14) //round robin cache replacement improves worst case performance
+	mcr p15, 0, r0, c1, c0, 0
+
+	//invalidate instruction cache
+	mov r0, #0
+	mcr p15, 0, r0, c7, c5, 0
+
+	//and data cache
+	mcr p15, 0, r0, c7, c6, 0
+
+	mcr	p15, 0, r0, c7, c10, 4
+
 	mov r0, #0x01000000
 	bl sd_init
+	bl dc_wait_write_buffer_empty
+	bl dc_flush_all
+
+	mrc p15, 0, r0, c1, c0, 0
+	bic r0, #(1 | (1 << 2))	//disable pu and data cache
+	bic r0, #(1 << 12) //and cache
+	mcr p15, 0, r0, c1, c0, 0
+
+	ldr r0,= pu_data_permissions
+	mcr p15, 0, r0, c5, c0, 2
 
 	ldr r0,= 0x04001000
 	ldr r1,= 0x10801
