@@ -31,6 +31,13 @@ static flash_patchinfo_t sPatchInfo;
 #define FLASH_512V130_OFFSET_FL_MAXTIME		0x24
 #define FLASH_512V130_OFFSET_FLASH			0x28
 
+#define FLASH_1MV102_OFFSET_PROG_SECTOR		0x10
+#define FLASH_1MV102_OFFSET_ERASE_CHIP		0x14
+#define FLASH_1MV102_OFFSET_ERASE_SECTOR	0x18
+#define FLASH_1MV102_OFFSET_POLLING_SR		0x1C
+#define FLASH_1MV102_OFFSET_FL_MAXTIME		0x20
+#define FLASH_1MV102_OFFSET_FLASH			0x24
+
 struct flash_v120_sector
 {
 	u32 size;
@@ -55,6 +62,9 @@ static const u8 sIdentifyFlashV120Sig[0x10] =
 	{0x80, 0xB5, 0x82, 0xB0, 0x6F, 0x46, 0x0E, 0x48, 0x0D, 0x49, 0x0A, 0x88, 0x0D, 0x4B, 0x11, 0x1C};
 
 static const u8 sIdentifyFlashV123Sig[0x10] =
+	{0x10, 0xB5, 0x07, 0x4A, 0x10, 0x88, 0x07, 0x49, 0x08, 0x40, 0x03, 0x21, 0x08, 0x43, 0x10, 0x80};
+
+static const u8 sIdentifyFlash1MV103Sig[0x10] =
 	{0x10, 0xB5, 0x07, 0x4A, 0x10, 0x88, 0x07, 0x49, 0x08, 0x40, 0x03, 0x21, 0x08, 0x43, 0x10, 0x80};
 
 static const u8 sVerifyFlashV126Sig[0x10] =
@@ -274,6 +284,43 @@ bool flash_patch512V130(const save_type_t* type)
 	sPatchInfo.flashPtr = *(u32**)(vram_cd->tmpSector + FLASH_512V130_OFFSET_FLASH);
 
 	if (!patchIdentify(sIdentifyFlashV123Sig))
+		return false;
+
+	u32* readFunc = save_findSignature(sReadFlash512V130Sig);
+	if (!readFunc)
+		return false;
+	save_injectJump(readFunc, (void*)readFlash);
+
+	u32* verifySector = save_findSignature(sVerifyFlashSector512V130Sig);
+	if (!verifySector)
+		return false;
+	save_injectJump(verifySector, (void*)verifyFlashSector);
+
+	u32* verify = save_findSignature(sVerifyFlash512V130Sig);
+	if (!verify)
+		return false;
+	save_injectJump(verify, (void*)verifyFlash);
+	return true;
+}
+
+bool flash_patch1MV102(const save_type_t* type)
+{
+	//load flash data
+	f_lseek(&vram_cd->fil, f_tell(&vram_cd->fil) + ((type->tagLength + 3) & ~3));
+	UINT read;
+	if (f_read(&vram_cd->fil, vram_cd->tmpSector, 0x94, &read) != FR_OK || read != 0x94)
+		return false;
+
+	sPatchInfo.progSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_PROG_SECTOR);
+	sPatchInfo.eraseChipPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_ERASE_CHIP);
+	sPatchInfo.eraseSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_ERASE_SECTOR);
+	sPatchInfo.pollingSrPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_POLLING_SR);
+	sPatchInfo.flMaxTimePtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_FL_MAXTIME + (
+		type->type == SAVE_TYPE_FLASH1M_V102 ? 0 : 4));
+	sPatchInfo.flashPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_FLASH + (
+		type->type == SAVE_TYPE_FLASH1M_V102 ? 0 : 4));
+
+	if (!patchIdentify(type->type == SAVE_TYPE_FLASH1M_V102 ? sIdentifyFlashV123Sig : sIdentifyFlash1MV103Sig))
 		return false;
 
 	u32* readFunc = save_findSignature(sReadFlash512V130Sig);
