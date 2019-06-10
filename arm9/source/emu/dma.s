@@ -159,8 +159,8 @@ dma_special_mode_\offs:
 dma_rom_src_\offs:
 	cmp r13, #0x0E000000
 	bge 3b
-	bic r13, #0x07000000
-
+	bic r13, #0x06000000
+	
 	tst r11, #(3 << 11)
 	bne 5f
 
