@@ -142,8 +142,8 @@ read_address_from_handler_eeprom_32:
 read_address_from_handler_sram_32:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x0FF00000) //#0x0BC00000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x000FF000) //#0x00010000
 	ldrb r10, [r10]
 	orr r10, r10, lsl #8
 	orr r10, r10, lsl #16
@@ -290,8 +290,8 @@ read_address_from_handler_eeprom_16:
 read_address_from_handler_sram_16:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x0FF00000) //#0x0BC00000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x000FF000) //#0x00010000
 	ldrb r10, [r10]
 	orr r10, r10, lsl #8
 	tst r9, #1
@@ -434,8 +434,8 @@ read_address_from_handler_eeprom_8:
 read_address_from_handler_sram_8:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x0FF00000) //#0x0BC00000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x000FF000) //#0x00010000
 	ldrb r10, [r10]
 	bx lr
 

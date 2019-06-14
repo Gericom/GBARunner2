@@ -25,9 +25,6 @@ static const u8 sProgramEepromDwordV124Sig[0x10] =
 static const u8 sProgramEepromDwordV126Sig[0x10] =
 	{0xF0, 0xB5, 0x47, 0x46, 0x80, 0xB4, 0xAC, 0xB0, 0x0E, 0x1C, 0x00, 0x04, 0x05, 0x0C, 0x12, 0x06};
 
-//static const u8 sVerifyEepromDwordV120Sig[0x10] =
-//	{0x30, 0xB5, 0x82, 0xB0, 0x0C, 0x1C, 0x00, 0x04, 0x01, 0x0C, 0x00, 0x25, 0x03, 0x48, 0x00, 0x68};
-
 //not in EEPROM_V111
 //could be used to identify the eeprom size, but not strictly needed
 /*static u16 identifyEeprom(u16 kbitSize)
@@ -38,42 +35,21 @@ static const u8 sProgramEepromDwordV126Sig[0x10] =
 static u16 readEepromDword(u16 epAdr, u16* dst)
 {
 	//reading from main memory is safe without changing permissions
-	u16* pSave = (u16*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (epAdr << 3));
-	for (int i = 0; i < 8; i += 2)
-		*dst++ = *pSave++;
+	u8* pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (epAdr << 3));
+	for (int i = 0; i < 8; i++)
+		((u8*)dst)[7 - i] = *pSave++;
 	return 0;
 }
 
 static u16 programEepromDword(u16 epAdr, u16* src)
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
-	u16*       pSave = (u16*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (epAdr << 3));
-	//disable irqs
-	u32 irq = *(vu32*)0x04000208;
-	*(vu32*)0x04000208 = 0;
-	{
-		CP15_SET_DATA_PROT(0x33333333);
-		for (int i = 0; i < 8; i += 2)
-			*pSave++ = *src++;
-		vramcd_uncached->save_work.save_state = SAVE_WORK_STATE_DIRTY;
-		CP15_SET_DATA_PROT(pu_data_permissions);
-	}
-	//restore irqs
-	*(vu32*)0x04000208 = irq;
+	//I would rather have written to the save in main memory directly,
+	//but it wouldn't work right for whatever reason :/
+	u8* pSave = (u8*)(0x0E000000 + (epAdr << 3));
+	for (int i = 0; i < 8; i++)
+		*pSave++ = ((u8*)src)[7 - i];
 	return 0;
 }
-
-/*static u16 VerifyEepromDword(u16 epAdr, u16* src)
-{
-	//todo: maybe implement parameter error 0x80ff
-
-	//reading from main memory is safe without changing permissions
-	u16* pSave = (u16*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (epAdr << 3));
-	for (int i = 0; i < 8; i += 2)
-		if (*pSave++ != *src++)
-			return 0x8000;
-	return 0;
-}*/
 
 bool eeprom_patchV111(const save_type_t* type)
 {

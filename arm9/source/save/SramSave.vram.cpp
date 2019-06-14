@@ -31,20 +31,8 @@ static void readSram(u8* src, u8* dst, u32 size)
 
 static void writeSram(u8* src, u8* dst, u32 size)
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
-	u8*        pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + ((u32)dst & 0xFFFF));
-	//disable irqs
-	u32 irq = *(vu32*)0x04000208;
-	*(vu32*)0x04000208 = 0;
-	{
-		CP15_SET_DATA_PROT(0x33333333);
-		for (int i = 0; i < size; i++)
-			*pSave++ = *src++;
-		vramcd_uncached->save_work.save_state = SAVE_WORK_STATE_DIRTY;
-		CP15_SET_DATA_PROT(pu_data_permissions);
-	}
-	//restore irqs
-	*(vu32*)0x04000208 = irq;
+	for (int i = 0; i < size; i++)
+		*dst++ = *src++;
 }
 
 static u32 verifySram(u8* src, u8* tgt, u32 size)
