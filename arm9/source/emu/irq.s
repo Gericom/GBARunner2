@@ -211,7 +211,7 @@ irq_handler_arm7_irq:
 
 	ldrb r2, [r12, #1]
 	cmp r2, #0
-	beq 5f
+	beq 4f
 
 	ldrb r2, [r12, #3]
 	add r3, r2, #1
@@ -258,11 +258,6 @@ irq_handler_arm7_irq:
 	cmp r2, #0
 	bgt 1b
 4:
-	ldr r0,= 0xAA5500F9
-	mov r1, #0x04000000
-	str r0, [r1, #0x188]
-
-5:
 	mov r12, #0x04000000
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]

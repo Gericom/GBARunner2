@@ -144,6 +144,22 @@ void gba_sound_vblank()
 
 }
 
+void gba_sound_fifo_update()
+{
+	while (vram_cd->sound_emu_work.resp_size > 0)
+	{
+		gba_sound_fifo_write16((u8*)&vram_cd->sound_emu_work.resp_queue[vram_cd->sound_emu_work.resp_read_ptr][0]);
+		vram_cd->sound_emu_work.resp_read_ptr++;
+		if (vram_cd->sound_emu_work.resp_read_ptr >= SOUND_EMU_QUEUE_LEN)
+			vram_cd->sound_emu_work.resp_read_ptr -= SOUND_EMU_QUEUE_LEN;
+		lock_lock(&vram_cd->sound_emu_work.resp_size_lock);
+		{
+			vram_cd->sound_emu_work.resp_size--;
+		}
+		lock_unlock(&vram_cd->sound_emu_work.resp_size_lock);
+	}
+}
+
 static int sampcnter = 0;
 
 extern "C" void timer3_overflow_irq()
@@ -152,6 +168,7 @@ extern "C" void timer3_overflow_irq()
 		return;
 	if(sampcnter == 0)//(FIFO_BLOCK_SIZE - 1))
 	{
+		gba_sound_fifo_update();
 		if (vram_cd->sound_emu_work.req_size < SOUND_EMU_QUEUE_LEN)
 		{
 			vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
@@ -241,22 +258,6 @@ void gba_sound_fifo_write16(uint8_t* samps)
 	if(soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
 		soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
 	gba_sound_update_ds_channels();
-}
-
-void gba_sound_fifo_update()
-{
-	while (vram_cd->sound_emu_work.resp_size > 0)
-	{
-		gba_sound_fifo_write16((u8*)&vram_cd->sound_emu_work.resp_queue[vram_cd->sound_emu_work.resp_read_ptr][0]);
-		vram_cd->sound_emu_work.resp_read_ptr++;
-		if (vram_cd->sound_emu_work.resp_read_ptr >= SOUND_EMU_QUEUE_LEN)
-			vram_cd->sound_emu_work.resp_read_ptr -= SOUND_EMU_QUEUE_LEN;
-		lock_lock(&vram_cd->sound_emu_work.resp_size_lock);
-		{
-			vram_cd->sound_emu_work.resp_size--;
-		}
-		lock_unlock(&vram_cd->sound_emu_work.resp_size_lock);
-	}
 }
 
 void gbas_updateVolume(u8 vol)

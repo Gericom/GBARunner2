@@ -124,40 +124,40 @@ data_abort_handler_cont2:
 
 .global address_calc_unknown
 address_calc_unknown:
-	ldr r0,= 0x06202000
-	ldr r1,= 0x4B4E5541
-	str r1, [r0]
-
-	mov r0, r10
-	ldr r1,= nibble_to_char
-	ldr r12,= (0x06202000 + 32 * 10)
-	//print address to bottom screen
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
-
-	ldrb r2, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	ldrb r3, [r1, r0, lsr #28]
-	mov r0, r0, lsl #4
-	orr r2, r2, r3, lsl #8
-	strh r2, [r12], #2
+//	ldr r0,= 0x06202000
+//	ldr r1,= 0x4B4E5541
+//	str r1, [r0]
+//
+//	mov r0, r10
+//	ldr r1,= nibble_to_char
+//	ldr r12,= (0x06202000 + 32 * 10)
+//	//print address to bottom screen
+//	ldrb r2, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	ldrb r3, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	orr r2, r2, r3, lsl #8
+//	strh r2, [r12], #2
+//
+//	ldrb r2, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	ldrb r3, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	orr r2, r2, r3, lsl #8
+//	strh r2, [r12], #2
+//
+//	ldrb r2, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	ldrb r3, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	orr r2, r2, r3, lsl #8
+//	strh r2, [r12], #2
+//
+//	ldrb r2, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	ldrb r3, [r1, r0, lsr #28]
+//	mov r0, r0, lsl #4
+//	orr r2, r2, r3, lsl #8
+//	strh r2, [r12], #2
 
 	b .
