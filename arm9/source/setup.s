@@ -42,7 +42,7 @@ gba_setup:
 
 	//copy the itcm in place
 	ldr r0,= __itcm_lma
-	ldr r1,= (32 * 1024)
+	ldr r1,= (16 * 1024)
 	ldr r2,= __itcm_start
 itcm_setup_copyloop:
 	ldmia r0!, {r3-r10}
@@ -94,13 +94,22 @@ itcm_setup_copyloop:
 
 	//copy the vram code to a
 	ldr r0,= __vram_lma
-	ldr r1,= (128 * 1024)
+	ldr r1,= (256 * 1024)
 	ldr r2,= __vram_start
 vram_setup_copyloop:
 	ldmia r0!, {r3-r10}
 	stmia r2!, {r3-r10}
 	subs r1, #0x20
 	bne vram_setup_copyloop
+	
+	//fill bss
+	mov r0, #0
+	ldr r1,= __bss_start
+	ldr r2,= __bss_end__
+1:
+	str r0, [r1], #4
+	cmp r1, r2
+	bls 1b
 
 #ifdef ISNITRODEBUG
 	//this enables debug printing on IS-NITRO-EMULATOR
@@ -184,10 +193,6 @@ vram_setup_copyloop:
 	//mcr p15, 0, r0, c6, c7, 0
 
 	ldr r0,= pu_data_permissions
-	//mov r0, #3
-	//orr r0, r0, #(0x6 << (4 * 4))
-	//orr r0, r0, #(0x36 << (4 * 5))
-	//orr r0, r0, #(0x3 << (4 * 7))
 	mcr p15, 0, r0, c5, c0, 2
 	ldr r0,= 0x33660303
 	mcr p15, 0, r0, c5, c0, 3
@@ -227,41 +232,16 @@ vram_setup_copyloop:
 	ldr r0,= 0x04000248
 	mov r1, #0x81
 	strb r1, [r0]
+
+	ldr r0,= 0x04000249
+	mov r1, #0x82
+	strb r1, [r0]
 	//decompress debugFont to 0x06200000
 	//ldr r0,= debugFont
 	//ldr r1,= 0x06200000
 	//ldr r2,=0x1194
 	//blx r2
 	//svc 0x120000
-
-	//Copy debug font
-	ldr r0,= debugFont
-	mov r1, #0x4000
-	ldr r2,= 0x06200000
-font_setup_copyloop:
-	ldmia r0!, {r3-r10}
-	stmia r2!, {r3-r10}
-	subs r1, #0x20
-	bne font_setup_copyloop
-
-	ldr r0,= 0x04001000
-	ldr r1,= 0x10801
-	str r1, [r0]
-
-	ldr r0,= 0x0400100E
-	ldr r1,= 0x4400
-	strh r1, [r0]
-
-	ldr r0,= 0x04001030
-	ldr r1,= 0x100
-	strh r1, [r0]
-	strh r1, [r0, #6]
-
-	ldr r1,= 0x00
-	strh r1, [r0, #2]
-	strh r1, [r0, #4]
-
-	str r1, [r0, #0xC]
 
 	mov r0, #0
 	ldr r1,= 0x06202000
@@ -366,8 +346,55 @@ dldi_name_copy:
 	subs r2, #4
 	bne dldi_name_copy
 
+	ldr r0,= 0x33333333
+	mcr p15, 0, r0, c5, c0, 2
+	
+	mrc p15, 0, r0, c1, c0, 0
+	orr r0, #(1 | (1 << 2))	//enable pu and data cache
+	orr r0, #(1 << 12) //and cache
+	orr r0, #(1 << 14) //round robin cache replacement improves worst case performance
+	mcr p15, 0, r0, c1, c0, 0
+
+	//invalidate instruction cache
+	mov r0, #0
+	mcr p15, 0, r0, c7, c5, 0
+
+	//and data cache
+	mcr p15, 0, r0, c7, c6, 0
+
+	mcr	p15, 0, r0, c7, c10, 4
+
 	mov r0, #0x01000000
 	bl sd_init
+	bl dc_wait_write_buffer_empty
+	bl dc_flush_all
+
+	mrc p15, 0, r0, c1, c0, 0
+	bic r0, #(1 | (1 << 2))	//disable pu and data cache
+	bic r0, #(1 << 12) //and cache
+	mcr p15, 0, r0, c1, c0, 0
+
+	ldr r0,= pu_data_permissions
+	mcr p15, 0, r0, c5, c0, 2
+
+	ldr r0,= 0x04001000
+	ldr r1,= 0x10801
+	str r1, [r0]
+
+	ldr r0,= 0x0400100E
+	ldr r1,= 0x4400
+	strh r1, [r0]
+
+	ldr r0,= 0x04001030
+	ldr r1,= 0x100
+	strh r1, [r0]
+	strh r1, [r0, #6]
+
+	ldr r1,= 0x00
+	strh r1, [r0, #2]
+	strh r1, [r0, #4]
+
+	str r1, [r0, #0xC]
 
 	//more displaycap stuff
 	ldr r0,= 0x04001000
@@ -419,10 +446,11 @@ dldi_name_copy:
 	cmp r1, #192
 	blt 1b
 
-	//disable vram h
+	//disable vram h and i
 	ldr r0,= 0x04000248
 	mov r1, #0x00
 	strb r1, [r0]
+	strb r1, [r0, #1]
 
 	//disable the 3d geometry and render engine and swap the screens
 	ldr r0,= 0x04000304

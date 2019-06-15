@@ -410,11 +410,11 @@ void gbs_init()
 
 	sMasterEnable = false;
 
-	//setup timer 1 for the frame sequencer
-	REG_TM[1].CNT_H = 0;
-	REG_TM[1].CNT_L = TIMER_FREQ(512 * 1024);
-	REG_TM[1].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_1024;
-	REG_IE |= (1 << 4);
+	//setup timer 0 for the frame sequencer
+	REG_TM[0].CNT_H = 0;
+	REG_TM[0].CNT_L = TIMER_FREQ(512 * 1024);
+	REG_TM[0].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_1024;
+	REG_IE |= (1 << 3);
 }
 
 //assumes an 8 bit write

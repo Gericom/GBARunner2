@@ -25,6 +25,11 @@ volatile int soundStarted;
 
 uint32_t srcAddress = 0;
 
+u8 sChannelATimer = 0;
+u8 sChannelAVolume = 1;
+
+u16 sTimerReloadVals[4];
+
 /*static void gba_sound_timer2_handler()
 {
 	soundBufferVirtualReadOffset += 256;
@@ -188,21 +193,21 @@ extern "C" void timer3_overflow_irq()
 		sampcnter = 0;
 }
 
-void gbas_soundTimerUpdated(int timer, uint16_t reloadVal)
+void gbas_updateChannelATimer()
 {
-	if(reloadVal == 0)
-		return;
-	int freq = (-16 * 1024 * 1024) / ((int16_t)reloadVal);
+	int freq = (-16 * 1024 * 1024) / ((int16_t)sTimerReloadVals[sChannelATimer]);
 	if(sampleFreq != freq)
 	{
 		sampleFreq = freq;
 		gba_sound_resync();
-		//setup the sound fifo timer
-		//REG_TM[3].CNT_H = 0;
-		//REG_TM[3].CNT_L = ((TIMER_FREQ(sampleFreq) + 2) * FIFO_BLOCK_SIZE);//* 64 / FIFO_BLOCK_SIZE);//16);
-		//REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;// | REG_TMXCNT_H_PS_64;
-		//REG_IE |= (1 << 6);
 	}
+}
+
+void gbas_soundTimerUpdated(int timer, uint16_t reloadVal)
+{
+	sTimerReloadVals[timer] = reloadVal;
+	if(sChannelATimer == timer)
+		gbas_updateChannelATimer();
 }
 
 void gba_sound_fifo_write(uint32_t samps)
@@ -251,5 +256,20 @@ void gba_sound_fifo_update()
 			vram_cd->sound_emu_work.resp_size--;
 		}
 		lock_unlock(&vram_cd->sound_emu_work.resp_size_lock);
+	}
+}
+
+void gbas_updateVolume(u8 vol)
+{
+	sChannelAVolume = (vol >> 2) & 1;
+}
+
+void gbas_updateMixConfig(u8 mixConfig)
+{
+	int newATimer = (mixConfig >> 10) & 1;
+	if(sChannelATimer != newATimer)
+	{
+		sChannelATimer = newATimer;
+		gbas_updateChannelATimer();
 	}
 }

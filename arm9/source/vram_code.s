@@ -264,6 +264,23 @@ print_address_isnitro:
 
 .global gba_start_bkpt_vram
 gba_start_bkpt_vram:
+	//fill main memory
+	mov r0, #0
+	ldr r1,= 0x02000000
+	mov r2, #(256 * 1024)
+1:
+	str r0, [r1], #4
+	subs r2, #4
+	bne 1b
+
+	//fill wram
+	ldr r1,= 0x03000000
+	mov r2, #(32 * 1024)
+1:
+	str r0, [r1], #4
+	subs r2, #4
+	bne 1b
+
 	//set abort exception handlers
 	ldr r0,= instruction_abort_handler
 	sub r0, #0xC	//relative to source address
