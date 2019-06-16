@@ -13,13 +13,14 @@ reg_table_dtcm:
 cpu_mode_switch_dtcm:
 	.word pu_data_permissions
 	.word data_abort_handler_cont_finish
-.rept 13
+	.word 0 //spsr
+.rept 12
 	.word 0
 .endr
-	.word data_abort_handler_arm_usr_sys //usr
+	.word 0 //usr
 	.word address_calc_unknown //fiq
-	.word data_abort_handler_arm_irq //irq
-	.word data_abort_handler_arm_svc //svc
+	.word 0 //irq
+	.word 0 //svc
 	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown
@@ -31,7 +32,7 @@ cpu_mode_switch_dtcm:
 	.word address_calc_unknown
 	.word address_calc_unknown
 	.word address_calc_unknown
-	.word data_abort_handler_arm_usr_sys
+	.word 0
 
 .global thumb_table
 thumb_table:
@@ -99,36 +100,42 @@ thumb_table:
 
 .global arm_table
 arm_table:
-.macro list_ldrh_strh_variant a,b,c,d,e
-	.word ldrh_strh_address_calc_\a\b\c\d\e
+.macro listSingleTrans type, p, b, w, l, s, h
+	.word aabt_singleTrans_\type\p\b\w\l\s\h
 .endm
 
-.macro list_all_ldrh_strh_variants arg=0
-	list_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
-.if \arg<0x1F
-	list_all_ldrh_strh_variants %(\arg+1)
-.endif
-.endm
-	list_all_ldrh_strh_variants
-
-.rept 32
+.macro listLdrhStrh p, arg=0
+.if (\arg % 4) > 0
+	listSingleTrans 0,\p,0,%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.else
 	.word address_calc_unknown
-.endr
-
-.macro list_ldr_str_variant a,b,c,d,e,f
-	.word ldr_str_address_calc_\a\b\c\d\e\f
-.endm
-
-.altmacro
-.macro list_all_ldr_str_variants arg=0
-	list_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.endif
 .if \arg<0x3F
-	list_all_ldr_str_variants %(\arg+1)
+	listLdrhStrh \p,%(\arg+1)
 .endif
 .endm
 
-	list_all_ldr_str_variants
+listLdrhStrh 0
+listLdrhStrh 1
+listLdrhStrh 0
+listLdrhStrh 1
 
+.macro listLdrStr p, arg=0
+	listSingleTrans 1,\p,%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),0,0
+.if \arg<0x3F
+	listLdrStr \p,%(\arg+1)
+.endif
+.endm
+
+listLdrStr 0
+listLdrStr 1
+listLdrStr 0
+listLdrStr 1
+
+.word 0
+
+.global arm_ldm_table
+arm_ldm_table:
 .macro list_ldm_stm_variant a,b,c,d,e
 	.word ldm_stm_address_calc_\a\b\c\d\e
 .endm
@@ -214,4 +221,5 @@ timer_shadow_regs_dtcm:
 .endr
 
 //for some reason the file is ignored without this nop here
+nop
 nop

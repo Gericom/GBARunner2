@@ -18,7 +18,7 @@
 
 //#define address_thumb_table_dtcm (address_dtcm + 0xFA0) //(address_dtcm + 0xF98)
 
-#define pu_data_permissions 0x33600603 //0x33600003 //0x33660003
+#define pu_data_permissions 0x33660603 //0x33600003 //0x33660003
 
 //for debugging the abort handler only!
 //registers will be destroyed by a fiq interrupt though
@@ -116,7 +116,8 @@ FIELDS(address_dtcm,
 	reg_table, 0x40,
 	address_cpu_mode_switch_dtcm, 4 * 31,
 	address_thumb_table_dtcm, 4 * 128,
-	address_arm_table_dtcm, 4 * 256,
+	address_arm_table_dtcm, 4 * 512 + 4,
+	address_arm_ldm_table_dtcm, 4 * 128,
 	address_count_bit_table, 0x100,
 	address_write_table_32bit_dtcm, 0x108,
 	address_write_table_16bit_dtcm, 0x20C,

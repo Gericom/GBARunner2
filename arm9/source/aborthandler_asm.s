@@ -27,8 +27,9 @@ data_abort_handler:
 	str lr, [r13, #(4 * 15 + 1)]!
 
 	mrs lr, spsr
+	str lr, [r13, #0xC]
 	movs lr, lr, lsl #27
-	ldrcc pc, [r13, lr, lsr #25] //uses cpu_mode_switch_dtcm
+	bcc data_abort_handler_arm
 
 data_abort_handler_thumb:
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
@@ -38,38 +39,46 @@ data_abort_handler_thumb:
 	add r12, r12, #(address_thumb_table_dtcm - reg_table)
 	ldr pc, [r12, r10, lsr #7]
 
-.global data_abort_handler_arm_irq
-data_abort_handler_arm_irq:
-	str r0, [r13, #(-4 * 15)]
-	sub r0, r13, #(4 * 14)
-	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x12)
-	stmia r0, {r1-r12,sp,lr}
-	b data_abort_handler_cont
-
-.global data_abort_handler_arm_svc
-data_abort_handler_arm_svc:
-	str r0, [r13, #(-4 * 15)]
-	sub r0, r13, #(4 * 14)
-	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x13)
-	stmia r0, {r1-r12,sp,lr}
-	b data_abort_handler_cont
-
-.global data_abort_handler_arm_usr_sys
-data_abort_handler_arm_usr_sys:
-	stmdb r13, {r0-r14}^
-
-data_abort_handler_cont:
+data_abort_handler_arm:
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
-
 	ldr r12,= reg_table
-	//add r6, r5, #4	//pc+12
-	//pc + 8
-	//str r5, [r11, #(4 * 15)]
-	ldr r10, [r12, #(4 * 15)]
+	ldr r11, [r12, #(4 * 15)]
+	ldr r10, [r12, #0x48]
+	ldr r8, [r11, #-8]
+	ands r10, #0xF
+	orreq r10, #0xF
+	orr r10, #(CPSR_IRQ_FIQ_BITS | 0x10)
+	msr spsr_c, r10
+	tst r8, #(1 << 27)	
+	bne data_abort_handler_arm_ldm
+	and r9, r8, #0x7F00000
+	and r10, r8, #0x60
+	orr r9, r10, lsl #13
+	add r11, r12, r9, lsr #16
 
-	ldr r10, [r10, #-8]
-	add r11, r12, #(address_arm_table_dtcm - reg_table)
-	and r10, r10, #0x0FFFFFFF
+	mrc p15, 0, r14, c1, c0, 0
+	bic r12, r14, #(1 | (1 << 2))
+	mrs r13, spsr
+	//get rn bits in r10
+	and r10, r8, #0x000F0000
+	mov r10, r10, lsr #12
+	//get rd bits in r9
+	and r9, r8, #0x0000F000
+	mov r9, r9, lsr #8
+	//patch instruction
+	bic r8, #0xF0000000 //clear condition bits
+	orr r8, #0xE0000000 //set condition to always
+
+	ldr pc, [r11, #(address_arm_table_dtcm - reg_table)]
+
+data_abort_handler_arm_ldm:
+	str r0, [r12]
+	add r0, r12, #4
+	msr cpsr_c, r10
+	stmia r0, {r1-r12,sp,lr}
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
+	add r11, r12, #(address_arm_ldm_table_dtcm - reg_table)
+	and r10, r8, #0x07FFFFFF
 
 	and r8, r10, #(0xF << 16)
 	ldr r9, [r12, r8, lsr #14]
