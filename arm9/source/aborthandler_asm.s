@@ -71,6 +71,21 @@ data_abort_handler_cont:
 	add r11, r12, #(address_arm_table_dtcm - reg_table)
 	and r10, r10, #0x0FFFFFFF
 
+#ifdef HANDLER_STATISTICS
+	mov r8, r10, lsr #19
+	mov r8, r8, lsl #4
+	tst r10, #(1 << 15)
+	orrne r8, #(1 << 3)
+	tst r10, #(1 << 3)
+	orrne r8, #1
+	and r9, r10, #(3 << 5)
+	orr r8, r9, lsr #4
+	ldr r9,= STATISTICS_ADDRESS
+	ldr r8, [r9, r8, lsl #2]!
+	add r8, #1
+	str r8, [r9]
+#endif
+
 	and r8, r10, #(0xF << 16)
 	ldr r9, [r12, r8, lsr #14]
 

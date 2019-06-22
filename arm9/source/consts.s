@@ -41,6 +41,10 @@
 //#define ENABLE_WRAM_ICACHE
 //#define POSTPONED_ICACHE
 
+//for collecting statistics about the instruction being handled
+//#define HANDLER_STATISTICS
+#define STATISTICS_ADDRESS		0x02400000		//in is-nitro expanded debug memory
+
 #ifdef __ASSEMBLER__
 @destroys r12, r13
 .macro printreg reg

@@ -155,6 +155,10 @@ PUT_IN_VRAM void initialize_cache()
 	vram_cd->sound_emu_work.resp_read_ptr = 0;
 	//vram_cd->save_work.save_enabled = 0;
 	//vram_cd->save_work.save_state = SAVE_WORK_STATE_CLEAN;
+#ifdef HANDLER_STATISTICS
+	for (u32 i = 0; i < (2 * 1024 * 1024) / 4; i++)
+		((u32*)STATISTICS_ADDRESS)[i] = 0;
+#endif
 }
 
 extern "C" PUT_IN_VRAM void sd_write_save()
