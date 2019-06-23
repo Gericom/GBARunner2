@@ -99,6 +99,9 @@
     <ClCompile Include="source\save\SramSave.vram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\bios.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="build\BarShadow_nbfc.h">
@@ -230,6 +233,9 @@
     <ClInclude Include="source\save\SramSave.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\bios.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="source\aborthandler_asm.s" />
@@ -267,5 +273,6 @@
     <None Include="data\ListCircle.nbfc" />
     <None Include="data\RobotoMedium13.ntft" />
     <None Include="data\RobotoRegular10.ntft" />
+    <None Include="source\bios.s" />
   </ItemGroup>
 </Project>

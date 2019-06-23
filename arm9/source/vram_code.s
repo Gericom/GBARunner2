@@ -339,7 +339,7 @@ gba_start_bkpt_vram:
 	blx r0
 
 	ldr r0,= 0x05000000
-	ldr r1,= 0x3E0
+	ldr r1,= 0x7FFF
 	strh r1, [r0]
 	mrc p15, 0, r0, c1, c0, 0
 	//orr r0, #(1<<15)
@@ -357,5 +357,6 @@ gba_start_bkpt_vram:
 
 	mcr	p15, 0, r0, c7, c10, 4
 
-	mov r0, #0
+	//to boot without intro set this to 0xB4
+	ldr r0,= (gGbaBios + 0x68)
 	bx r0

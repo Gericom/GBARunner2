@@ -147,6 +147,7 @@ __secure_area__ = .;
 
 	.vram __vram_start : AT (__vram_lma)
 	{
+		bios.o
 		*(.vram)
 		*vram.*(.text)
 		*vram.*(.text.*)

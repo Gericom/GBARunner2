@@ -505,9 +505,9 @@ dldi_name_copy:
 //	bgt gba_setup_copyloop_rom2
 
 	//Make bios jump to 02040000
-	ldr r0,= 0xE3A0E781
-	ldr r1,= 0xCC
-	str r0, [r1]
+	//ldr r0,= 0xE3A0E781
+	//ldr r1,= 0xCC
+	//str r0, [r1]
 
 	//Move wram into place
 	ldr r0,= 0x4000247
@@ -570,12 +570,12 @@ dldi_name_copy:
 //	subs r2, #4
 //	bne gba_setup_fill_H_loop
 
-	ldr r0,= 0x74
-	mov r1, #0
-	str r1, [r0]//fix post boot redirect
-	ldr r0,= 0x800
-	ldr r1,= 0x4770
-	strh r1, [r0]//fix sound bias hang
+	//ldr r0,= 0x74
+	//mov r1, #0
+	//str r1, [r0]//fix post boot redirect
+	//ldr r0,= 0x800
+	//ldr r1,= 0x4770
+	//strh r1, [r0]//fix sound bias hang
 
 	//Patch the CpuSet and CpuFastSet bios functions for faster sd access (aka larger blocks instead of 4 bytes each time)
 	//CpuFastSet
@@ -594,22 +594,22 @@ dldi_name_copy:
 	//str r1, [r0]
 
 	//replace the write to haltcnt in waitintr with a cp15 instruction that does the same on arm9
-	ldr r0,= bios_waitintr_fix
-	ldr r0, [r0]
-	mov r1, #0x344
-	str r0, [r1]
-	mov r1, #0x1B0
-	str r0, [r1]
+	//ldr r0,= bios_waitintr_fix
+	//ldr r0, [r0]
+	//mov r1, #0x344
+	//str r0, [r1]
+	//mov r1, #0x1B0
+	//str r0, [r1]
 
-#ifdef ENABLE_WRAM_ICACHE
-	ldr r0,= bios_cpuset_cache_patch
-	mov r1, #0x1F4
-	str r0, [r1]
+//#ifdef ENABLE_WRAM_ICACHE
+	//ldr r0,= bios_cpuset_cache_patch
+	//mov r1, #0x1F4
+	//str r0, [r1]
 
-	ldr r0,= bios_cpufastset_cache_patch
-	mov r1, #0x1F8
-	str r0, [r1]
-#endif
+	//ldr r0,= bios_cpufastset_cache_patch
+	//mov r1, #0x1F8
+	//str r0, [r1]
+//#endif
 
 	//We need to get into privileged mode, misuse the undefined mode for it
 	//ldr r0,= gba_start_bkpt

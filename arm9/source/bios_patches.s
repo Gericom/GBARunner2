@@ -1,10 +1,6 @@
-.section .itcm
+.section .vram
 
 #include "consts.s"
-
-.global bios_waitintr_fix
-bios_waitintr_fix:
-	mcr p15,0,r0,c7,c0,4
 
 /*.global bios_cpufastset_sd_patch
 bios_cpufastset_sd_patch:
@@ -29,7 +25,7 @@ bios_cpufastset_sd_patch:
 	ldr r3,= 0x4000242
 	ldr r4,= 0x8080
 	strh r4, [r3]
-
+	
 	ldr r3,= 0x04000188
 	ldr r4,= 0xAA5500C8
 	str r4, [r3]
@@ -77,14 +73,12 @@ bios_cpuset_cache_patch:
 	PUSH    {R4,R5,LR}
 	mov r4, #0
 	mcr p15, 0, r4, c7, c5, 0
-	mov r4, #0xB40
-	orr r4, #0x00F
-	bx r4
+	ldr pc,= (gGbaBios + 0xB4F)
 
 .global bios_cpufastset_cache_patch
 bios_cpufastset_cache_patch:
 	STMFD   SP!, {R4-R10,LR}
 	mov r4, #0
 	mcr p15, 0, r4, c7, c5, 0
-	b 0xBC8
+	ldr pc,= (gGbaBios + 0xBC8)
 #endif

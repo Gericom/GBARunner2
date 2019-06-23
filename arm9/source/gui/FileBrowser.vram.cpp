@@ -19,6 +19,7 @@
 #include "qsort.h"
 #include "crc16.h"
 #include "save/Save.h"
+#include "bios.h"
 #include "FileBrowser.h"
 
 static int compDirEntries(const FILINFO*& dir1, const FILINFO*& dir2)
@@ -32,18 +33,20 @@ static int compDirEntries(const FILINFO*& dir1, const FILINFO*& dir2)
 
 void FileBrowser::LoadBios()
 {
-	FRESULT result = f_open(&vram_cd->fil, "0:/bios.bin", FA_OPEN_EXISTING | FA_READ);
-	if (result != FR_OK)
-		result = f_open(&vram_cd->fil, "0:/gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
-	if (result != FR_OK)
-		FatalError("Bios not found!");
-	if (vram_cd->fil.obj.objsize != 16 * 1024)
-		FatalError("Invalid bios size!");
-	UINT br;
-	if (f_read(&vram_cd->fil, (void*)vram_cd->cluster_cache, 16 * 1024, &br) != FR_OK || br != 16 * 1024)
-		FatalError("Error while loading bios!");
-	f_close(&vram_cd->fil);
-	arm9_memcpy16((u16*)0, (u16*)vram_cd->cluster_cache, (16 * 1024) >> 1);
+	switch (bios_load())
+	{
+		case BIOS_LOAD_RESULT_OK:
+			break;
+		case BIOS_LOAD_RESULT_ERROR:
+			FatalError("Error while loading bios!");
+			break;
+		case BIOS_LOAD_RESULT_NOT_FOUND:
+			FatalError("Bios not found!");
+			break;
+		case BIOS_LOAD_RESULT_INVALID:
+			FatalError("Bios invalid!");
+			break;
+	}
 }
 
 void FileBrowser::LoadFolder(const char* path)

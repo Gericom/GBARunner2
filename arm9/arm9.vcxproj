@@ -157,6 +157,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\bios.vram.cpp" />
     <ClCompile Include="source\crc16.vram.cpp" />
     <ClCompile Include="source\fat\diskio.vram.cpp" />
     <ClCompile Include="source\fat\ff.vram.c" />
@@ -198,6 +199,7 @@
     <ClInclude Include="build\RobotoMedium13_ntft.h" />
     <ClInclude Include="build\RobotoRegular10_ntft.h" />
     <ClInclude Include="build\SettingsIcon_nbfc.h" />
+    <ClInclude Include="source\bios.h" />
     <ClInclude Include="source\crc16.h" />
     <ClInclude Include="source\fat\diskio.h" />
     <ClInclude Include="source\fat\ff.h" />
@@ -249,6 +251,7 @@
     <None Include="ds_arm9_gbarunner.specs" />
     <None Include="Makefile" />
     <None Include="source\aborthandler_asm.s" />
+    <None Include="source\bios.s" />
     <None Include="source\bios_patches.s" />
     <None Include="source\consts.s" />
     <None Include="source\dldi_stub.s" />
