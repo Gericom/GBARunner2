@@ -27,16 +27,34 @@ data_abort_handler:
 	str lr, [r13, #(4 * 15 + 1)]!
 
 	mrs lr, spsr
-	movs lr, lr, lsl #27
-	ldrcc pc, [r13, lr, lsr #25] //uses cpu_mode_switch_dtcm
-
-data_abort_handler_thumb:
+	movs lr, lr, lsl #27	
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
 	ldr r12,= reg_table
+	bcc handleArm
+
+	//ldrcc pc, [r13, lr, lsr #25] //uses cpu_mode_switch_dtcm
+
+data_abort_handler_thumb:
 	ldr r11, [r12, #(4 * 15)]
 	ldrh r10, [r11, #-8]
 	add r12, r12, #(address_thumb_table_dtcm - reg_table)
 	ldr pc, [r12, r10, lsr #7]
+
+handleArm:
+	ldr r10, [r12, #(4 * 15)]
+	ldr r11, [r12, #0x48] //0x08088008
+	ldr r10, [r10, #-8]
+	tst r10, r11
+	bne handleArmHi	
+	add r9, r12, #(address_jumptab_armLo - reg_table)
+	and r11, r10, #0x07F00000
+	and r13, r10, #0x00000060
+	orr r11, r13, lsl #13
+	ldr pc, [r9, r11, lsr #16]
+
+handleArmHi:
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
+	ldr pc, [r13, lr, lsr #25]
 
 .global data_abort_handler_arm_irq
 data_abort_handler_arm_irq:
@@ -59,17 +77,9 @@ data_abort_handler_arm_usr_sys:
 	stmdb r13, {r0-r14}^
 
 data_abort_handler_cont:
-	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
-
-	ldr r12,= reg_table
-	//add r6, r5, #4	//pc+12
-	//pc + 8
-	//str r5, [r11, #(4 * 15)]
-	ldr r10, [r12, #(4 * 15)]
-
-	ldr r10, [r10, #-8]
-	add r11, r12, #(address_arm_table_dtcm - reg_table)
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)	
 	and r10, r10, #0x0FFFFFFF
+	add r11, r12, #(address_arm_table_dtcm - reg_table)
 
 #ifdef HANDLER_STATISTICS
 	mov r8, r10, lsr #19

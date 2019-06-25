@@ -8,22 +8,26 @@
 ldrh_strh_address_calc_\p\u\i\w\l:
 	//and r8, r10, #(0xF << 16)
 	//ldr r9, [r11, r8, lsr #14]
-	and r0, r10, #0xF
+	and r13, r10, #0xF
 .if !\i
-	ldr r0, [r12, r0, lsl #2]
+	ldr r13, [r12, r13, lsl #2]
 .else
 	and r14, r10, #0xF00
-	orr r0, r14, lsr #4
+	orr r13, r14, lsr #4
 .endif
 .if \p
 	.if !\u
-		sub r9, r9, r0
+		sub r9, r13
 	.else
-		add r9, r9, r0
+		add r9, r13
 	.endif
 .else
-	.if \l && !\u
-		rsb r0, r0, #0
+	.if \l
+		.if !\u
+			sub r13, r9, r13
+		.else
+			add r13, r9, r13
+		.endif
 	.endif
 .endif
 .if !\l
@@ -35,9 +39,9 @@ ldrh_strh_address_calc_\p\u\i\w\l:
 	ldrh r11, [r12, r11]
 	.if !\p
 		.if !\u
-			sub r13, r9, r0
+			sub r13, r9, r13
 		.else
-			add r13, r9, r0
+			add r13, r9, r13
 		.endif
 		str r13, [r12, r8, lsr #14]
 	.endif
@@ -70,8 +74,11 @@ create_all_ldrh_strh_variants
 
 ldrh_strh_address_calc_cont_001:
 ldrh_strh_address_calc_cont_011:
-	mov r1, r10
-	mov r7, r12
+	str r13, [r12, r8, lsr #14]
+
+	and r8, r10, #(0xF << 12)
+	add r8, r12, r8, lsr #10
+
 	and r4, r10, #(3 << 5)
 	cmp r4, #(2 << 5)
 	beq 2f
@@ -82,21 +89,13 @@ ldrh_strh_address_calc_cont_011:
 	cmp r4, #(1 << 5)
 	movne r10, r10, lsl #16
 	movne r10, r10, asr #16
-	and r11, r1, #(0xF << 12)
-	str r10, [r7, r11, lsr #10]
-
-	add r9, r0
-	str r9, [r7, r8, lsr #14]
+	str r10, [r8]
 	b data_abort_handler_cont_finish
 2:
 	bl read_address_from_handler_8bit
 	mov r10, r10, lsl #24
 	mov r10, r10, asr #24
-	and r11, r1, #(0xF << 12)
-	str r10, [r7, r11, lsr #10]
-
-	add r9, r0
-	str r9, [r7, r8, lsr #14]
+	str r10, [r8]
 	b data_abort_handler_cont_finish
 
 

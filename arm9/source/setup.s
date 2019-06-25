@@ -42,7 +42,7 @@ gba_setup:
 
 	//copy the itcm in place
 	ldr r0,= __itcm_lma
-	ldr r1,= (16 * 1024)
+	ldr r1,= (32 * 1024)
 	ldr r2,= __itcm_start
 itcm_setup_copyloop:
 	ldmia r0!, {r3-r10}

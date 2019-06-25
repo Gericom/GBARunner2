@@ -256,14 +256,15 @@
     <None Include="source\consts.s" />
     <None Include="source\dldi_stub.s" />
     <None Include="source\dtcm_data.s" />
+    <None Include="source\emu\cpuArmLo.s" />
     <None Include="source\emu\dma.s" />
     <None Include="source\emu\gfx.s" />
     <None Include="source\emu\handle_address_read.s" />
     <None Include="source\emu\handle_address_read_table.s" />
     <None Include="source\emu\handle_address_write.s" />
     <None Include="source\emu\handle_address_write_table.s" />
-    <None Include="source\emu\handle_instructions_arm.s" />
-    <None Include="source\emu\handle_instructions_thumb.s" />
+    <None Include="source\emu\cpuArmHi.s" />
+    <None Include="source\emu\cpuThumb.s" />
     <None Include="source\emu\irq.s" />
     <None Include="source\emu\snd.s" />
     <None Include="source\emu\timer.s" />

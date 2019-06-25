@@ -13,7 +13,8 @@ reg_table_dtcm:
 cpu_mode_switch_dtcm:
 	.word pu_data_permissions
 	.word data_abort_handler_cont_finish
-.rept 13
+	.word 0x08088008 //arm low instruction mask
+.rept 12
 	.word 0
 .endr
 	.word data_abort_handler_arm_usr_sys //usr
@@ -144,6 +145,57 @@ arm_table:
 	.word address_calc_unknown
 .endr
 
+.word 0
+
+.global jumptab_armLo
+jumptab_armLo:
+
+.macro list_arml_instLdrhStrh pre, up, imm, wrback, load, sign, half
+	.if (!\pre && \wrback) || (\load && !\sign && !\half) || (!\load && !(!\sign && \half)) 
+		.word address_calc_unknown
+	.else
+		.word arml_instLdrhStrh_\pre\up\imm\wrback\load\sign\half
+	.endif
+.endm
+
+.macro listAll_arml_instLdrhStrh pre, arg=0
+	list_arml_instLdrhStrh \pre,%((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x3F
+	listAll_arml_instLdrhStrh \pre,%(\arg+1)
+.endif
+.endm
+
+listAll_arml_instLdrhStrh 0
+listAll_arml_instLdrhStrh 1
+
+.rept 128
+	.word address_calc_unknown
+.endr
+
+.macro list_arml_instLdrStr reg, pre, up, byte, wrback, load
+	.if !\pre && \wrback
+		.word address_calc_unknown
+		.word address_calc_unknown
+		.word address_calc_unknown
+		.word address_calc_unknown
+	.else
+		.word arml_instLdrStr_\reg\pre\up\byte\wrback\load
+		.word arml_instLdrStr_\reg\pre\up\byte\wrback\load
+		.word arml_instLdrStr_\reg\pre\up\byte\wrback\load
+		.word arml_instLdrStr_\reg\pre\up\byte\wrback\load
+	.endif
+.endm
+
+.macro listAll_arml_instLdrStr arg=0
+	list_arml_instLdrStr %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg<0x3F
+	listAll_arml_instLdrStr %(\arg+1)
+.endif
+.endm
+
+listAll_arml_instLdrStr
+
+
 .global count_bit_table_new
 count_bit_table_new:
 .rept 256
@@ -214,4 +266,5 @@ timer_shadow_regs_dtcm:
 .endr
 
 //for some reason the file is ignored without this nop here
+nop
 nop
