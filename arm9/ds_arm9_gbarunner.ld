@@ -127,6 +127,7 @@ __secure_area__ = .;
 
 	.itcm __itcm_start : AT (__itcm_lma)
 	{
+		*(.itcm.addrhack1)
 		*(.itcm)
 		*itcm.*(.text)
 		. = ALIGN(4);

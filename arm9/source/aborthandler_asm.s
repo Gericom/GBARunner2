@@ -1,9 +1,9 @@
-.section .itcm
+.section .itcm.addrhack1
 .altmacro
 
 #include "consts.s"
 
-//#define DEBUG_ABORT_ADDRESS
+.space (0x3F4 - (0x20 + addrhack1 - data_abort_handler))
 
 //when r15 is used as destination, problems will arise, as it's currently not supported
 
@@ -27,34 +27,17 @@ data_abort_handler:
 	str lr, [r13, #(4 * 15 + 1)]!
 
 	mrs lr, spsr
-	movs lr, lr, lsl #27	
+	movs lr, lr, lsl #27
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)
-	ldr r12,= reg_table
-	bcc handleArm
-
-	//ldrcc pc, [r13, lr, lsr #25] //uses cpu_mode_switch_dtcm
+	ldr r12,= reg_table	
+	ldr r11, [r12, #(4 * 15)]
+	bcc (abt_handleArm - 0x01000000 + 0x180000)
 
 data_abort_handler_thumb:
-	ldr r11, [r12, #(4 * 15)]
 	ldrh r10, [r11, #-8]
+	//todo: fill up this interlock
 	add r12, r12, #(address_thumb_table_dtcm - reg_table)
-	ldr pc, [r12, r10, lsr #7]
-
-handleArm:
-	ldr r10, [r12, #(4 * 15)]
-	ldr r11, [r12, #0x48] //0x08088008
-	ldr r10, [r10, #-8]
-	tst r10, r11
-	bne handleArmHi	
-	add r9, r12, #(address_jumptab_armLo - reg_table)
-	and r11, r10, #0x07F00000
-	and r13, r10, #0x00000060
-	orr r11, r13, lsl #13
-	ldr pc, [r9, r11, lsr #16]
-
-handleArmHi:
-	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
-	ldr pc, [r13, lr, lsr #25]
+	ldr pc, [r12, r10, lsr #7] //todo: this construct actually involves an interlock!
 
 .global data_abort_handler_arm_irq
 data_abort_handler_arm_irq:
@@ -78,7 +61,6 @@ data_abort_handler_arm_usr_sys:
 
 data_abort_handler_cont:
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x11)	
-	and r10, r10, #0x0FFFFFFF
 	add r11, r12, #(address_arm_table_dtcm - reg_table)
 
 #ifdef HANDLER_STATISTICS
@@ -99,7 +81,7 @@ data_abort_handler_cont:
 	and r8, r10, #(0xF << 16)
 	ldr r9, [r12, r8, lsr #14]
 
-	ldr pc, [r11, r10, lsr #18]
+	ldr pc, [r11, r13, lsr #18]//todo: this construct actually involves an interlock!
 
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:
@@ -186,3 +168,20 @@ address_calc_unknown:
 //	strh r2, [r12], #2
 
 	b .
+
+.global abt_handleArm
+abt_handleArm:
+	ldr r14, [r12, #0x48] //0x08088008
+	ldr r10, [r11, #-8]
+    //fills in the interlock cycle that would otherwise be wasted    
+	add r9, r12, #(address_jumptab_armLo - reg_table)
+.global addrhack1
+addrhack1:
+	and r13, r10, pc, ror #14 //specially crafted value of pc serves as mask, pc + 8 should be 0x1803FC
+	tst r10, r14
+    //conditional is faster than branching here
+	orreq r13, r13, lsl #13
+	ldreq pc, [r9, r13, lsr #16]
+handleArmHi:
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
+	ldr pc, [r13, lr, lsr #25] //todo: this construct actually involves an interlock!
