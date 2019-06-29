@@ -120,7 +120,7 @@ int main()
 				gba_sound_notify_reset();
 				break;
 #ifdef ARM7_DLDI
-		case 0xAA5500DF:
+			case 0xAA5500DF:
 			{
 				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				uint32_t sector = REG_RECV_FIFO;
@@ -132,18 +132,18 @@ int main()
 				REG_SEND_FIFO = 0x55AAAA55;
 				break;
 			}
-		case 0xAA5500F0:
-		{
-			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-			uint32_t sector = REG_RECV_FIFO;
-			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-			uint32_t count = REG_RECV_FIFO;
-			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-			uint8_t* src = (uint8_t*)REG_RECV_FIFO;
-			dldi_handler_write_sectors(sector, count, src);
-			REG_SEND_FIFO = 0x55AAAA55;
-			break;
-		}
+			case 0xAA5500F0:
+			{
+				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+				uint32_t sector = REG_RECV_FIFO;
+				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+				uint32_t count = REG_RECV_FIFO;
+				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+				uint8_t* src = (uint8_t*)REG_RECV_FIFO;
+				dldi_handler_write_sectors(sector, count, src);
+				REG_SEND_FIFO = 0x55AAAA55;
+				break;
+			}
 #endif
 			case 0xAA5500F8:
 				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);

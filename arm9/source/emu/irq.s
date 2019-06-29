@@ -266,7 +266,16 @@ irq_handler_arm7_irq:
 
 	ldr r2,= fake_irq_flags
 	ldr r1, [r2]
-	orr r1, #(3 << 9)
+
+	ldr r0,= dma_shadow_regs_dtcm
+	ldrh r12, [r0, #0x16]
+	tst r12, #(1 << 14)
+	orrne r1, #(1 << 9) //dma 1
+
+	ldrh r12, [r0, #0x22]
+	tst r12, #(1 << 14)
+	orrne r1, #(1 << 10) //dma 2
+
 	str r1, [r2]
 
 //enable icache by pressing the R button
@@ -311,4 +320,35 @@ cap_control:
 	streqb r2, [r12, #0x243]
 	orr r1, #0x80000000
 	str r1, [r12, #0x64]
+
+	ldr r2,= 0x07000400
+	ldr r3,= 0xC0080C10
+	ldr r0, [r2]
+	cmp r0, r3
+	beq irq_cont
+
+	//fix sub oams
+	mov r1, #0
+1:
+	mov r0, #0
+2:
+	orr r3, r1, #0x0C00 //bitmap obj
+	add r3, #16
+	strh r3, [r2], #2
+	orr r3, r0, #0xC000 //64x64
+	add r3, #8
+	strh r3, [r2], #2
+	mov r3, r1, lsr #3
+	mov r3, r3, lsl #5
+	add r3, r3, r0, lsr #3
+	orr r3, #0xF000 //fully visible
+	strh r3, [r2], #4
+
+	add r0, #64
+	cmp r0, #256
+	blt 2b
+
+	add r1, #64
+	cmp r1, #192
+	blt 1b
 	b irq_cont

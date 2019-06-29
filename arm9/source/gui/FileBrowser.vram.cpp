@@ -20,6 +20,7 @@
 #include "crc16.h"
 #include "save/Save.h"
 #include "bios.h"
+#include "gamePatches.h"
 #include "FileBrowser.h"
 
 static int compDirEntries(const FILINFO*& dir1, const FILINFO*& dir2)
@@ -183,6 +184,8 @@ void FileBrowser::LoadGame(const char* path)
 	}
 
 	f_close(&vram_cd->fil);
+
+	gptc_patchRom();
 
 	char nameBuf[256];
 	for (int i = 0; i < 256; i++)

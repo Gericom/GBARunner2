@@ -163,6 +163,7 @@
     <ClCompile Include="source\fat\ff.vram.c" />
     <ClCompile Include="source\fat\ffsystem.vram.c" />
     <ClCompile Include="source\fat\ffunicode.vram.c" />
+    <ClCompile Include="source\gamePatches.vram.cpp" />
     <ClCompile Include="source\gui\core\InputRepeater.vram.cpp" />
     <ClCompile Include="source\gui\core\PaletteManager.vram.cpp" />
     <ClCompile Include="source\gui\Dialog.vram.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="source\fat\diskio.h" />
     <ClInclude Include="source\fat\ff.h" />
     <ClInclude Include="source\fat\ffconf.h" />
+    <ClInclude Include="source\gamePatches.h" />
     <ClInclude Include="source\gui\core\InputRepeater.h" />
     <ClInclude Include="source\gui\core\PaletteManager.h" />
     <ClInclude Include="source\gui\Dialog.h" />
