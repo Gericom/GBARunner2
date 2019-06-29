@@ -122,8 +122,11 @@ arml_instLdrhStrh_\pre\up\imm\wrback\load\sign\half:
 			mov r10, r10, asr #24
 		.else
 			bl read_address_from_handler_16bit
+			tst r9, #1
+			movne r10, r10, lsl #8
 			mov r10, r10, lsl #16
 			mov r10, r10, asr #16
+			movne r10, r10, asr #8
 		.endif
 		4:
 			mov r0, r10
