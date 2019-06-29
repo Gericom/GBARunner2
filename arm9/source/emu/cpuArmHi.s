@@ -183,7 +183,7 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 .endif
 //align if 32 bit write
 .if !\bw && !\l
-	bic r9, r9, #3
+	//bic r9, r9, #3
 .endif
 
 .if \p && \w //pre

@@ -18,6 +18,10 @@ read_dma_control_top8:
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
 	ldrb r10, [r12, r10]
+	and r12, r10, #0xB0
+	cmp r12, #0xB0
+	orreq r10, #0x80
+	bxeq lr
 	//get the busy bit from the actual hardware
 	ldrb r11, [r9]
 	tst r11, #0x80
@@ -31,6 +35,10 @@ read_dma_control:
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
 	ldrh r10, [r12, r10]
+	and r12, r10, #0xB000
+	cmp r12, #0xB000
+	orreq r10, #0x8000
+	bxeq lr
 	//get the busy bit from the actual hardware
 	ldrh r11, [r9]
 	tst r11, #0x8000
@@ -45,6 +53,11 @@ read_dma_size_control:
 	sub r10, r9, r10
 	add r10, #2
 	ldrh r10, [r12, r10]
+	and r12, r10, #0xB000
+	cmp r12, #0xB000
+	orreq r10, #0x8000
+	moveq r10, r10, lsl #16
+	bxeq lr
 	//get the busy bit from the actual hardware
 	ldrh r11, [r9, #2]
 	tst r11, #0x8000
@@ -53,6 +66,7 @@ read_dma_size_control:
 	mov r10, r10, lsl #16
 	bx lr
 
+//todo: transfers should only start on 0->1 transitions!
 .macro write_dma_control_variant offs
 
 .global write_dma_control_\offs
@@ -64,7 +78,25 @@ write_dma_control_\offs:
 	sub r10, #(\offs - 2)
 	add r10, r12
 	bic r11, r11, #0x1F
+
+	//resolve busy status of old dma
+	ldrh r13, [r10]
+	and r13, r13, #0xB000
+	cmp r13, #0xB000
+	moveq r12, #1
+	beq 9f
+	//get the busy bit from the actual hardware
+	ldrh r13, [r9, #(2 - \offs)]
+	tst r13, #0x8000
+	moveq r12, #0
+	orrne r12, #1
+9:
+	//this is not completely correct as a second time writing while busy might give wrong results
 	strh r11, [r10]
+	cmp r12, #1
+	andeq r12, r11, #0x8000
+	cmpeq r12, #0x8000
+	bxeq lr
 #ifdef ENABLE_WRAM_ICACHE
 	//invalidate icache
 	mov r12, #0
@@ -79,6 +111,7 @@ write_dma_control_\offs:
 	beq 6f
 	//fix and check dst
 	ldr r12, [r10, #-6]
+	bic r12, #0xF0000000
 	//dst invalid
 	cmp r12, #0x02000000
 	biclt r11, r11, #0x8000
@@ -111,6 +144,7 @@ write_dma_control_\offs:
 
 	//is the src in rom
 	ldr r13, [r10, #-0xA]
+	bic r13, #0xF0000000
 	cmp r13, #0x08000000
 	bge dma_rom_src_\offs
 
@@ -148,6 +182,12 @@ dma_special_mode_\offs:
 	bxne lr
 
 	ldr r13, [r9, #(-8 - \offs)] //src
+
+	ldr r11,= 0x04000188
+7:
+	ldr r10, [r11, #-4]
+	tst r10, #1
+	beq 7b
 
 	ldr r10,= 0x04000188
 	ldr r12,= 0xAA5500F8
@@ -232,7 +272,75 @@ write_dma_control_top8:
 	orr r11, r13, r11, lsl #8
 	strh r11, [r12, r10]
 	b write_dma_control_3
-	
+
+//the way these things handle invalid src/dst is not very nice
+//for 16 and 8 bit accesses (are these even allowed??)
+
+.global write_dma_shadow_src_dst_internal_32
+write_dma_shadow_src_dst_internal_32:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	cmp r11, #0x02000000
+	bxlo lr
+	tst r11, #0xF8000000
+	streq r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_src_dst_internal_hi16
+write_dma_shadow_src_dst_internal_hi16:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	cmp r11, #0x0200
+	bxlo lr
+	tst r11, #0xF800
+	streqh r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_src_dst_internal_hi8
+write_dma_shadow_src_dst_internal_hi8:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	cmp r11, #0x02
+	bxlo lr
+	tst r11, #0xF8
+	streqb r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_src_dst_all_32
+write_dma_shadow_src_dst_all_32:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	cmp r11, #0x02000000
+	bxlo lr
+	tst r11, #0xF0000000
+	streq r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_src_dst_all_hi16
+write_dma_shadow_src_dst_all_hi16:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	cmp r11, #0x0200
+	bxlo lr
+	tst r11, #0xF000
+	streqh r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_src_dst_all_hi8
+write_dma_shadow_src_dst_all_hi8:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	cmp r11, #0x02
+	bxlo lr
+	tst r11, #0xF0
+	streqb r11, [r12, r10]
+	bx lr
 
 .global write_dma_shadow_32
 write_dma_shadow_32:

@@ -48,6 +48,11 @@ write_address_timer_counter:
 	strh r12, [r9]
 
 	//send info to arm7
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]
@@ -96,6 +101,11 @@ write_address_timer:
 	str r13, [r9]
 
 1:
+	ldr r13,= 0x04000188
+2:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 2b
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]

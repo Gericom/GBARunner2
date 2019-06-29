@@ -278,7 +278,6 @@ arml_instLdrStr_\reg\pre\up\byte\wrback\load:
 			and r11, #0xFF //byte
 			bl write_address_from_handler_8bit
 		.else		
-			bic r9, #3 //force align if 32 bit write
 			bl write_address_from_handler_32bit
 		.endif
 	.endif

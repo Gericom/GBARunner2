@@ -110,6 +110,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\dldi_handler.cpp" />
+    <ClCompile Include="source\gbsound.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\save.cpp" />
     <ClCompile Include="source\sound.cpp" />
@@ -117,6 +118,7 @@
   <ItemGroup>
     <ClInclude Include="source\dldi_handler.h" />
     <ClInclude Include="source\fifo.h" />
+    <ClInclude Include="source\gbsound.h" />
     <ClInclude Include="source\lock.h" />
     <ClInclude Include="source\save.h" />
     <ClInclude Include="source\sound.h" />

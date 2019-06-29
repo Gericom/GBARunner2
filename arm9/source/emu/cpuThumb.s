@@ -51,7 +51,7 @@ thumb7_address_calc_\l\bw:
 	.word 0
 //align if 32 bit write
 .if !\bw && !\l
-	bic r9, r9, #3
+	//bic r9, r9, #3
 .endif
 .ifeq \l //write
 2:

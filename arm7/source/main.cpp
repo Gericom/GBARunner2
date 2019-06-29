@@ -10,7 +10,6 @@
 
 static void vblank_handler()
 {
-
 }
 
 extern "C" void my_irq_handler();
@@ -49,8 +48,9 @@ int main()
 	//wait for the arm9 sync command
 	do
 	{
-		while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
-	} while(REG_RECV_FIFO != 0xAA5555AA);
+		while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+	}
+	while (REG_RECV_FIFO != 0xAA5555AA);
 #ifdef ARM7_DLDI
 	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
@@ -71,7 +71,7 @@ int main()
 
 
 	//irqSet(IRQ_VBLANK, vblank_irq_handler);
-    //irqEnable(IRQ_VBLANK);
+	//irqEnable(IRQ_VBLANK);
 
 	//irqSet(IRQ_FIFO_NOT_EMPTY, fifo_handler);
 	//irqEnable(IRQ_FIFO_NOT_EMPTY);
@@ -91,7 +91,7 @@ int main()
 	//REG_TM[2].CNT_L = TIMER_FREQ(60)/64;//4 * 15734);
 	////REG_TM[2].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_64;
 	//irqEnable(IRQ_TIMER2);
-	
+
 	//REG_SOUND[0].SAD = 0x23F8000;
 	//REG_SOUND[0].TMR = (u16)-1594; //-1253
 	//REG_SOUND[0].PNT = 0;
@@ -100,11 +100,11 @@ int main()
 	//fifo loop
 	//vu32 val;
 	//int frameOffset = 0;
-	while(1)
+	while (1)
 	{
-		while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
+		while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 		{
-			if(!(*((vu32*)0x04000136) & 1))
+			if (!(*((vu32*)0x04000136) & 1))
 				gba_sound_resync();
 		}
 
@@ -112,13 +112,13 @@ int main()
 		//if((cmd >> 16) != 0xAA55)
 		//	continue;
 		uint32_t vals[4];
-		u32 val;
-		switch(cmd)
+		u32      val;
+		switch (cmd)
 		{
-		case 0xAA5500C4://fifo_start_sound_command
-			//REG_SOUND[0].CNT |= REG_SOUNDXCNT_E;
-			gba_sound_notify_reset();
-			break;
+			case 0xAA5500C4: //fifo_start_sound_command
+				//REG_SOUND[0].CNT |= REG_SOUNDXCNT_E;
+				gba_sound_notify_reset();
+				break;
 #ifdef ARM7_DLDI
 		case 0xAA5500DF:
 			{
@@ -145,80 +145,91 @@ int main()
 			break;
 		}
 #endif
-		case 0xAA5500F8:
-			while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
-			val = REG_RECV_FIFO;
-			gba_sound_set_src(val);
-			break;
-		case 0xAA5500F9:
-			/*while(*((vu32*)0x04000184) & (1 << 8));
-				vals[0] = REG_RECV_FIFO;
-			while(*((vu32*)0x04000184) & (1 << 8));
-				vals[1] = REG_RECV_FIFO;
-			while(*((vu32*)0x04000184) & (1 << 8));
-				vals[2] = REG_RECV_FIFO;
-			while(*((vu32*)0x04000184) & (1 << 8));
-				vals[3] = REG_RECV_FIFO;
-			gba_sound_fifo_write16((uint8_t*)&vals[0]);*/
-			gba_sound_fifo_update();
-			break;
-		case 0xAA5500FA://gb sound update
-		{
-			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-			val = REG_RECV_FIFO;
-			int reg = val & 0xFF;
-			int len = (val >> 8) & 0x7;
-			while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-			val = REG_RECV_FIFO;
-			for(int i = 0; i < len; i++)
-			{
-				if(reg == 0x82)
-				{
-					gbs_setMixVolume(val & 3);
-					gbas_updateVolume(val);
-				}
-				else if(reg == 0x83)
-					gbas_updateMixConfig(val);
-				else
-					gbs_writeReg(reg, val & 0xFF);
-				reg++;
-				val >>= 8;
-			}
-			break;
-		}
-		case 0x040000A0:
-			while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
-			val = REG_RECV_FIFO;
-			gba_sound_fifo_write(val);
-			break;
-		case 0x04000100:
-		case 0x04000102:
-			{
-				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
-				val = REG_RECV_FIFO;
-				gbas_soundTimerUpdated(0, val & 0xFFFF);
-				break;
-			}
-		case 0x04000104:
-		case 0x04000106:
-			{
+			case 0xAA5500F8:
 				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;
-				gbas_soundTimerUpdated(1, val & 0xFFFF);
+				gba_sound_set_src(val);
 				break;
-			}
-		case 0x04000108:
-		case 0x0400010A:
-		case 0x0400010C:
-		case 0x0400010E:
-			{
-				while(REG_FIFO_CNT & FIFO_CNT_EMPTY);
+			case 0xAA5500F9:
+				/*while(*((vu32*)0x04000184) & (1 << 8));
+					vals[0] = REG_RECV_FIFO;
+				while(*((vu32*)0x04000184) & (1 << 8));
+					vals[1] = REG_RECV_FIFO;
+				while(*((vu32*)0x04000184) & (1 << 8));
+					vals[2] = REG_RECV_FIFO;
+				while(*((vu32*)0x04000184) & (1 << 8));
+					vals[3] = REG_RECV_FIFO;
+				gba_sound_fifo_write16((uint8_t*)&vals[0]);*/
+				gba_sound_fifo_update();
+				break;
+			case 0xAA5500FA: //gb sound update
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;
+					int reg = val & 0xFF;
+					int len = (val >> 8) & 0x7;
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;
+					for (int i = 0; i < len; i++)
+					{
+						if (reg == 0x82)
+						{
+							gbs_setMixVolume(val & 3);
+							gbas_updateVolume(val);
+						}
+						else if (reg == 0x83)
+							gbas_updateMixConfig(val);
+						else
+							gbs_writeReg(reg, val & 0xFF);
+						reg++;
+						val >>= 8;
+					}
+					break;
+				}
+			case 0x040000A0:
+				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;
+				gba_sound_fifo_write(val);
 				break;
-			}
-		//case 0xC5://fifo_stop_sound_command
-			//REG_SOUND[0].CNT = SOUND_CHANNEL_0_SETTINGS;
-		//	break;
+			case 0x04000100:
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;
+					gbas_soundTimerUpdated(0, val & 0xFFFF);
+					break;
+				}
+			case 0x04000102:
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;
+					break;
+				}
+			case 0x04000104:
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;
+					gbas_soundTimerUpdated(1, val & 0xFFFF);
+					break;
+				}
+			case 0x04000106:
+
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;
+					break;
+				}
+			case 0x04000108:
+			case 0x0400010A:
+			case 0x0400010C:
+			case 0x0400010E:
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;
+					break;
+				}
+				//case 0xC5://fifo_stop_sound_command
+				//REG_SOUND[0].CNT = SOUND_CHANNEL_0_SETTINGS;
+				//	break;
 		}
 	}
 	return 0;

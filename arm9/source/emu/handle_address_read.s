@@ -9,7 +9,7 @@ bios_op = 0xE3A02004 //[0188h+8] after swi execution; reads between 0x1C8 and 0x
 
 .global read_address_from_handler_32bit
 read_address_from_handler_32bit:
-	cmp r9, #0x0F000000
+	cmp r9, #0x10000000
 	ldrlo pc, [pc, r9, lsr #22]
 	b read_address_undefined_memory_32
 
@@ -27,6 +27,7 @@ read_address_from_handler_32bit:
 	.word read_address_from_handler_rom_32
 	.word read_address_from_handler_rom_32
 	.word read_address_from_handler_eeprom_32
+	.word read_address_from_handler_sram_32
 	.word read_address_from_handler_sram_32
 
 read_address_from_handler_bios_32:
@@ -151,7 +152,7 @@ read_address_from_handler_sram_32:
 
 .global read_address_from_handler_16bit
 read_address_from_handler_16bit:
-	cmp r9, #0x0F000000
+	cmp r9, #0x010000000
 	ldrlo pc, [pc, r9, lsr #22]
 	b read_address_undefined_memory_16
 
@@ -169,6 +170,7 @@ read_address_from_handler_16bit:
 	.word read_address_from_handler_rom_16
 	.word read_address_from_handler_rom_16
 	.word read_address_from_handler_eeprom_16
+	.word read_address_from_handler_sram_16
 	.word read_address_from_handler_sram_16
 
 read_address_from_handler_bios_16:
@@ -300,7 +302,7 @@ read_address_from_handler_sram_16:
 
 .global read_address_from_handler_8bit
 read_address_from_handler_8bit:
-	cmp r9, #0x0F000000
+	cmp r9, #0x10000000
 	ldrlo pc, [pc, r9, lsr #22]
 	b read_address_undefined_memory_8
 
@@ -318,6 +320,7 @@ read_address_from_handler_8bit:
 	.word read_address_from_handler_rom_8
 	.word read_address_from_handler_rom_8
 	.word read_address_from_handler_eeprom_8
+	.word read_address_from_handler_sram_8
 	.word read_address_from_handler_sram_8
 
 read_address_from_handler_bios_8:
