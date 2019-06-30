@@ -93,6 +93,9 @@ static void applyPatches()
 	//todo: check if this is even needed anymore, it may be handled by prefetch abort just fine
 	gGbaBios[0xCC >> 2] = 0xE3A0E781;
 
+	//Start in usr mode
+	gGbaBios[0xD0 >> 2] = 0xE3A00010;
+
 	//fix post boot redirect
 	//todo: maybe I should correctly implement that register instead
 	gGbaBios[0x74 >> 2] = 0;
