@@ -32,7 +32,7 @@ static const u8 sProgramEepromDwordV126Sig[0x10] =
 	return 0;
 }*/
 
-static u16 readEepromDword(u16 epAdr, u16* dst)
+extern "C" u16 readEepromDword_impl(u16 epAdr, u16* dst)
 {
 	//reading from main memory is safe without changing permissions
 	u8* pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (epAdr << 3));
@@ -41,7 +41,9 @@ static u16 readEepromDword(u16 epAdr, u16* dst)
 	return 0;
 }
 
-static u16 programEepromDword(u16 epAdr, u16* src)
+GBA_INTERWORK_BRIDGE(readEepromDword)
+
+extern "C" u16 programEepromDword_impl(u16 epAdr, u16* src)
 {
 	//I would rather have written to the save in main memory directly,
 	//but it wouldn't work right for whatever reason :/
@@ -50,6 +52,8 @@ static u16 programEepromDword(u16 epAdr, u16* src)
 		*pSave++ = ((u8*)src)[7 - i];
 	return 0;
 }
+
+GBA_INTERWORK_BRIDGE(programEepromDword)
 
 bool eeprom_patchV111(const save_type_t* type)
 {

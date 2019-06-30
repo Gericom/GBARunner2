@@ -21,7 +21,7 @@ static const u8 sVerifySramV110Sig[0x10] =
 static const u8 sVerifySramV111Sig[0x10] =
 	{0x70, 0xB5, 0xB0, 0xB0, 0x04, 0x1C, 0x0D, 0x1C, 0x16, 0x1C, 0x08, 0x4A, 0x10, 0x88, 0x08, 0x49};
 
-static void readSram(u8* src, u8* dst, u32 size)
+extern "C" void readSram_impl(u8* src, u8* dst, u32 size)
 {
 	//reading from main memory is safe without changing permissions
 	u8* pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + ((u32)src & 0xFFFF));
@@ -29,13 +29,17 @@ static void readSram(u8* src, u8* dst, u32 size)
 		*dst++ = *pSave++;
 }
 
-static void writeSram(u8* src, u8* dst, u32 size)
+GBA_INTERWORK_BRIDGE(readSram)
+
+extern "C" void writeSram_impl(u8* src, u8* dst, u32 size)
 {
 	for (int i = 0; i < size; i++)
 		*dst++ = *src++;
 }
 
-static u32 verifySram(u8* src, u8* tgt, u32 size)
+GBA_INTERWORK_BRIDGE(writeSram)
+
+extern "C" u32 verifySram_impl(u8* src, u8* tgt, u32 size)
 {
 	//reading from main memory is safe without changing permissions
 	const u32 addr = (u32)tgt & 0xFFFF;
@@ -46,6 +50,7 @@ static u32 verifySram(u8* src, u8* tgt, u32 size)
 	return 0;
 }
 
+GBA_INTERWORK_BRIDGE(verifySram)
 
 bool sram_patchV110(const save_type_t* type)
 {

@@ -79,7 +79,7 @@ static const u8 sVerifyFlash512V130Sig[0x10] =
 static const u8 sVerifyFlashSector512V130Sig[0x10] =
 	{0x30, 0xB5, 0xC0, 0xB0, 0x0D, 0x1C, 0x03, 0x04, 0x1C, 0x0C, 0x0F, 0x4A, 0x10, 0x88, 0x0F, 0x49};
 
-static u16 eraseFlashChip()
+extern "C" u16 eraseFlashChip_impl()
 {
 	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
 	u8*        pSave = (u8*)MAIN_MEMORY_ADDRESS_SAVE_DATA;
@@ -98,7 +98,9 @@ static u16 eraseFlashChip()
 	return 0;
 }
 
-static u16 eraseFlashSector(u16 secNo)
+GBA_INTERWORK_BRIDGE(eraseFlashChip)
+
+extern "C" u16 eraseFlashSector_impl(u16 secNo)
 {
 	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
 	u8*        pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (secNo << 12));
@@ -117,7 +119,9 @@ static u16 eraseFlashSector(u16 secNo)
 	return 0;
 }
 
-static u16 programFlashSector512(u16 secNo, u8* src)
+GBA_INTERWORK_BRIDGE(eraseFlashSector)
+
+extern "C" u16 programFlashSector512_impl(u16 secNo, u8* src)
 {
 	u8* pSave = (u8*)(0x0E000000 + (secNo << 12));
 	for (int i = 0; i < (1 << 12); i++)
@@ -125,8 +129,10 @@ static u16 programFlashSector512(u16 secNo, u8* src)
 	return 0;
 }
 
+GBA_INTERWORK_BRIDGE(programFlashSector512)
+
 //todo: account for rom source
-static u16 programFlashSector1M(u16 secNo, u8* src)
+extern "C" u16 programFlashSector1M_impl(u16 secNo, u8* src)
 {
 	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
 	u8*        pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (secNo << 12));
@@ -145,7 +151,9 @@ static u16 programFlashSector1M(u16 secNo, u8* src)
 	return 0;
 }
 
-static u32 verifyFlashSector(u16 secNo, u8* src)
+GBA_INTERWORK_BRIDGE(programFlashSector1M)
+
+extern "C" u32 verifyFlashSector_impl(u16 secNo, u8* src)
 {
 	//reading from main memory is safe without changing permissions
 	const u32 addr = secNo << 12;
@@ -156,7 +164,9 @@ static u32 verifyFlashSector(u16 secNo, u8* src)
 	return 0;
 }
 
-static u32 verifyFlash(u16 secNo, u8* src, u32 size)
+GBA_INTERWORK_BRIDGE(verifyFlashSector)
+
+extern "C" u32 verifyFlash_impl(u16 secNo, u8* src, u32 size)
 {
 	//reading from main memory is safe without changing permissions
 	const u32 addr = secNo << 12;
@@ -167,7 +177,9 @@ static u32 verifyFlash(u16 secNo, u8* src, u32 size)
 	return 0;
 }
 
-static void readFlash(u16 secNo, u32 offset, u8* dst, u32 size)
+GBA_INTERWORK_BRIDGE(verifyFlash)
+
+extern "C" void readFlash_impl(u16 secNo, u32 offset, u8* dst, u32 size)
 {
 	//reading from main memory is safe without changing permissions
 	u8* pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (secNo << 12) + offset);
@@ -175,7 +187,9 @@ static void readFlash(u16 secNo, u32 offset, u8* dst, u32 size)
 		*dst++ = *pSave++;
 }
 
-static u16 identifyFlash512()
+GBA_INTERWORK_BRIDGE(readFlash)
+
+extern "C" u16 identifyFlash512_impl()
 {
 	*sPatchInfo.progSectorPtr = (u32)&programFlashSector512;
 	*sPatchInfo.eraseChipPtr = (u32)&eraseFlashChip;
@@ -196,7 +210,9 @@ static u16 identifyFlash512()
 	return 0;
 }
 
-static u16 identifyFlash1M()
+GBA_INTERWORK_BRIDGE(identifyFlash512)
+
+extern "C" u16 identifyFlash1M_impl()
 {
 	*sPatchInfo.progSectorPtr = (u32)&programFlashSector1M;
 	*sPatchInfo.eraseChipPtr = (u32)&eraseFlashChip;
@@ -216,6 +232,8 @@ static u16 identifyFlash1M()
 	*sPatchInfo.flashPtr = (u32)&sFlashType;
 	return 0;
 }
+
+GBA_INTERWORK_BRIDGE(identifyFlash1M)
 
 static bool loadDataV120(const save_type_t* type)
 {

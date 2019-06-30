@@ -346,6 +346,7 @@ gba_start_bkpt_vram:
 	orr r0, #(1 | (1 << 2))	//enable pu and data cache
 	orr r0, #(1 << 12) //and cache
 	orr r0, #(1 << 14) //round robin cache replacement improves worst case performance
+	orr r0, #(1 << 15) //arm v4 thumb handling
 	mcr p15, 0, r0, c1, c0, 0
 
 	//invalidate instruction cache

@@ -52,6 +52,15 @@ struct save_type_t
 
 #define CP15_SET_DATA_PROT(x)		do { asm volatile("mcr p15, 0, %0, c5, c0, 2" :: "r"((x))); } while(0)
 
+#define GBA_INTERWORK_BRIDGE(func) \
+	static u16  __attribute__((naked)) func() \
+	{ \
+		asm volatile("push {lr}"); \
+		asm volatile("bl "#func"_impl"); \
+		asm volatile("pop {lr}"); \
+		asm volatile("bx lr"); \
+	}
+
 const save_type_t* save_findTag();
 u32*               save_findSignature(const u8* signature);
 void               save_injectJump(u32* location, void* jumpTarget);

@@ -45,13 +45,13 @@ void gptc_patchRom()
 		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC71C) == 0xE8B2001C)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC71C) = 0xE892001C;
 	}*/
-	/*else if (gameTitle0 == 0x4159414D && gameTitle1 == 0x45485420 && gameTitle2 == 0x45454220 && gameCode == 0x50454542)
+	else if (gameTitle0 == 0x4159414D && gameTitle1 == 0x45485420 && gameTitle2 == 0x45454220 && gameCode == 0x50454542)
 	{
 		//Maya the Bee - Sweet Gold (Europe) (En,Fr,De,Es,It)
 		//remove writeback from ldm
 		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1D0F4) == 0xE8B0000F)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1D0F4) = 0xE890000F;
-	}*/
+	}
 	/*else if(gameTitle0 == 0x4E534944 && gameTitle1 == 0x4F565945 && gameTitle2 == 0x3130304C && gameCode == 0x4543444D)
 	{
 		//Game Boy Advance Video - Disney Channel Collection - Volume 1 (USA)
