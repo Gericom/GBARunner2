@@ -52,4 +52,12 @@ void gptc_patchRom()
 		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1D0F4) == 0xE8B0000F)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1D0F4) = 0xE890000F;
 	}*/
+	/*else if(gameTitle0 == 0x4E534944 && gameTitle1 == 0x4F565945 && gameTitle2 == 0x3130304C && gameCode == 0x4543444D)
+	{
+		//Game Boy Advance Video - Disney Channel Collection - Volume 1 (USA)
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xC5C) == 0x4478)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xC5C) = 0x4470;
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xCF4) == 0x94)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xCF4) = 0x9D;
+	}*/
 }
