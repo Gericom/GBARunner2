@@ -268,12 +268,12 @@ irq_handler_arm7_irq:
 	ldr r1, [r2]
 
 	ldr r0,= dma_shadow_regs_dtcm
-	ldrh r12, [r0, #0x16]
-	tst r12, #(1 << 14)
+	ldrh lr, [r0, #0x16]
+	tst lr, #(1 << 14)
 	orrne r1, #(1 << 9) //dma 1
 
-	ldrh r12, [r0, #0x22]
-	tst r12, #(1 << 14)
+	ldrh lr, [r0, #0x22]
+	tst lr, #(1 << 14)
 	orrne r1, #(1 << 10) //dma 2
 
 	str r1, [r2]
