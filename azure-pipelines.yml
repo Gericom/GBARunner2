@@ -31,8 +31,8 @@ steps:
     copy /b *.zip.00* newzip.zip
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
     cd bar
-    setx DEVKITPRO $(Agent.TempDirectory)/bar/devkitPro
-    setx DEVKITARM $(Agent.TempDirectory)/bar/devkitPro/devkitARM
+    setx DEVKITPRO "$(Agent.TempDirectory)/bar/devkitPro"
+    setx DEVKITARM "$(Agent.TempDirectory)/bar/devkitPro/devkitARM"
     set
     echo test
   displayName: 'Run a multi-line script'
