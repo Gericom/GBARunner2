@@ -98,57 +98,61 @@ thumb_table:
 	.word address_calc_unknown
 .endr
 
+.word 0
+.word 0
+
 .global arm_table
 arm_table:
-.macro list_ldrh_strh_variant a,b,c,d,e
-	.word ldrh_strh_address_calc_\a\b\c\d\e
-.endm
-
-.macro list_all_ldrh_strh_variants arg=0
-	list_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
-.if \arg<0x1F
-	list_all_ldrh_strh_variants %(\arg+1)
-.endif
-.endm
-	list_all_ldrh_strh_variants
-
-.rept 32
+.rept 96
 	.word address_calc_unknown
 .endr
-
-.macro list_ldr_str_variant a,b,c,d,e,f
-	.word ldr_str_address_calc_\a\b\c\d\e\f
-.endm
-
-.altmacro
-.macro list_all_ldr_str_variants arg=0
-	list_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
-.if \arg<0x3F
-	list_all_ldr_str_variants %(\arg+1)
-.endif
-.endm
-
-	list_all_ldr_str_variants
 
 .macro list_ldm_stm_variant a,b,c,d,e
 	.word ldm_stm_address_calc_\a\b\c\d\e
 .endm
 
-.macro list_all_ldm_stm_variants arg=0
+.macro list_all_ldm_stm_variants arg=0x1F
 	list_ldm_stm_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
-.if \arg<0x1F
-	list_all_ldm_stm_variants %(\arg+1)
+.if \arg>0
+	list_all_ldm_stm_variants %(\arg-1)
 .endif
 .endm
 	list_all_ldm_stm_variants
-.rept 96
+
+
+.macro list_ldr_str_variant a,b,c,d,e,f
+	.word ldr_str_address_calc_\a\b\c\d\e\f
+.endm
+
+.macro list_all_ldr_str_variants arg=0x3F
+	list_ldr_str_variant %((\arg>>5)&1),%((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg>0
+	list_all_ldr_str_variants %(\arg-1)
+.endif
+.endm
+
+	list_all_ldr_str_variants
+
+.rept 32
 	.word address_calc_unknown
 .endr
 
-.word 0
+.macro list_ldrh_strh_variant a,b,c,d,e
+	.word ldrh_strh_address_calc_\a\b\c\d\e
+.endm
+
+.macro list_all_ldrh_strh_variants arg=0x1F
+	list_ldrh_strh_variant %((\arg>>4)&1),%((\arg>>3)&1),%((\arg>>2)&1),%((\arg>>1)&1),%((\arg>>0)&1)
+.if \arg>1
+	list_all_ldrh_strh_variants %(\arg-1)
+.endif
+.endm
+	list_all_ldrh_strh_variants
 
 .global jumptab_armLo
 jumptab_armLo:
+
+	.word ldrh_strh_address_calc_00000
 
 .macro list_arml_instLdrhStrh pre, up, imm, wrback, load, sign, half
 	.if (!\pre && \wrback) || (\load && !\sign && !\half) || (!\load && !(!\sign && \half)) 
@@ -165,7 +169,7 @@ jumptab_armLo:
 .endif
 .endm
 
-listAll_arml_instLdrhStrh 0
+listAll_arml_instLdrhStrh 0,1
 listAll_arml_instLdrhStrh 1
 
 .rept 128
