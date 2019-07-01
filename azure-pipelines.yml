@@ -4,8 +4,9 @@
 # https://aka.ms/yaml
 
 variables:
-  DEVKITPRO: $(Agent.TempDirectory)/bar/devkitPro
-  DEVKITARM: $(Agent.TempDirectory)/bar/devkitPro/devkitARM
+  DEVKITPRO: $(Agent.TempDirectory)\bar\devkitPro
+  DEVKITARM: $(Agent.TempDirectory)\bar\devkitPro\devkitARM
+  PATH: $(PATH);$(DEVKITPRO)\msys\bin
 
 trigger:
 - master
@@ -34,8 +35,7 @@ steps:
     cd $(Agent.TempDirectory)
     copy /b *.zip.00* newzip.zip
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
-    set
-    echo test
+    echo %PATH%
   displayName: 'Run a multi-line script'
 
 - script: |
