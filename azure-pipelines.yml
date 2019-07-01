@@ -7,9 +7,6 @@ variables:
   DEVKITPRO: $(Agent.TempDirectory)\bar\devkitPro
   DEVKITARM: $(Agent.TempDirectory)\bar\devkitPro\devkitARM
 
-trigger:
-- master
-
 pool:
   vmImage: 'windows-latest'
 
