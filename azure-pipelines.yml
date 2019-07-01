@@ -66,8 +66,9 @@ steps:
   inputs:
     targetPath: '$(Build.Repository.LocalPath)\\build'
     artifact: 'GBARunner2 Build'
-    
+
 - task: GitHubRelease@0
+  condition: not(eq(variables['Build.Reason'], 'PullRequest'))
   inputs:
     gitHubConnection: Gericom2
     repositoryName: '$(Build.Repository.Name)'
