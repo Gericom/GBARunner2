@@ -36,12 +36,28 @@ ifdef ISNITRODEBUG
 	CFLAGS	+=  -DISNITRODEBUG
 endif
 
+ifdef ARM7_DLDI
+	CFLAGS	+=  -DARM7_DLDI
+endif
+
+ifdef ENABLE_WRAM_ICACHE
+	CFLAGS	+=  -DENABLE_WRAM_ICACHE
+endif
+
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fnon-call-exceptions
 
 ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s $(INCLUDE)
 
 ifdef ISNITRODEBUG
 	ASFLAGS	+=  -DISNITRODEBUG
+endif
+
+ifdef ARM7_DLDI
+	ASFLAGS	+=  -DARM7_DLDI
+endif
+
+ifdef ENABLE_WRAM_ICACHE
+	ASFLAGS	+=  -DENABLE_WRAM_ICACHE
 endif
 
 LDFLAGS	=	-specs=../ds_arm9_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -nodefaultlibs
