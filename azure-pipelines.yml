@@ -35,35 +35,34 @@ steps:
     cd $(Agent.TempDirectory)
     copy /b *.zip.00* newzip.zip
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
-    cd $(Build.Repository.LocalPath)
-    md build
+    md $(Build.Repository.LocalPath)\build
   displayName: 'Prepare environment'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make
-    move GBARunner2.nds build\GBARunner2_arm9dldi.nds    
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm9dldi.nds    
     make clean
   displayName: 'Build arm9dldi'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make all ENABLE_WRAM_ICACHE=1
-    move GBARunner2.nds build\GBARunner2_arm9dldi_wramicache.nds
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm9dldi_wramicache.nds
     make clean
   displayName: 'Build arm9dldi_wramicache'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make all ARM7_DLDI=1
-    move GBARunner2.nds build\GBARunner2_arm7dldi.nds    
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi.nds    
     make clean
   displayName: 'Build arm7dldi'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make all ARM7_DLDI=1 ENABLE_WRAM_ICACHE=1
-    move GBARunner2.nds build\GBARunner2_arm7dldi_wramicache.nds    
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_wramicache.nds    
     make clean
   displayName: 'Build arm7dldi_wramicache'
 
