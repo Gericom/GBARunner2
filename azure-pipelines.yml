@@ -69,7 +69,7 @@ steps:
 
 - task: GitHubRelease@0
   inputs:
-    gitHubConnection: Gericom
+    gitHubConnection: Gericom2
     repositoryName: '$(Build.Repository.Name)'
     action: 'create'
     target: '$(Build.SourceVersion)'
