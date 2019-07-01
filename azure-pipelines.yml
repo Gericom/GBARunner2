@@ -42,25 +42,29 @@ steps:
 - script: |
     cd $(Build.Repository.LocalPath)
     make
-    copy GBARunner2.nds build\GBARunner2_arm9dldi.nds
+    move GBARunner2.nds build\GBARunner2_arm9dldi.nds    
+    make clean
   displayName: 'Build arm9dldi'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make build ENABLE_WRAM_ICACHE=1
-    copy GBARunner2.nds build\GBARunner2_arm9dldi_wramicache.nds
+    move GBARunner2.nds build\GBARunner2_arm9dldi_wramicache.nds
+    make clean
   displayName: 'Build arm9dldi_wramicache'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make build ARM7_DLDI=1
-    copy GBARunner2.nds build\GBARunner2_arm7dldi.nds
+    move GBARunner2.nds build\GBARunner2_arm7dldi.nds    
+    make clean
   displayName: 'Build arm7dldi'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make build ARM7_DLDI=1 ENABLE_WRAM_ICACHE=1
-    copy GBARunner2.nds build\GBARunner2_arm7dldi_wramicache.nds
+    move GBARunner2.nds build\GBARunner2_arm7dldi_wramicache.nds    
+    make clean
   displayName: 'Build arm7dldi_wramicache'
 
 - task: PublishPipelineArtifact@1
