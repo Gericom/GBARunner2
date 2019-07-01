@@ -48,21 +48,21 @@ steps:
 
 - script: |
     cd $(Build.Repository.LocalPath)
-    make build ENABLE_WRAM_ICACHE=1
+    make all ENABLE_WRAM_ICACHE=1
     move GBARunner2.nds build\GBARunner2_arm9dldi_wramicache.nds
     make clean
   displayName: 'Build arm9dldi_wramicache'
 
 - script: |
     cd $(Build.Repository.LocalPath)
-    make build ARM7_DLDI=1
+    make all ARM7_DLDI=1
     move GBARunner2.nds build\GBARunner2_arm7dldi.nds    
     make clean
   displayName: 'Build arm7dldi'
 
 - script: |
     cd $(Build.Repository.LocalPath)
-    make build ARM7_DLDI=1 ENABLE_WRAM_ICACHE=1
+    make all ARM7_DLDI=1 ENABLE_WRAM_ICACHE=1
     move GBARunner2.nds build\GBARunner2_arm7dldi_wramicache.nds    
     make clean
   displayName: 'Build arm7dldi_wramicache'
