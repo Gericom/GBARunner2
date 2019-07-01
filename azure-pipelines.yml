@@ -36,7 +36,7 @@ steps:
     copy /b *.zip.00* newzip.zip
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
     cd $(Build.Repository.LocalPath)
-    mkdir build
+    md build
   displayName: 'Prepare environment'
 
 - script: |
