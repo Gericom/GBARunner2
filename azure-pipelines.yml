@@ -66,3 +66,12 @@ steps:
   inputs:
     targetPath: '$(Build.Repository.LocalPath)\\build'
     artifact: 'GBARunner2 Build'
+
+- task: GitHubRelease@0
+  inputs:
+    gitHubConnection: Gericom
+    repositoryName: '$(Build.Repository.Name)'
+    action: 'create'
+    target: '$(Build.SourceVersion)'
+    tagSource: 'auto'
+    assets: '$(Build.Repository.LocalPath)/build/*'
