@@ -26,10 +26,9 @@ steps:
   inputs:
     secureFile: 'devkitPro.zip.004'
 
-- script: echo %Agent.TempDirectory%
-  displayName: 'Run a one-line script'
-
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
+    cd $(Agent.TempDirectory)
+    cd %Agent.TempDirectory%
+    dir
+    echo test
   displayName: 'Run a multi-line script'
