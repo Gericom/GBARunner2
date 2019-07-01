@@ -3,6 +3,10 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
+variables:
+  DEVKITPRO: $(Agent.TempDirectory)/bar/devkitPro
+  DEVKITARM: $(Agent.TempDirectory)/bar/devkitPro/devkitARM
+
 trigger:
 - master
 
@@ -30,9 +34,6 @@ steps:
     cd $(Agent.TempDirectory)
     copy /b *.zip.00* newzip.zip
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
-    cd bar
-    setx DEVKITPRO "$(Agent.TempDirectory)/bar/devkitPro"
-    setx DEVKITARM "$(Agent.TempDirectory)/bar/devkitPro/devkitARM"
     set
     echo test
   displayName: 'Run a multi-line script'
