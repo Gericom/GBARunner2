@@ -35,10 +35,9 @@ steps:
     cd $(Agent.TempDirectory)
     copy /b *.zip.00* newzip.zip
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
-    echo %PATH%
   displayName: 'Run a multi-line script'
 
 - script: |
-    set
-    echo %DEVKITARM%
-  displayName: 'Run a multi-line script2'
+    cd $(Build.Repository.LocalPath)
+    make
+  displayName: 'Build arm9dldi'
