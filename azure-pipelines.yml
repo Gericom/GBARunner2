@@ -28,7 +28,10 @@ steps:
 
 - script: |
     cd $(Agent.TempDirectory)
-    cd %Agent.TempDirectory%
+    dir
+    copy /b *.zip.00* newzip.zip
+    dir
+    powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
     dir
     echo test
   displayName: 'Run a multi-line script'
