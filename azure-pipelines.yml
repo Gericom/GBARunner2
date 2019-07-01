@@ -28,10 +28,16 @@ steps:
 
 - script: |
     cd $(Agent.TempDirectory)
-    dir
     copy /b *.zip.00* newzip.zip
-    dir
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
-    dir
+    cd bar
+    setx DEVKITPRO $(Agent.TempDirectory)/bar/devkitPro
+    setx DEVKITARM $(Agent.TempDirectory)/bar/devkitPro/devkitARM
+    set
     echo test
   displayName: 'Run a multi-line script'
+
+- script: |
+    set
+    echo %DEVKITARM%
+  displayName: 'Run a multi-line script2'
