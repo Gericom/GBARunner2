@@ -35,9 +35,35 @@ steps:
     cd $(Agent.TempDirectory)
     copy /b *.zip.00* newzip.zip
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
-  displayName: 'Run a multi-line script'
+    cd $(Build.Repository.LocalPath)
+    mkdir build
+  displayName: 'Prepare environment'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make
+    copy GBARunner2.nds build\GBARunner2_arm9dldi.nds
   displayName: 'Build arm9dldi'
+
+- script: |
+    cd $(Build.Repository.LocalPath)
+    make build ENABLE_WRAM_ICACHE=1
+    copy GBARunner2.nds build\GBARunner2_arm9dldi_wramicache.nds
+  displayName: 'Build arm9dldi_wramicache'
+
+- script: |
+    cd $(Build.Repository.LocalPath)
+    make build ARM7_DLDI=1
+    copy GBARunner2.nds build\GBARunner2_arm7dldi.nds
+  displayName: 'Build arm7dldi'
+
+- script: |
+    cd $(Build.Repository.LocalPath)
+    make build ARM7_DLDI=1 ENABLE_WRAM_ICACHE=1
+    copy GBARunner2.nds build\GBARunner2_arm7dldi_wramicache.nds
+  displayName: 'Build arm7dldi_wramicache'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.Repository.LocalPath)\\build'
+    artifact: 'GBARunner2 Build'
