@@ -276,70 +276,148 @@ write_dma_control_top8:
 //the way these things handle invalid src/dst is not very nice
 //for 16 and 8 bit accesses (are these even allowed??)
 
-.global write_dma_shadow_src_dst_internal_32
-write_dma_shadow_src_dst_internal_32:
+.global write_dma_shadow_src_internal_32
+write_dma_shadow_src_internal_32:
 	ldr r12,= dma_shadow_regs_dtcm
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
-	cmp r11, #0x02000000
-	bxlo lr
-	tst r11, #0xF8000000
-	streq r11, [r12, r10]
+	bic r11, #0xF0000000
+	//cmp r11, #0x02000000
+	//	movlo r11, #0
+	//cmp r11, #0x08000000
+	//	movhs r11, #0
+	str r11, [r12, r10]
 	bx lr
 
-.global write_dma_shadow_src_dst_internal_hi16
-write_dma_shadow_src_dst_internal_hi16:
+.global write_dma_shadow_src_internal_hi16
+write_dma_shadow_src_internal_hi16:
 	ldr r12,= dma_shadow_regs_dtcm
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
-	cmp r11, #0x0200
-	bxlo lr
-	tst r11, #0xF800
-	streqh r11, [r12, r10]
+	bic r11, #0xF000
+	//cmp r11, #0x0200
+	//	movlo r11, #0
+	//cmp r11, #0x0800
+	//	movhs r11, #0
+	strh r11, [r12, r10]
 	bx lr
 
-.global write_dma_shadow_src_dst_internal_hi8
-write_dma_shadow_src_dst_internal_hi8:
+.global write_dma_shadow_src_internal_hi8
+write_dma_shadow_src_internal_hi8:
 	ldr r12,= dma_shadow_regs_dtcm
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
-	cmp r11, #0x02
-	bxlo lr
-	tst r11, #0xF8
-	streqb r11, [r12, r10]
+	bic r11, #0xF0
+	//cmp r11, #0x02
+	//	movlo r11, #0
+	//cmp r11, #0x08
+	//	movhs r11, #0
+	strb r11, [r12, r10]
 	bx lr
 
-.global write_dma_shadow_src_dst_all_32
-write_dma_shadow_src_dst_all_32:
+.global write_dma_shadow_src_all_32
+write_dma_shadow_src_all_32:
 	ldr r12,= dma_shadow_regs_dtcm
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
-	cmp r11, #0x02000000
-	bxlo lr
-	tst r11, #0xF0000000
-	streq r11, [r12, r10]
+	bic r11, #0xF0000000
+	//cmp r11, #0x02000000
+	//	movlo r11, #0
+	str r11, [r12, r10]
 	bx lr
 
-.global write_dma_shadow_src_dst_all_hi16
-write_dma_shadow_src_dst_all_hi16:
+.global write_dma_shadow_src_all_hi16
+write_dma_shadow_src_all_hi16:
 	ldr r12,= dma_shadow_regs_dtcm
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
-	cmp r11, #0x0200
-	bxlo lr
-	tst r11, #0xF000
-	streqh r11, [r12, r10]
+	bic r11, #0xF000
+	//cmp r11, #0x0200
+	//	movlo r11, #0
+	strh r11, [r12, r10]
 	bx lr
 
-.global write_dma_shadow_src_dst_all_hi8
-write_dma_shadow_src_dst_all_hi8:
+.global write_dma_shadow_src_all_hi8
+write_dma_shadow_src_all_hi8:
 	ldr r12,= dma_shadow_regs_dtcm
 	ldr r10,= ADDRESS_DMA_BASE
 	sub r10, r9, r10
-	cmp r11, #0x02
-	bxlo lr
-	tst r11, #0xF0
-	streqb r11, [r12, r10]
+	bic r11, #0xF0
+	//cmp r11, #0x02
+	//	movlo r11, #0
+	strb r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_dst_internal_32
+write_dma_shadow_dst_internal_32:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	bic r11, #0xF0000000
+	//cmp r11, #0x02000000
+	//	bxlo lr
+	//cmp r11, #0x08000000
+	//	bxhs lr
+	str r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_dst_internal_hi16
+write_dma_shadow_dst_internal_hi16:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	bic r11, #0xF000
+	//cmp r11, #0x0200
+	//	bxlo lr
+	//cmp r11, #0x0800
+	//	bxhs lr
+	strh r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_dst_internal_hi8
+write_dma_shadow_dst_internal_hi8:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	bic r11, #0xF0
+	//cmp r11, #0x02
+	//	bxlo lr
+	//cmp r11, #0x08
+	//	bxhs lr
+	strb r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_dst_all_32
+write_dma_shadow_dst_all_32:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	bic r11, #0xF0000000
+	//cmp r11, #0x02000000
+	//	bxlo lr
+	str r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_dst_all_hi16
+write_dma_shadow_dst_all_hi16:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	bic r11, #0xF000
+	//cmp r11, #0x0200
+	//	bxlo lr
+	strh r11, [r12, r10]
+	bx lr
+
+.global write_dma_shadow_dst_all_hi8
+write_dma_shadow_dst_all_hi8:
+	ldr r12,= dma_shadow_regs_dtcm
+	ldr r10,= ADDRESS_DMA_BASE
+	sub r10, r9, r10
+	bic r11, #0xF0
+	//cmp r11, #0x02
+	//	bxlo lr
+	strb r11, [r12, r10]
 	bx lr
 
 .global write_dma_shadow_32
