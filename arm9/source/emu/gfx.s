@@ -158,8 +158,7 @@ write_address_dispstat:
 	tst r12, #(1 << 16)
 	orrne r12, #(1 << 7)
 	bic r12, r12, #(1 << 16)
-	bic r11, #0xFF00
-	bic r11, #0x0080
+	bic r11, #0xFFFFFF80
 	orr r11, r11, r12
 write_address_dispstat_finish:
 	strh r11, [r9]

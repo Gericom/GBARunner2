@@ -183,9 +183,29 @@ irq_handler:
 	tst r1, #0x80000000
 	beq cap_control
 irq_cont:
-	ldr r1, [r12, #0x214]
+	ldr r1, [r12, #0x214]	
+	tst r1, #(1 << 1) //hblank
+		beq 1f
+	ldrh r2, [r12, #6]
+	cmp r2, #160
+		blt 1f //gba normal scanlines
+	cmp r2, #192
+		bge 1f //vblank
+
+	//clear hblank irq flag
+	mov r2, #(1 << 1)
+	str r2, [r12, #0x214]
+
+	//check if any irqs are left
+	bic r1, #(1 << 1)
+	ldr r3, [r12, #0x210]
+	tst r1, r3
+		beq finish_nohandle
+
+1:
+	//test for arm7->arm9 irq
 	tst r1, #(1 << 16)
-	bne irq_handler_arm7_irq
+		bne irq_handler_arm7_irq
 
 irq_cont_handle_gba:
 	ldr r1,= pu_data_permissions
@@ -304,6 +324,7 @@ sdsave_request:
 	ldr r12,= sd_write_save
 	blx r12
 
+finish_nohandle:
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 	LDMFD   SP!, {R0-R3,R12,LR}
