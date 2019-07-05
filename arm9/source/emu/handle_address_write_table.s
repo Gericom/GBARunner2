@@ -9,8 +9,20 @@
 address_write_table_32bit:
 //0x04000000
 .word write_address_dispcontrol
-//0x04000004-0x0400005C
-.rept 23
+//0x04000004-0x0400001C
+.rept 7
+.word write_address_nomod_32
+.endr
+//0x04000020
+.word gfx_writeBg2PAPB
+//0x04000024
+.word gfx_writeBg2PCPD
+//0x04000028
+.word gfx_writeBg2X
+//0x0400002C
+.word gfx_writeBg2Y
+//0x04000028-0x0400005C
+.rept 12
 .word write_address_nomod_32
 .endr
 //0x04000060-0x04000084
@@ -93,8 +105,36 @@ address_write_table_16bit:
 .word write_address_ignore
 //0x04000004
 .word write_address_dispstat
-//0x04000006-0x0400005E
-.rept 45
+//0x04000006
+.word write_address_ignore
+//0x04000008
+.word write_address_nomod_16
+//0x0400000A
+.word write_address_nomod_16
+//0x0400000C
+.word gfx_writeBg2Cnt
+//0x0400000E-0x0400001E
+.rept 9
+.word write_address_nomod_16
+.endr
+//0x04000020
+.word gfx_writeBg2PA
+//0x04000022
+.word gfx_writeBg2PB
+//0x04000024
+.word gfx_writeBg2PC
+//0x04000026
+.word gfx_writeBg2PD
+//0x04000028
+.word gfx_writeBg2X_L
+//0x0400002A
+.word gfx_writeBg2X_H
+//0x0400002C
+.word gfx_writeBg2Y_L
+//0x0400002E
+.word gfx_writeBg2Y_H
+//0x04000030-0x0400005E
+.rept 24
 .word write_address_nomod_16
 .endr
 //0x04000060-0x04000084

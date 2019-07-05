@@ -70,8 +70,7 @@ write_address_dispcontrol_cont:
 	movge r11, #5
 	orr r12, r11
 
-	bicge r12, #0xF00	//clear all bg bits
-	orrge r12, #0x800	//display only bg3 (which goes unused on the gba)
+	bicge r12, #0xB00	//clear all bg bits except bg2
 
 	str r12, [r9]
 
@@ -86,31 +85,53 @@ write_address_dispcontrol_cont:
 	ldrge r11,= (1 | (13 << 1) | 0x06014000)
 	mcr p15, 0, r11, c6, c3, 0
 
-	bxlt lr
-
 	ldr r11,= 0x04000000
+
+	bge 1f
+
+	//restore the bg2cnt register if not bitmap mode
+	ldr r13,= BG2CNT_copy
+	ldrh r12, [r13]
+	strh r12, [r11, #0xC]
+
+	ldr r12, [r13, #(address_BG2PA_copy - address_BG2CNT_copy)]
+	str r12, [r11, #0x20]
+
+	ldr r12, [r13, #(address_BG2PC_copy - address_BG2CNT_copy)]
+	str r12, [r11, #0x24]
+
+	ldr r12, [r13, #(address_BG2X_copy - address_BG2CNT_copy)]
+	str r12, [r11, #0x28]
+
+	ldr r12, [r13, #(address_BG2Y_copy - address_BG2CNT_copy)]
+	str r12, [r11, #0x2C]
+
+	bx lr
+
+1:	
 	mov r12, #256
-	strh r12, [r11, #0x30]
+	strh r12, [r11, #0x20]
 	ldr r12,= -4096
-	strh r12, [r11, #0x32]
+	strh r12, [r11, #0x22]
 	mov r12, #1
-	strh r12, [r11, #0x34]
+	strh r12, [r11, #0x24]
 	mov r12, #240
-	strh r12, [r11, #0x36]
+	strh r12, [r11, #0x26]
 
 	ldr r10,= DISPCNT_copy
 	ldrh r10, [r10]
-	tst r10, #(1 << 4)
+
+	cmp r13, #3
+
+	tstne r10, #(1 << 4) //test page flip bit
 
 	mov r12, #0
-	str r12, [r11, #0x38]
-	streq r12, [r11, #0x3C]
-	ldrne r12,= 8192
-	strne r12, [r11, #0x3C]
+	str r12, [r11, #0x28]
+	movne r12, #8192
+	str r12, [r11, #0x2C]
 
 	ldrh r12, [r11, #0xC]
-	bic r12, #0xFF00
-	bic r12, #0x00BC
+	and r12, #0x43
 
 	cmp r13, #4
 	orrne r12, #0x84
@@ -120,7 +141,7 @@ write_address_dispcontrol_cont:
 	tst r10, #(1 << 4)
 	orrne r12, #(2 << 8)
 
-	strh r12, [r11, #0xE]
+	strh r12, [r11, #0xC]
 	bx lr
 	
 
@@ -161,5 +182,175 @@ write_address_dispstat:
 	bic r11, #0xFFFFFF80
 	orr r11, r11, r12
 write_address_dispstat_finish:
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2Cnt
+gfx_writeBg2Cnt:
+	ldr r13,= BG2CNT_copy
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2CNT_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+	strlth r11, [r9]
+	bxlt lr
+
+	ldrh r13, [r9]
+	and r11, #0x43
+	bic r13, #0x43
+	orr r13, r11
+	strh r13, [r9]
+	bx lr
+
+.global gfx_writeBg2PAPB
+gfx_writeBg2PAPB:
+	ldr r13,= BG2PA_copy
+	str r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2PA_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		ldrge r11,= 0xF0000100
+	str r11, [r9]
+	bx lr
+
+.global gfx_writeBg2PCPD
+gfx_writeBg2PCPD:
+	ldr r13,= BG2PC_copy
+	str r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2PC_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		ldrge r11,= 0x00F00001
+	str r11, [r9]
+	bx lr
+
+.global gfx_writeBg2PA
+gfx_writeBg2PA:
+	ldr r13,= BG2PA_copy
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2PA_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		movge r11, #256
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2PB
+gfx_writeBg2PB:
+	ldr r13,= BG2PB_copy
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2PB_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		ldrge r11,= -4096
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2PC
+gfx_writeBg2PC:
+	ldr r13,= BG2PC_copy
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2PC_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		movge r11, #1
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2PD
+gfx_writeBg2PD:
+	ldr r13,= BG2PD_copy
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2PD_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		movge r11, #240
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2X
+gfx_writeBg2X:
+	ldr r13,= BG2X_copy
+	str r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2X_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		movge r11, #0
+	str r11, [r9]
+	bx lr
+
+.global gfx_writeBg2X_L
+gfx_writeBg2X_L:
+	ldr r13,= BG2X_copy
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2X_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+		movge r11, #0
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2X_H
+gfx_writeBg2X_H:
+	ldr r13,= (BG2X_copy + 2)
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - (address_BG2X_copy + 2))]
+	and r12, r13, #7
+	cmp r12, #3
+		movge r11, #0
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2Y
+gfx_writeBg2Y:
+	ldr r13,= BG2Y_copy
+	str r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2Y_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+	blt 1f
+	tstne r13, #(1 << 4) //test page flip bit
+	moveq r11, #0
+	movne r11, #8192
+1:
+	str r11, [r9]
+	bx lr
+
+.global gfx_writeBg2Y_L
+gfx_writeBg2Y_L:
+	ldr r13,= BG2Y_copy
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - address_BG2Y_copy)]
+	and r12, r13, #7
+	cmp r12, #3
+	blt 1f
+	tstne r13, #(1 << 4) //test page flip bit
+	moveq r11, #0
+	movne r11, #8192
+1:
+	strh r11, [r9]
+	bx lr
+
+.global gfx_writeBg2Y_H
+gfx_writeBg2Y_H:
+	ldr r13,= (BG2Y_copy + 2)
+	strh r11, [r13]
+
+	ldrh r13, [r13, #(address_DISPCNT_copy - (address_BG2Y_copy + 2))]
+	and r12, r13, #7
+	cmp r12, #3
+		movge r11, #0
 	strh r11, [r9]
 	bx lr

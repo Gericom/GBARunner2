@@ -246,6 +246,34 @@ read_table_8bit_dtcm_new:
 DISPCNT_copy:
 	.word 0
 
+.global BG2CNT_copy
+BG2CNT_copy:
+	.word 0
+
+.global BG2PA_copy
+BG2PA_copy:
+	.2byte 0
+
+.global BG2PB_copy
+BG2PB_copy:
+	.2byte 0
+
+.global BG2PC_copy
+BG2PC_copy:
+	.2byte 0
+
+.global BG2PD_copy
+BG2PD_copy:
+	.2byte 0
+
+.global BG2X_copy
+BG2X_copy:
+	.word 0
+
+.global BG2Y_copy
+BG2Y_copy:
+	.word 0
+
 .global shadow_dispstat
 shadow_dispstat:
 	.word 0
