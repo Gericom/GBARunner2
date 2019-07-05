@@ -67,6 +67,8 @@ steps:
     targetPath: '$(Build.Repository.LocalPath)\\build'
     artifact: 'GBARunner2 Build'
 
+- task: short-git-version-hash-extractor@1
+
 - task: GitHubRelease@0
   condition: not(eq(variables['Build.Reason'], 'PullRequest'))
   inputs:
@@ -75,6 +77,6 @@ steps:
     action: 'create'
     target: '$(Build.SourceVersion)'
     tagSource: 'manual'
-    tag: 'commit_$(Build.SourceVersion)'
+    tag: 'v$(CURRENT_DATE)_$(ShortVersionHash)'
     assets: '$(Build.Repository.LocalPath)/build/*'
     addChangeLog: false
