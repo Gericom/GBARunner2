@@ -153,7 +153,7 @@ vram_setup_copyloop:
 	//mov r0, #0
 	//mcr p15, 0, r0, c6, c2, 0
 	//vram; write protected, cause byte writes are not possible :/
-	ldr r0,= (1 | (16 << 1) | 0x06000000)
+	ldr r0,= (1 | (22 << 1) | 0x06000000)
 	mcr p15, 0, r0, c6, c2, 0
 
 	//region 3	oam vram region	0x06010000-0x06017FFF	2 << 14		-/-/-

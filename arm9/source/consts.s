@@ -18,7 +18,7 @@
 
 //#define address_thumb_table_dtcm (address_dtcm + 0xFA0) //(address_dtcm + 0xF98)
 
-#define pu_data_permissions 0x33600603 //0x33600003 //0x33660003
+#define pu_data_permissions 0x33600003 //0x33600603 //0x33600003 //0x33660003
 
 //for debugging the abort handler only!
 //registers will be destroyed by a fiq interrupt though

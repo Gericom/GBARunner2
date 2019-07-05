@@ -70,9 +70,25 @@ read_address_from_handler_io_32:
 	b read_address_undefined_memory_32
 
 read_address_from_handler_vram_32:
-	add r10, r9, #0x3F0000
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
+	cmp r10, r12
+		bicge r10, #0x8000
+
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r12, r13, #7
+	cmp r12, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r10, r13
+		addge r10, #0x3F0000
 	ldr r10, [r10]
 	bx lr
+	
+	//add r10, r9, #0x3F0000
+	//ldr r10, [r10]
+	//bx lr
 
 read_address_from_handler_rom_32:
 	bic r10, r9, #0x0E000000
@@ -210,7 +226,20 @@ read_address_from_handler_io_16:
 	b read_address_undefined_memory_16
 
 read_address_from_handler_vram_16:
-	add r10, r9, #0x3F0000
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
+	cmp r10, r12
+		bicge r10, #0x8000
+
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r12, r13, #7
+	cmp r12, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r10, r13
+		addge r10, #0x3F0000
+
 	ldrh r10, [r10]
 	tst r9, #1
 		movne r10, r10, ror #8
@@ -364,7 +393,19 @@ read_address_from_handler_io_8:
 	b read_address_undefined_memory_8
 
 read_address_from_handler_vram_8:
-	add r10, r9, #0x3F0000
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
+	cmp r10, r12
+		bicge r10, #0x8000
+
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r12, r13, #7
+	cmp r12, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r10, r13
+		addge r10, #0x3F0000
 	ldrb r10, [r10]
 	bx lr
 

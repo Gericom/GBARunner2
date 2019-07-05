@@ -36,14 +36,20 @@ write_address_from_handler_io_32:
 	orr pc, r13, #0x01000000	//itcm
 
 write_address_from_handler_vram_32:
-	bic r9, #3 //force align
 	ldr r13,= DISPCNT_copy
+	bic r9, #3 //force align
+
+	ldr r12,= 0x06018000
+	bic r10, r9, #0xFE0000
 	ldrh r13, [r13]
+	cmp r10, r12
+		bicge r10, #0x8000
+
 	and r12, r13, #7
 	cmp r12, #3
 	ldrlt r13,= 0x06010000
 	ldrge r13,= 0x06014000
-	cmp r9, r13
+	cmp r10, r13
 	bge 1f
 
 	//add alpha bit when in 15 bit bitmap mode
@@ -52,15 +58,11 @@ write_address_from_handler_vram_32:
 	cmpne r12, #5
 		orreq r11, #0x8000
 		orreq r11, #0x80000000
-	str r11, [r9]
+	str r11, [r10]
 	bx lr
 
 1:
-	ldr r12,= 0x06018000
-	cmp r9, r12
-	bxge lr
-
-	add r10, r9, #0x3F0000
+	add r10, #0x3F0000
 	str r11, [r10]
 	bx lr
 
@@ -116,28 +118,29 @@ write_address_from_handler_io_16:
 
 write_address_from_handler_vram_16:
 	ldr r13,= DISPCNT_copy
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
 	ldrh r13, [r13]
+	cmp r10, r12
+		bicge r10, #0x8000
+
 	and r12, r13, #7
 	cmp r12, #3
 	ldrlt r13,= 0x06010000
 	ldrge r13,= 0x06014000
-	cmp r9, r13
-	bge 1f
+	cmp r10, r13
+		bge 1f
 
 	//add alpha bit when in 15 bit bitmap mode
 	//caution: this is potentially dangerous!
 	cmp r12, #3
 	cmpne r12, #5
 		orreq r11, #0x8000
-	strh r11, [r9]
+	strh r11, [r10]
 	bx lr
 
 1:
-	ldr r12,= 0x06018000
-	cmp r9, r12
-	bxge lr
-
-	add r10, r9, #0x3F0000
+	add r10, #0x3F0000
 	strh r11, [r10]
 	bx lr
 
@@ -189,16 +192,21 @@ write_address_from_handler_io_8:
 
 write_address_from_handler_vram_8:
 	ldr r13,= DISPCNT_copy
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
 	ldrh r13, [r13]
+	cmp r10, r12
+		bicge r10, #0x8000
+
 	and r13, #7
 	cmp r13, #3
 	ldrlt r13,= 0x06010000
 	ldrge r13,= 0x06014000
-	cmp r9, r13
-	bxge lr //nothing written on 8 bit access
+	cmp r10, r13
+		bxge lr //nothing written on 8 bit access
 
 	orr r11, r11, lsl #8
-	strh r11, [r9]
+	strh r11, [r10]
 	bx lr
 
 write_address_from_handler_sram_8:

@@ -114,9 +114,17 @@ write_dma_control_\offs:
 	bic r12, #0xF0000000
 	//dst invalid
 	cmp r12, #0x02000000
-	biclt r11, r11, #0x8000
-	blt 6f
+		biclt r11, r11, #0x8000
+		blt 6f
 	//dst vram
+	and r13, r12, #0xFF000000
+	cmp r13, #0x06000000
+		bne 1f
+	bic r12, #0xFE0000
+	ldr r13,= 0x06018000
+	cmp r12, r13
+		bicge r12, #0x8000
+
 	ldr r13,= DISPCNT_copy
 	ldrh r13, [r13]
 	and r13, #7
@@ -124,10 +132,10 @@ write_dma_control_\offs:
 	ldrlt r13,= 0x06010000
 	ldrge r13,= 0x06014000
 	cmp r12, r13
-	blt 1f
+		blt 1f
 	ldr r13,= 0x06018000
 	cmp r12, r13
-	addlt r12, #0x3F0000
+		addlt r12, #0x3F0000
 1:
 	str r12, [r9, #(-4 - \offs)] //store in actual dst register
 	//fix count
@@ -147,6 +155,15 @@ write_dma_control_\offs:
 	bic r13, #0xF0000000
 	cmp r13, #0x08000000
 	bge dma_rom_src_\offs
+
+	//src vram
+	and r12, r13, #0xFF000000
+	cmp r12, #0x06000000
+		bne 3f
+	bic r13, #0xFE0000
+	ldr r12,= 0x06018000
+	cmp r13, r12
+		bicge r13, #0x8000
 
 	//fix src for vram
 	ldr r12,= DISPCNT_copy
