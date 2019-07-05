@@ -6,6 +6,7 @@
 variables:
   DEVKITPRO: $(Agent.TempDirectory)\bar\devkitPro
   DEVKITARM: $(Agent.TempDirectory)\bar\devkitPro\devkitARM
+  CURRENT_DATE: $[format('{0:yyyyMMdd\-HHmmss}', pipeline.startTime)]
 
 pool:
   vmImage: 'windows-latest'
