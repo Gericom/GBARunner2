@@ -1,5 +1,6 @@
 #include "vram.h"
 #include "sd_access.h"
+#include "gamePatches.h"
 #include "Save.h"
 #include "SramSave.h"
 
@@ -54,17 +55,17 @@ GBA_INTERWORK_BRIDGE(verifySram)
 
 bool sram_patchV110(const save_type_t* type)
 {
-	u32* readFunc = save_findSignature(sReadSramV110Sig);
+	u32* readFunc = gptc_findSignature(sReadSramV110Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readSram);
 
-	u32* writeFunc = save_findSignature(sWriteSramV110Sig);
+	u32* writeFunc = gptc_findSignature(sWriteSramV110Sig);
 	if (!writeFunc)
 		return false;
 	save_injectJump(writeFunc, (void*)writeSram);
 
-	u32* verifyFunc = save_findSignature(sVerifySramV110Sig);
+	u32* verifyFunc = gptc_findSignature(sVerifySramV110Sig);
 	if (!verifyFunc)
 		return false;
 	save_injectJump(verifyFunc, (void*)verifySram);
@@ -73,17 +74,17 @@ bool sram_patchV110(const save_type_t* type)
 
 bool sram_patchV111(const save_type_t* type)
 {
-	u32* readFunc = save_findSignature(sReadSramV111Sig);
+	u32* readFunc = gptc_findSignature(sReadSramV111Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readSram);
 
-	u32* writeFunc = save_findSignature(sWriteSramV111Sig);
+	u32* writeFunc = gptc_findSignature(sWriteSramV111Sig);
 	if (!writeFunc)
 		return false;
 	save_injectJump(writeFunc, (void*)writeSram);
 
-	u32* verifyFunc = save_findSignature(sVerifySramV111Sig);
+	u32* verifyFunc = gptc_findSignature(sVerifySramV111Sig);
 	if (!verifyFunc)
 		return false;
 	save_injectJump(verifyFunc, (void*)verifySram);

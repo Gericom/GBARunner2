@@ -72,6 +72,8 @@ write_address_dispcontrol_cont:
 
 	bicge r12, #0xB00	//clear all bg bits except bg2
 
+	ldr r10, [r9]
+
 	str r12, [r9]
 
 	//move gba vram block b to either bg or obj
@@ -88,6 +90,10 @@ write_address_dispcontrol_cont:
 	ldr r11,= 0x04000000
 
 	bge 1f
+
+	and r10, #7
+	cmp r10, #5
+		bxne lr //only if the previous mode was bitmap restore the shadow registers
 
 	//restore the bg2cnt register if not bitmap mode
 	ldr r13,= BG2CNT_copy

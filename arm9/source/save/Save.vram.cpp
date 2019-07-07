@@ -108,25 +108,6 @@ const save_type_t* save_findTag()
 	return NULL;
 }
 
-u32* save_findSignature(const u8* signature)
-{
-	u32* pRom = (u32*)MAIN_MEMORY_ADDRESS_ROM_DATA;
-	bool found = false;
-	for (int i = 0; i < ROM_DATA_LENGTH; i += 4)
-	{
-		if (pRom[0] == ((u32*)signature)[0] && pRom[1] == ((u32*)signature)[1] &&
-			pRom[2] == ((u32*)signature)[2] && pRom[3] == ((u32*)signature)[3])
-		{
-			found = true;
-			break;
-		}
-		pRom++;
-	}
-	if (!found)
-		return NULL;
-	return pRom;
-}
-
 void save_injectJump(u32* location, void* jumpTarget)
 {
 	if (((u32)location & 2) != 0)

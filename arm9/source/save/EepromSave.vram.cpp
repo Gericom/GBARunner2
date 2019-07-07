@@ -1,5 +1,6 @@
 #include "vram.h"
 #include "sd_access.h"
+#include "gamePatches.h"
 #include "Save.h"
 #include "EepromSave.h"
 
@@ -57,12 +58,12 @@ GBA_INTERWORK_BRIDGE(programEepromDword)
 
 bool eeprom_patchV111(const save_type_t* type)
 {
-	u32* readFunc = save_findSignature(sReadEepromDwordV111Sig);
+	u32* readFunc = gptc_findSignature(sReadEepromDwordV111Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readEepromDword);
 
-	u32* progFunc = save_findSignature(sProgramEepromDwordV111Sig);
+	u32* progFunc = gptc_findSignature(sProgramEepromDwordV111Sig);
 	if (!progFunc)
 		return false;
 	save_injectJump(progFunc, (void*)programEepromDword);
@@ -71,12 +72,12 @@ bool eeprom_patchV111(const save_type_t* type)
 
 bool eeprom_patchV120(const save_type_t* type)
 {
-	u32* readFunc = save_findSignature(sReadEepromDwordV120Sig);
+	u32* readFunc = gptc_findSignature(sReadEepromDwordV120Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readEepromDword);
 
-	u32* progFunc = save_findSignature(sProgramEepromDwordV120Sig);
+	u32* progFunc = gptc_findSignature(sProgramEepromDwordV120Sig);
 	if (!progFunc)
 		return false;
 	save_injectJump(progFunc, (void*)programEepromDword);
@@ -85,12 +86,12 @@ bool eeprom_patchV120(const save_type_t* type)
 
 bool eeprom_patchV124(const save_type_t* type)
 {
-	u32* readFunc = save_findSignature(sReadEepromDwordV120Sig);
+	u32* readFunc = gptc_findSignature(sReadEepromDwordV120Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readEepromDword);
 
-	u32* progFunc = save_findSignature(sProgramEepromDwordV124Sig);
+	u32* progFunc = gptc_findSignature(sProgramEepromDwordV124Sig);
 	if (!progFunc)
 		return false;
 	save_injectJump(progFunc, (void*)programEepromDword);
@@ -99,12 +100,12 @@ bool eeprom_patchV124(const save_type_t* type)
 
 bool eeprom_patchV126(const save_type_t* type)
 {
-	u32* readFunc = save_findSignature(sReadEepromDwordV120Sig);
+	u32* readFunc = gptc_findSignature(sReadEepromDwordV120Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readEepromDword);
 
-	u32* progFunc = save_findSignature(sProgramEepromDwordV126Sig);
+	u32* progFunc = gptc_findSignature(sProgramEepromDwordV126Sig);
 	if (!progFunc)
 		return false;
 	save_injectJump(progFunc, (void*)programEepromDword);

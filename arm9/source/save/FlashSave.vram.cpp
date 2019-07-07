@@ -1,5 +1,6 @@
 #include "vram.h"
 #include "sd_access.h"
+#include "gamePatches.h"
 #include "Save.h"
 #include "FlashSave.h"
 
@@ -257,7 +258,7 @@ bool flash_patchV120(const save_type_t* type)
 	if (!loadDataV120(type))
 		return false;
 
-	u32* pIdentify = save_findSignature(sIdentifyFlashV120Sig);
+	u32* pIdentify = gptc_findSignature(sIdentifyFlashV120Sig);
 	if (!pIdentify)
 		return false;
 
@@ -276,7 +277,7 @@ bool flash_patchV123(const save_type_t* type)
 	if (!loadDataV120(type))
 		return false;
 
-	u32* pIdentify = save_findSignature(sIdentifyFlashV123Sig);
+	u32* pIdentify = gptc_findSignature(sIdentifyFlashV123Sig);
 	if (!pIdentify)
 		return false;
 
@@ -295,7 +296,7 @@ bool flash_patchV126(const save_type_t* type)
 	if (!loadDataV120(type))
 		return false;
 
-	u32* pIdentify = save_findSignature(sIdentifyFlashV123Sig);
+	u32* pIdentify = gptc_findSignature(sIdentifyFlashV123Sig);
 	if (!pIdentify)
 		return false;
 
@@ -307,7 +308,7 @@ bool flash_patchV126(const save_type_t* type)
 	save_injectJump((u32*)((*(u32*)(vram_cd->tmpSector + FLASH_V120_OFFSET_VERIFY_SECTOR) & ~1) - 0x08000000 +
 		                MAIN_MEMORY_ADDRESS_ROM_DATA), (void*)verifyFlashSector);
 
-	u32* verify = save_findSignature(sVerifyFlashV126Sig);
+	u32* verify = gptc_findSignature(sVerifyFlashV126Sig);
 	if (!verify)
 		return false;
 	save_injectJump(verify, (void*)verifyFlash);
@@ -329,23 +330,23 @@ bool flash_patch512V130(const save_type_t* type)
 	sPatchInfo.flMaxTimePtr = *(u32**)(vram_cd->tmpSector + FLASH_512V130_OFFSET_FL_MAXTIME);
 	sPatchInfo.flashPtr = *(u32**)(vram_cd->tmpSector + FLASH_512V130_OFFSET_FLASH);
 
-	u32* pIdentify = save_findSignature(sIdentifyFlashV123Sig);
+	u32* pIdentify = gptc_findSignature(sIdentifyFlashV123Sig);
 	if (!pIdentify)
 		return false;
 
 	save_injectJump(pIdentify, (void*)identifyFlash512);
 
-	u32* readFunc = save_findSignature(sReadFlash512V130Sig);
+	u32* readFunc = gptc_findSignature(sReadFlash512V130Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readFlash);
 
-	u32* verifySector = save_findSignature(sVerifyFlashSector512V130Sig);
+	u32* verifySector = gptc_findSignature(sVerifyFlashSector512V130Sig);
 	if (!verifySector)
 		return false;
 	save_injectJump(verifySector, (void*)verifyFlashSector);
 
-	u32* verify = save_findSignature(sVerifyFlash512V130Sig);
+	u32* verify = gptc_findSignature(sVerifyFlash512V130Sig);
 	if (!verify)
 		return false;
 	save_injectJump(verify, (void*)verifyFlash);
@@ -369,23 +370,23 @@ bool flash_patch1MV102(const save_type_t* type)
 	sPatchInfo.flashPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_FLASH + (
 		type->type == SAVE_TYPE_FLASH1M_V102 ? 0 : 4));
 
-	u32* pIdentify = save_findSignature(type->type == SAVE_TYPE_FLASH1M_V102 ? sIdentifyFlashV123Sig : sIdentifyFlash1MV103Sig);
+	u32* pIdentify = gptc_findSignature(type->type == SAVE_TYPE_FLASH1M_V102 ? sIdentifyFlashV123Sig : sIdentifyFlash1MV103Sig);
 	if (!pIdentify)
 		return false;
 
 	save_injectJump(pIdentify, (void*)identifyFlash1M);
 
-	u32* readFunc = save_findSignature(sReadFlash512V130Sig);
+	u32* readFunc = gptc_findSignature(sReadFlash512V130Sig);
 	if (!readFunc)
 		return false;
 	save_injectJump(readFunc, (void*)readFlash);
 
-	u32* verifySector = save_findSignature(sVerifyFlashSector512V130Sig);
+	u32* verifySector = gptc_findSignature(sVerifyFlashSector512V130Sig);
 	if (!verifySector)
 		return false;
 	save_injectJump(verifySector, (void*)verifyFlashSector);
 
-	u32* verify = save_findSignature(sVerifyFlash512V130Sig);
+	u32* verify = gptc_findSignature(sVerifyFlash512V130Sig);
 	if (!verify)
 		return false;
 	save_injectJump(verify, (void*)verifyFlash);

@@ -62,5 +62,4 @@ struct save_type_t
 	}
 
 const save_type_t* save_findTag();
-u32*               save_findSignature(const u8* signature);
 void               save_injectJump(u32* location, void* jumpTarget);
