@@ -13,6 +13,9 @@ extern "C" void initSystem()
 		TIMER_DATA(i) = 0;
 	}
 
+	REG_SCFG_EXT = 0x83000000;	// Disable access to DSi hardware
+	REG_SCFG_CLK = 0x80;		// Set NTR clock speed
+
 
 	// clear video display registers
 	dmaFillWords(0, (void*)0x04000000, 0x56);
