@@ -43,7 +43,8 @@ typedef volatile struct
 void gba_sound_init();
 void gba_sound_notify_reset();
 void gba_sound_vblank();
-void gbas_soundTimerUpdated(int timer, uint16_t reloadVal);
+void gbas_soundTimerUpdated(int timer, u16 controlVal, u16 reloadVal);
+void gbas_soundTimerControlUpdated(int timer, u16 controlVal);
 void gba_sound_fifo_write(uint32_t samps);
 void gba_sound_set_src(uint32_t address);
 void gba_sound_fifo_write16(uint8_t* samps);

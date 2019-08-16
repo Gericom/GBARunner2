@@ -175,10 +175,10 @@ int main()
 						if (reg == 0x82)
 						{
 							gbs_setMixVolume(val & 3);
-							gbas_updateVolume(val);
+							gbas_updateVolume(val & 0xFF);
 						}
 						else if (reg == 0x83)
-							gbas_updateMixConfig(val);
+							gbas_updateMixConfig(val & 0xFF);
 						else
 							gbs_writeReg(reg, val & 0xFF);
 						reg++;
@@ -195,20 +195,21 @@ int main()
 				{
 					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 					val = REG_RECV_FIFO;
-					gbas_soundTimerUpdated(0, val & 0xFFFF);
+					gbas_soundTimerUpdated(0, val >> 16, val & 0xFFFF);
 					break;
 				}
 			case 0x04000102:
 				{
 					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 					val = REG_RECV_FIFO;
+					gbas_soundTimerControlUpdated(0, val & 0xFFFF);
 					break;
 				}
 			case 0x04000104:
 				{
 					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 					val = REG_RECV_FIFO;
-					gbas_soundTimerUpdated(1, val & 0xFFFF);
+					gbas_soundTimerUpdated(1, val >> 16, val & 0xFFFF);
 					break;
 				}
 			case 0x04000106:
@@ -216,6 +217,7 @@ int main()
 				{
 					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 					val = REG_RECV_FIFO;
+					gbas_soundTimerControlUpdated(1, val & 0xFFFF);
 					break;
 				}
 			case 0x04000108:

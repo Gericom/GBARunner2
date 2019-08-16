@@ -29,6 +29,9 @@ u8 sChannelATimer = 0;
 u8 sChannelAVolume = 1;
 
 u16 sTimerReloadVals[4];
+u16 sTimerControlVals[4];
+
+static int sampcnter = 0;
 
 /*static void gba_sound_timer2_handler()
 {
@@ -59,6 +62,7 @@ void gba_sound_resync()
 {
 	soundStarted = 0;
 	soundBufferWriteOffset = 0;
+	//REG_SOUND[0].CNT = 0;
 }
 
 static void gba_sound_update_ds_channels()
@@ -160,8 +164,6 @@ void gba_sound_fifo_update()
 	}
 }
 
-static int sampcnter = 0;
-
 extern "C" void timer3_overflow_irq()
 {
 	if(srcAddress == 0)
@@ -212,17 +214,40 @@ extern "C" void timer3_overflow_irq()
 
 void gbas_updateChannelATimer()
 {
-	int freq = (-16 * 1024 * 1024) / ((int16_t)sTimerReloadVals[sChannelATimer]);
+	int freq = 0;
+	if(sTimerControlVals[sChannelATimer] & 0x80)
+		freq = (-16 * 1024 * 1024) / ((int16_t)sTimerReloadVals[sChannelATimer]);
 	if(sampleFreq != freq)
 	{
 		sampleFreq = freq;
-		gba_sound_resync();
+		REG_TM[3].CNT_H = 0;
+		if(sampleFreq != 0)
+		{
+			REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq);
+			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
+			REG_IE |= (1 << 6);
+			REG_SOUND[0].TMR = (u16)(-(33513982/2)/sampleFreq);
+			REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) | REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(64) | REG_SOUNDXCNT_VOLUME(0x7F);
+		}
+		else
+		{
+			REG_SOUND[0].TMR = 0;
+			REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) | REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(64) | REG_SOUNDXCNT_VOLUME(0);
+		}
 	}
 }
 
-void gbas_soundTimerUpdated(int timer, uint16_t reloadVal)
+void gbas_soundTimerUpdated(int timer, u16 controlVal, u16 reloadVal)
 {
+	sTimerControlVals[timer] = controlVal;
 	sTimerReloadVals[timer] = reloadVal;
+	if(sChannelATimer == timer)
+		gbas_updateChannelATimer();
+}
+
+void gbas_soundTimerControlUpdated(int timer, u16 controlVal)
+{
+	sTimerControlVals[timer] = controlVal;
 	if(sChannelATimer == timer)
 		gbas_updateChannelATimer();
 }
@@ -245,9 +270,12 @@ void gba_sound_set_src(uint32_t address)
 	REG_TM[3].CNT_H = 0;
 	sampcnter = 0;
 	//timer3_overflow_irq();
-	REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq);// * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
-	REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;// | REG_TMXCNT_H_PS_64;
-	REG_IE |= (1 << 6);
+	if(sampleFreq != 0)
+	{
+		REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq);// * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
+		REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;// | REG_TMXCNT_H_PS_64;
+		REG_IE |= (1 << 6);
+	}
 }
 
 void gba_sound_fifo_write16(uint8_t* samps)
@@ -267,7 +295,7 @@ void gbas_updateVolume(u8 vol)
 
 void gbas_updateMixConfig(u8 mixConfig)
 {
-	int newATimer = (mixConfig >> 10) & 1;
+	int newATimer = (mixConfig >> 2) & 1;
 	if(sChannelATimer != newATimer)
 	{
 		sChannelATimer = newATimer;
