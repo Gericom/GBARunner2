@@ -29,9 +29,13 @@ address_write_table_32bit:
 .rept 10
 .word write_address_snd_32
 .endr
-//0x04000088-0x0400009C
-.rept 6
+//0x04000088
 .word write_address_ignore
+//0x0400008C
+.word write_address_ignore
+//0x04000090-0x0400009C
+.rept 4
+.word write_address_snd_waveram_32
 .endr
 //0x040000A0
 .word write_address_snd_fifo_A
@@ -141,8 +145,16 @@ address_write_table_16bit:
 .rept 19
 .word write_address_snd_16
 .endr
-//0x04000086-0x040000AC
-.rept 21
+//0x04000086-0x0400008E
+.rept 5
+.word write_address_ignore
+.endr
+//0x04000090-0x0400009E
+.rept 8
+.word write_address_snd_waveram_16
+.endr
+//0x040000A0-0x040000AE
+.rept 8
 .word write_address_ignore
 .endr
 //0x040000B0
@@ -257,8 +269,16 @@ address_write_table_8bit:
 .rept 37
 .word write_address_snd_8
 .endr
-//0x04000085-0x040000AF
-.rept 43
+//0x04000085-0x0400008F
+.rept 11
+.word write_address_ignore
+.endr
+//0x04000090-0x0400009F
+.rept 16
+.word write_address_snd_waveram_8
+.endr
+//0x040000A0-0x040000AF
+.rept 16
 .word write_address_ignore
 .endr
 //0x040000B0-0x040000DF
