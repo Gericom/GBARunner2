@@ -414,10 +414,15 @@ dldi_name_copy:
 	strh r1, [r0, #0x44]
 	mov r1, #0x18
 	strh r1, [r0, #0x48]
-	mov r1, #0x00
+	mov r1, #(1 << 5)
 	strh r1, [r0, #0x4A]
+	mov r1, #0x10
+	strh r1, [r0, #0x54]
+	ldr r1,= 0x3FFF
+	strh r1, [r0, #0x50]
 
 	ldr r2,= 0x05000400
+	mov r1, #0
 	strh r1, [r2]
 
 	//setup the oam
