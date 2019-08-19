@@ -73,16 +73,17 @@ static void gba_sound_update_ds_channels()
 		//soundBufferVirtualReadOffset = 0;
 		//soundBufferVirtualWriteOffset = soundBufferWriteOffset;
 
+
+		REG_SOUND[0].CNT = 0;
+		REG_SOUND[1].CNT = 0;
 		REG_SOUND[0].SAD = (u32)&soundBuffer[0];
 		REG_SOUND[1].SAD = (u32)&soundBuffer[0];
-		REG_SOUND[0].TMR = (u16)(-(33513982 / 2) / sampleFreq); //(u16)-1253;//-1594; //-1253
-		REG_SOUND[1].TMR = (u16)(-(33513982 / 2) / sampleFreq); //(u16)-1253;//-1594; //-1253
+		REG_SOUND[0].TMR = sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
+		REG_SOUND[1].TMR = sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
 		REG_SOUND[0].PNT = 0;
 		REG_SOUND[1].PNT = 0;
 		REG_SOUND[0].LEN = SOUND_BUFFER_SIZE >> 2; //396 * 10;
 		REG_SOUND[1].LEN = SOUND_BUFFER_SIZE >> 2; //396 * 10;
-		REG_SOUND[0].CNT = 0;
-		REG_SOUND[1].CNT = 0;
 
 		//REG_TM[2].CNT_L = TIMER_FREQ(13378);
 
@@ -100,57 +101,7 @@ static void gba_sound_update_ds_channels()
 
 void gba_sound_notify_reset()
 {
-	return;
-	/*if(sampleFreq <= 0)
-		return;
-	if(!(*((vu32*)0x04000136) & 1))
-		gba_sound_resync();
-	//old value
-	u16 count = REG_TM[1].CNT_L; //in samples
-	if(count < 20)
-		return;//ignore
-	//reset
-	REG_TM[0].CNT_H = 0;
-	REG_TM[1].CNT_H = 0;
-	REG_TM[0].CNT_L = TIMER_FREQ(sampleFreq);///*10512);///13378);//10512);
-	REG_TM[1].CNT_L = 0;
-	REG_TM[1].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_CH;
-	REG_TM[0].CNT_H = REG_TMXCNT_H_E;
-	uint32_t newSamplesPerBlock = (count + 8) & ~0xF;
-	if(newSamplesPerBlock > samplesPerBlock * 3)
-		gba_sound_resync();
-	//if(samplesPerBlock == 0)
-		samplesPerBlock = newSamplesPerBlock;
-	//else
-	//	samplesPerBlock = /*(((3 * samplesPerBlock + (/(count + 8) & ~0xF;//)) / 4) + 8) & ~0xF;//(u32)(((u64)count * 598261ull + 298685ull) / 597370ull);
-	//append the block to the ringbuffer
-	if(samplesPerBlock == 0 || samplesPerBlock > SOUND_BUFFER_SIZE)
-	{
-		gba_sound_resync();
-		return;
-	}
-	if(SOUND_BUFFER_SIZE - soundBufferWriteOffset >= samplesPerBlock)
-	{
-		while(dmaBusy(2));
-		dmaCopyWordsAsynch(2, (void*)0x23F8000, &soundBuffer[soundBufferWriteOffset], samplesPerBlock);
-		//memcpy(&soundBuffer[soundBufferWriteOffset], (void*)0x23F8000, samplesPerBlock);
-	}
-	else
-	{
-		//wrap around
-		uint32_t left = SOUND_BUFFER_SIZE - soundBufferWriteOffset;
-		while(dmaBusy(2));
-		dmaCopyWordsAsynch(2, (void*)0x23F8000, &soundBuffer[soundBufferWriteOffset], left);
-		while(dmaBusy(3));
-		dmaCopyWordsAsynch(3, (void*)(0x23F8000 + left), &soundBuffer[0], samplesPerBlock - left);
-		//memcpy(&soundBuffer[soundBufferWriteOffset], (void*)0x23F8000, left);
-		//memcpy(&soundBuffer[0], (void*)(0x23F8000 + left), samplesPerBlock - left);
-	}
-	soundBufferWriteOffset += samplesPerBlock;
-	if(soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
-		soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
-	//soundBufferVirtualWriteOffset += samplesPerBlock;
-	gba_sound_update_ds_channels();*/
+
 }
 
 void gba_sound_vblank()
@@ -159,17 +110,10 @@ void gba_sound_vblank()
 
 void gba_sound_fifo_update()
 {
-	while (vram_cd->sound_emu_work.resp_size > 0)
+	while (vram_cd->sound_emu_work.resp_read_ptr != vram_cd->sound_emu_work.resp_write_ptr)
 	{
 		gba_sound_fifo_write16((u8*)&vram_cd->sound_emu_work.resp_queue[vram_cd->sound_emu_work.resp_read_ptr][0]);
-		vram_cd->sound_emu_work.resp_read_ptr++;
-		if (vram_cd->sound_emu_work.resp_read_ptr >= SOUND_EMU_QUEUE_LEN)
-			vram_cd->sound_emu_work.resp_read_ptr -= SOUND_EMU_QUEUE_LEN;
-		lock_lock(&vram_cd->sound_emu_work.resp_size_lock);
-		{
-			vram_cd->sound_emu_work.resp_size--;
-		}
-		lock_unlock(&vram_cd->sound_emu_work.resp_size_lock);
+		vram_cd->sound_emu_work.resp_read_ptr = (vram_cd->sound_emu_work.resp_read_ptr + 1) & (SOUND_EMU_QUEUE_LEN - 1);
 	}
 	gba_sound_update_ds_channels();
 }
@@ -181,23 +125,17 @@ extern "C" void timer3_overflow_irq()
 	if (sampcnter == 0) //(FIFO_BLOCK_SIZE - 1))
 	{
 		gba_sound_fifo_update();
-		if (vram_cd->sound_emu_work.req_size < SOUND_EMU_QUEUE_LEN)
+		int writeLength = vram_cd->sound_emu_work.req_read_ptr - vram_cd->sound_emu_work.req_write_ptr - 1;
+		if (writeLength < 0)
+			writeLength += SOUND_EMU_QUEUE_LEN;
+		if (writeLength != 0)
 		{
 			vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
-			vram_cd->sound_emu_work.req_write_ptr++;
-			if (vram_cd->sound_emu_work.req_write_ptr >= SOUND_EMU_QUEUE_LEN)
-				vram_cd->sound_emu_work.req_write_ptr -= SOUND_EMU_QUEUE_LEN;
-			lock_lock(&vram_cd->sound_emu_work.req_size_lock);
-			{
-				vram_cd->sound_emu_work.req_size++;
-			}
-			lock_unlock(&vram_cd->sound_emu_work.req_size_lock);
-			//invoke an irq on arm9
-			*((vu32*)0x04000180) |= (1 << 13);
+			vram_cd->sound_emu_work.req_write_ptr = (vram_cd->sound_emu_work.req_write_ptr + 1) & (SOUND_EMU_QUEUE_LEN - 1);
 		}
 		else
 		{
-			vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
+			/*vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
 			vram_cd->sound_emu_work.req_read_ptr++;
 			if (vram_cd->sound_emu_work.req_read_ptr >= SOUND_EMU_QUEUE_LEN)
 				vram_cd->sound_emu_work.req_read_ptr -= SOUND_EMU_QUEUE_LEN;
@@ -211,11 +149,10 @@ extern "C" void timer3_overflow_irq()
 			soundBufferWriteOffset += FIFO_BLOCK_SIZE;
 			if (soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
 				soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
-			gba_sound_update_ds_channels();
-
-			//invoke an irq on arm9
-			*((vu32*)0x04000180) |= (1 << 13);
+			gba_sound_update_ds_channels();*/
 		}
+		//invoke an irq on arm9
+		*((vu32*)0x04000180) |= (1 << 13);
 		srcAddress += FIFO_BLOCK_SIZE; //16;
 	}
 	sampcnter++;
@@ -234,11 +171,11 @@ void gbas_updateChannelATimer()
 		REG_TM[3].CNT_H = 0;
 		if (sampleFreq != 0)
 		{
-			REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq);
+			REG_TM[3].CNT_L = ((s16)sTimerReloadVals[sChannelATimer]) << 1;
 			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
 			REG_IE |= (1 << 6);
-			REG_SOUND[0].TMR = (u16)(-(33513982 / 2) / sampleFreq);
-			REG_SOUND[1].TMR = (u16)(-(33513982 / 2) / sampleFreq);
+			REG_SOUND[0].TMR = sTimerReloadVals[sChannelATimer];
+			REG_SOUND[1].TMR = sTimerReloadVals[sChannelATimer];
 			REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
 				REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(0x7F);
 			REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
@@ -291,7 +228,7 @@ void gba_sound_set_src(uint32_t address)
 	//timer3_overflow_irq();
 	if (sampleFreq != 0)
 	{
-		REG_TM[3].CNT_L = TIMER_FREQ(sampleFreq); // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
+		REG_TM[3].CNT_L = ((s16)sTimerReloadVals[sChannelATimer]) << 1; // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
 		REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I; // | REG_TMXCNT_H_PS_64;
 		REG_IE |= (1 << 6);
 	}
