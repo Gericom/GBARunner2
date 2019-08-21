@@ -21,7 +21,6 @@ extern "C" void initSystem()
 	}
 
 	REG_SCFG_EXT = 0x83000000;	// Disable access to DSi hardware
-	REG_SCFG_CLK = 0x80;		// Set NTR clock speed
 
 
 	// clear video display registers
