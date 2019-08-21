@@ -328,6 +328,7 @@ sdsave_request:
 
 	ldr r12,= sd_write_save
 	blx r12
+	b finish_nohandle
 
 cap_control:
 	eor r1, #0x00010000
