@@ -46,19 +46,19 @@ const save_type_t* save_findTag()
 	f_rewind(&vram_cd->fil);
 	UINT read;
 	u32  curAddr = 0;
-	if (f_read(&vram_cd->fil, vram_cd->cluster_cache, 512 * 1024, &read) != FR_OK)
+	if (f_read(&vram_cd->fil, vram_cd->cluster_cache, 128 * 1024, &read) != FR_OK)
 		return NULL;
 	int searchBufPtr = 0;
 	while (curAddr < vram_cd->sd_info.gba_rom_size)
 	{
 		if (searchBufPtr == 0)
 		{
-			if (f_read(&vram_cd->fil, vram_cd->cluster_cache + 512 * 1024, 512 * 1024, &read) != FR_OK)
+			if (f_read(&vram_cd->fil, vram_cd->cluster_cache + 128 * 1024, 128 * 1024, &read) != FR_OK)
 				return NULL;
 		}
-		else if (searchBufPtr == 512 * 1024)
+		else if (searchBufPtr == 128 * 1024)
 		{
-			if (f_read(&vram_cd->fil, vram_cd->cluster_cache, 512 * 1024, &read) != FR_OK)
+			if (f_read(&vram_cd->fil, vram_cd->cluster_cache, 128 * 1024, &read) != FR_OK)
 				return NULL;
 		}
 
