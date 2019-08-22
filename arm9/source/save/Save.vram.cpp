@@ -89,7 +89,7 @@ const save_type_t* save_findTag()
 				bool found = true;
 				for (int j = 4; j < ((sSaveTypes[i].tagLength + 3) & ~3); j += 4)
 				{
-					if (*(u32*)&sSaveTypes[i].tag[j] != *(u32*)&vram_cd->cluster_cache[(searchBufPtr + j) & 0xFFFFF])
+					if (*(u32*)&sSaveTypes[i].tag[j] != *(u32*)&vram_cd->cluster_cache[(searchBufPtr + j) & 0x3FFFF])
 					{
 						found = false;
 						break;
@@ -102,7 +102,7 @@ const save_type_t* save_findTag()
 				}
 			}
 		}
-		searchBufPtr = (searchBufPtr + 4) & 0xFFFFF;
+		searchBufPtr = (searchBufPtr + 4) & 0x3FFFF;
 		curAddr += 4;
 	}
 	return NULL;
