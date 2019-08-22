@@ -7,6 +7,7 @@
 struct flash_patchinfo_t
 {
 	u32* progSectorPtr;
+	u32* progBytePtr;
 	u32* eraseChipPtr;
 	u32* eraseSectorPtr;
 	u32* pollingSrPtr;
@@ -38,6 +39,14 @@ static flash_patchinfo_t sPatchInfo;
 #define FLASH_1MV102_OFFSET_POLLING_SR		0x1C
 #define FLASH_1MV102_OFFSET_FL_MAXTIME		0x20
 #define FLASH_1MV102_OFFSET_FLASH			0x24
+
+#define FLASH_1MV103_OFFSET_PROG_BYTE		0x10
+#define FLASH_1MV103_OFFSET_PROG_SECTOR		0x14
+#define FLASH_1MV103_OFFSET_ERASE_CHIP		0x18
+#define FLASH_1MV103_OFFSET_ERASE_SECTOR	0x1C
+#define FLASH_1MV103_OFFSET_POLLING_SR		0x20
+#define FLASH_1MV103_OFFSET_FL_MAXTIME		0x24
+#define FLASH_1MV103_OFFSET_FLASH			0x28
 
 struct flash_v120_sector
 {
@@ -154,6 +163,26 @@ extern "C" u16 programFlashSector1M_impl(u16 secNo, u8* src)
 
 GBA_INTERWORK_BRIDGE(programFlashSector1M)
 
+extern "C" u16 programFlashByte1M_impl(u16 secNo, u32 offset, u8 data)
+{
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	u8*        pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (secNo << 12) + offset);
+	//disable irqs
+	u32 irq = *(vu32*)0x04000208;
+	*(vu32*)0x04000208 = 0;
+	{
+		CP15_SET_DATA_PROT(0x33333333);
+		*pSave = data;
+		vramcd_uncached->save_work.save_state = SAVE_WORK_STATE_DIRTY;
+		CP15_SET_DATA_PROT(pu_data_permissions);
+	}
+	//restore irqs
+	*(vu32*)0x04000208 = irq;
+	return 0;
+}
+
+GBA_INTERWORK_BRIDGE(programFlashByte1M)
+
 extern "C" u32 verifyFlashSector_impl(u16 secNo, u8* src)
 {
 	//reading from main memory is safe without changing permissions
@@ -216,6 +245,8 @@ GBA_INTERWORK_BRIDGE(identifyFlash512)
 extern "C" u16 identifyFlash1M_impl()
 {
 	*sPatchInfo.progSectorPtr = (u32)&programFlashSector1M;
+	if(sPatchInfo.progBytePtr)
+		*sPatchInfo.progBytePtr = (u32)&programFlashByte1M;
 	*sPatchInfo.eraseChipPtr = (u32)&eraseFlashChip;
 	*sPatchInfo.eraseSectorPtr = (u32)&eraseFlashSector;
 	*sPatchInfo.pollingSrPtr = NULL;
@@ -245,6 +276,7 @@ static bool loadDataV120(const save_type_t* type)
 		return false;
 
 	sPatchInfo.progSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_V120_OFFSET_PROG_SECTOR);
+	sPatchInfo.progBytePtr = NULL;
 	sPatchInfo.eraseChipPtr = *(u32**)(vram_cd->tmpSector + FLASH_V120_OFFSET_ERASE_CHIP);
 	sPatchInfo.eraseSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_V120_OFFSET_ERASE_SECTOR);
 	sPatchInfo.pollingSrPtr = *(u32**)(vram_cd->tmpSector + FLASH_V120_OFFSET_POLLING_SR);
@@ -324,6 +356,7 @@ bool flash_patch512V130(const save_type_t* type)
 		return false;
 
 	sPatchInfo.progSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_512V130_OFFSET_PROG_SECTOR);
+	sPatchInfo.progBytePtr = NULL;
 	sPatchInfo.eraseChipPtr = *(u32**)(vram_cd->tmpSector + FLASH_512V130_OFFSET_ERASE_CHIP);
 	sPatchInfo.eraseSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_512V130_OFFSET_ERASE_SECTOR);
 	sPatchInfo.pollingSrPtr = *(u32**)(vram_cd->tmpSector + FLASH_512V130_OFFSET_POLLING_SR);
@@ -362,6 +395,7 @@ bool flash_patch1MV102(const save_type_t* type)
 		return false;
 
 	sPatchInfo.progSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_PROG_SECTOR);
+	sPatchInfo.progBytePtr = NULL;
 	sPatchInfo.eraseChipPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_ERASE_CHIP);
 	sPatchInfo.eraseSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_ERASE_SECTOR);
 	sPatchInfo.pollingSrPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV102_OFFSET_POLLING_SR);
@@ -371,6 +405,45 @@ bool flash_patch1MV102(const save_type_t* type)
 		type->type == SAVE_TYPE_FLASH1M_V102 ? 0 : 4));
 
 	u32* pIdentify = gptc_findSignature(type->type == SAVE_TYPE_FLASH1M_V102 ? sIdentifyFlashV123Sig : sIdentifyFlash1MV103Sig);
+	if (!pIdentify)
+		return false;
+
+	save_injectJump(pIdentify, (void*)identifyFlash1M);
+
+	u32* readFunc = gptc_findSignature(sReadFlash512V130Sig);
+	if (!readFunc)
+		return false;
+	save_injectJump(readFunc, (void*)readFlash);
+
+	u32* verifySector = gptc_findSignature(sVerifyFlashSector512V130Sig);
+	if (!verifySector)
+		return false;
+	save_injectJump(verifySector, (void*)verifyFlashSector);
+
+	u32* verify = gptc_findSignature(sVerifyFlash512V130Sig);
+	if (!verify)
+		return false;
+	save_injectJump(verify, (void*)verifyFlash);
+	return true;
+}
+
+bool flash_patch1MV103(const save_type_t* type)
+{
+	//load flash data
+	f_lseek(&vram_cd->fil, f_tell(&vram_cd->fil) + ((type->tagLength + 3) & ~3));
+	UINT read;
+	if (f_read(&vram_cd->fil, vram_cd->tmpSector, 0x94, &read) != FR_OK || read != 0x94)
+		return false;
+
+	sPatchInfo.progSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV103_OFFSET_PROG_SECTOR);
+	sPatchInfo.progBytePtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV103_OFFSET_PROG_BYTE);
+	sPatchInfo.eraseChipPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV103_OFFSET_ERASE_CHIP);
+	sPatchInfo.eraseSectorPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV103_OFFSET_ERASE_SECTOR);
+	sPatchInfo.pollingSrPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV103_OFFSET_POLLING_SR);
+	sPatchInfo.flMaxTimePtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV103_OFFSET_FL_MAXTIME);
+	sPatchInfo.flashPtr = *(u32**)(vram_cd->tmpSector + FLASH_1MV103_OFFSET_FLASH);
+
+	u32* pIdentify = gptc_findSignature(sIdentifyFlash1MV103Sig);
 	if (!pIdentify)
 		return false;
 

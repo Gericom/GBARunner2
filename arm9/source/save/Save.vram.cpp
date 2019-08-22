@@ -27,7 +27,7 @@ static const save_type_t sSaveTypes[SAVE_TYPE_COUNT] =
 	{"FLASH512_V131", 14, SAVE_TYPE_FLASH512_V131, 64 * 1024, flash_patch512V130},
 	{"FLASH512_V133", 14, SAVE_TYPE_FLASH512_V133, 64 * 1024, flash_patch512V130},
 	{"FLASH1M_V102", 13, SAVE_TYPE_FLASH1M_V102, 128 * 1024, flash_patch1MV102},
-	{"FLASH1M_V103", 13, SAVE_TYPE_FLASH1M_V103, 128 * 1024, NULL}, //flash_patch1MV102 },
+	{"FLASH1M_V103", 13, SAVE_TYPE_FLASH1M_V103, 128 * 1024, flash_patch1MV103 },
 
 	//Fast sram does not require patching
 	{"SRAM_F_V100", 12, SAVE_TYPE_SRAM_F_V100, 32 * 1024, NULL},
