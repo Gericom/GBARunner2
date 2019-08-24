@@ -16,7 +16,8 @@
 #include "settings.h"
 #include "SettingsScreen.h"
 
-#define STRINGIFY(x)	#x
+#define STRINGIFY2(x)	#x
+#define STRINGIFY(x)	STRINGIFY2(x)
 
 static settings_item_t sEmulationItems[] =
 {    
