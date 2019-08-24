@@ -45,10 +45,10 @@ ifdef ENABLE_WRAM_ICACHE
 endif
 
 GIT_HASH := $(shell git rev-parse HEAD)
-GIT_DATE := $(shell git log -1 "--date=format:%d-%m-%Y %H:%M" --pretty=format:%cd)
-GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+GIT_DATE := $(shell git log -1 "--date=format:%d-%m-%Y\ %H:%M" --pretty=format:%cd)
+GIT_BRANCH := $(shell git describe --all --exact-match | sed 's/heads\///' | sed 's/remotes\/origin\///')
 
-CFLAGS += -DGIT_COMMIT_HASH="\"$(GIT_HASH)\"" -DGIT_COMMIT_DATE="\"$(GIT_DATE)\"" -DGIT_BRANCH="\"$(GIT_BRANCH)\""
+CFLAGS +=  -DGIT_COMMIT_HASH=$(GIT_HASH) -DGIT_COMMIT_DATE=$(GIT_DATE) -DGIT_BRANCH=$(GIT_BRANCH)
 
 
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fnon-call-exceptions

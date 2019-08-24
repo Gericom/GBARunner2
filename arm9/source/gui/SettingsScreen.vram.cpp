@@ -16,6 +16,9 @@
 #include "settings.h"
 #include "SettingsScreen.h"
 
+#define STRINGIFY2(x)	#x
+#define STRINGIFY(x)	STRINGIFY2(x)
+
 static settings_item_t sEmulationItems[] =
 {    
 	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
@@ -35,11 +38,21 @@ static settings_item_t sInputItems[] =
     { SETTINGS_ITEM_MODE_SIMPLE, "GBA SELECT button", "DS SELECT button", NULL }
 };
 
+#ifndef GIT_COMMIT_DATE
+#define GIT_COMMIT_DATE unavailable
+#endif
+#ifndef GIT_COMMIT_HASH
+#define GIT_COMMIT_HASH unavailable
+#endif
+#ifndef GIT_BRANCH
+#define GIT_BRANCH unavailable
+#endif
+
 static settings_item_t sInfoItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", GIT_COMMIT_DATE, NULL },
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit hash", GIT_COMMIT_HASH, NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "Branch", GIT_BRANCH, NULL },
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", STRINGIFY(GIT_COMMIT_DATE), NULL },
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit hash", STRINGIFY(GIT_COMMIT_HASH), NULL },
+    { SETTINGS_ITEM_MODE_SIMPLE, "Branch", STRINGIFY(GIT_BRANCH), NULL },
     { SETTINGS_ITEM_MODE_SIMPLE, "DLDI Cpu", 
 #ifdef ARM7_DLDI
 		"ARM 7"
