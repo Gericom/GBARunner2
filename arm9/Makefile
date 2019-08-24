@@ -46,7 +46,7 @@ endif
 
 GIT_HASH := $(shell git rev-parse HEAD)
 GIT_DATE := date#$(shell git log -1 "--date=format:%d-%m-%Y %H:%M" --pretty=format:%cd)
-GIT_BRANCH := $(shell git branch | sed -n '/\* /s///p')
+GIT_BRANCH := $(shell git describe --all --exact-match | sed 's/heads\///')
 
 CFLAGS +=  -DGIT_COMMIT_HASH=$(GIT_HASH) -DGIT_COMMIT_DATE=$(GIT_DATE) -DGIT_BRANCH=$(GIT_BRANCH)
 
