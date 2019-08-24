@@ -37,6 +37,16 @@ static settings_item_t sInputItems[] =
     { SETTINGS_ITEM_MODE_SIMPLE, "GBA SELECT button", "DS SELECT button", NULL }
 };
 
+#ifndef GIT_COMMIT_DATE
+#define GIT_COMMIT_DATE unavailable
+#endif
+#ifndef GIT_COMMIT_HASH
+#define GIT_COMMIT_HASH unavailable
+#endif
+#ifndef GIT_BRANCH
+#define GIT_BRANCH unavailable
+#endif
+
 static settings_item_t sInfoItems[] =
 {    
 	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", STRINGIFY(GIT_COMMIT_DATE), NULL },
