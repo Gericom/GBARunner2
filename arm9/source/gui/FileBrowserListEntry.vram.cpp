@@ -30,21 +30,21 @@ void FileBrowserListEntry::LoadCommonData(UIManager& uiManager)
 	PaletteManager& palMan = uiManager.GetSubObjPalManager();
 	for (int i = 0; i < 16; i++)
 	{
-		int gray = 31 + ((4 - 31) * i + 7) / 15;
+		int gray = 31 + ((4 - 31) * i) / 15;
 		palMan.palette[i + (3 * 16)].color = RGB5(gray, gray, gray);
-		int gray2 = 28 + ((4 - 28) * i + 7) / 15;
+		int gray2 = 28 + ((4 - 28) * i) / 15;
 		palMan.palette[i + (6 * 16)].color = RGB5(gray2, gray2, gray2);
 	}
 	for (int i = 0; i < 16; i++)
 	{
-		int gray = 31 + ((19 - 31) * i + 7) / 15;
+		int gray = 31 + ((19 - 31) * i) / 15;
 		palMan.palette[i + (4 * 16)].color = RGB5(gray, gray, gray);
-		int gray2 = 28 + ((19 - 28) * i + 7) / 15;
+		int gray2 = 28 + ((19 - 28) * i) / 15;
 		palMan.palette[i + (7 * 16)].color = RGB5(gray2, gray2, gray2);
 	}
 	for (int i = 0; i < 16; i++)
 	{
-		int gray = 19 + ((31 - 19) * i + 7) / 15;
+		int gray = 19 + ((31 - 19) * i) / 15;
 		palMan.palette[i + (5 * 16)].color = RGB5(gray, gray, gray);
 	}
 	palMan.palette[1 + (8 * 16)].color = RGB5(28, 28, 28);
@@ -101,7 +101,7 @@ void FileBrowserListEntry::Update(UIManager& uiManager)
 	{
 		nameOams[i].attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_WIDE |
 			OBJ_Y(_offsetY + 10);
-		nameOams[i].attribute[1] = ATTR1_SIZE_32 | OBJ_X(_offsetX + 46 + 32 * i);
+		nameOams[i].attribute[1] = ATTR1_SIZE_32 | OBJ_X(_offsetX + 47 + 32 * i);
 		nameOams[i].attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(3 + palOffset) | ((_nameObjAddr >> 5) + 8 * i);
 	}
 }

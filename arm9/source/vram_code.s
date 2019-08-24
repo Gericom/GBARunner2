@@ -358,6 +358,9 @@ gba_start_bkpt_vram:
 
 	mcr	p15, 0, r0, c7, c10, 4
 
-	//to boot without intro set this to 0xB4
-	ldr r0,= (gGbaBios + 0x68)
+	ldr r2,= gEmuSettingSkipIntro
+	ldr r2, [r2]
+	cmp r2, #1
+	ldrne r0,= (gGbaBios + 0x68) //with intro
+	ldreq r0,= (gGbaBios + 0xB4) //without intro
 	bx r0

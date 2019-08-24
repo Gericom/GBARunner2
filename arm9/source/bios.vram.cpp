@@ -123,6 +123,8 @@ BiosLoadResult bios_load()
 	if (result != FR_OK)
 		result = f_open(&vram_cd->fil, "0:/gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
 	if (result != FR_OK)
+		result = f_open(&vram_cd->fil, "0:/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
+	if (result != FR_OK)
 		return BIOS_LOAD_RESULT_NOT_FOUND;
 	if (vram_cd->fil.obj.objsize != BIOS_SIZE)
 	{

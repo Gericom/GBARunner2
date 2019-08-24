@@ -402,6 +402,12 @@ dldi_name_copy:
 	str r1, [r0]
 	ldr r1,= 0x4084
 	strh r1, [r0, #0xE]
+
+	ldr r2,= gEmuSettingCenterMask
+	ldr r2, [r2]
+	cmp r2, #1
+	bne skip_center_mask
+
 	//center
 	ldr r1,= -(8 * 256)
 	str r1, [r0, #0x38]
@@ -420,6 +426,7 @@ dldi_name_copy:
 	strh r1, [r0, #0x54]
 	ldr r1,= 0x3FFF
 	strh r1, [r0, #0x50]
+skip_center_mask:
 
 	ldr r2,= 0x05000400
 	mov r1, #0
@@ -461,11 +468,24 @@ dldi_name_copy:
 	ldr r0,= 0x04000304
 	ldrh r1, [r0]
 	bic r1, #0xC
-	eor r1, #0x8000
+
+	//set the screen swap setting
+	ldr r2,= gEmuSettingUseBottomScreen
+	ldr r2, [r2]
+	cmp r2, #1
+	bicne r1, #0x8000
+	orreq r1, #0x8000
+
+	ldr r2,= gEmuSettingCenterMask
+	ldr r2, [r2]
+	cmp r2, #1
+	eorne r1, #0x8000 //reversed if no center+mask
+	
 	strh r1, [r0]
 
-	//turn off the main engine display using masterbright
-	ldr r0,= 0x0400006C
+	//turn off the other engine display using masterbright
+	ldreq r0,= 0x0400006C
+	ldrne r0,= 0x0400106C
 	ldr r1,= 0x801F
 	strh r1, [r0]
 

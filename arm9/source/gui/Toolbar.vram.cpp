@@ -20,9 +20,9 @@ void Toolbar::LoadCommonData(UIManager& uiManager)
 
 void Toolbar::Initialize(UIManager& uiManager)
 {
-	u16 backArrowAddr = uiManager.GetSubObjManager().Alloc(128);
+	_backArrowObjAddr = uiManager.GetSubObjManager().Alloc(128);
 	for (int i = 0; i < 128 / 2; i++)
-		SPRITE_GFX_SUB[(backArrowAddr >> 1) + i] = ((u16*)IconArrowLeft_nbfc)[i];
+		SPRITE_GFX_SUB[(_backArrowObjAddr >> 1) + i] = ((u16*)IconArrowLeft_nbfc)[i];
 	_settingsObjAddr = uiManager.GetSubObjManager().Alloc(128);
 	for (int i = 0; i < 128 / 2; i++)
 		SPRITE_GFX_SUB[(_settingsObjAddr >> 1) + i] = ((u16*)IconSettings_nbfc)[i];
@@ -47,8 +47,16 @@ void Toolbar::Update(UIManager& uiManager)
 	bgOams[1].attribute[1] = ATTR1_SIZE_64 | OBJ_X(128) | ATTR1_ROTDATA(mtxId);
 	bgOams[1].attribute[2] = ATTR2_PRIORITY(2) | ATTR2_PALETTE(0) | (sBgObjAddr >> 5);
 
-	SpriteEntry* titleOams = oamMan.AllocOams(5);
 	int          text_x = 10;
+	if (_flags.showBackButton)
+	{
+		SpriteEntry* backButtonOam = oamMan.AllocOams(1);
+		backButtonOam->attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_SQUARE | OBJ_Y(10);
+		backButtonOam->attribute[1] = ATTR1_SIZE_16 | OBJ_X(10);
+		backButtonOam->attribute[2] = ATTR2_PRIORITY(2) | ATTR2_PALETTE(2) | (_backArrowObjAddr >> 5);
+		text_x = 47;
+	}
+	SpriteEntry* titleOams = oamMan.AllocOams(5);
 	for (int i = 0; i < 5; i++)
 	{
 		titleOams[i].attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_WIDE | OBJ_Y(11);
@@ -56,10 +64,13 @@ void Toolbar::Update(UIManager& uiManager)
 		titleOams[i].attribute[2] = ATTR2_PRIORITY(2) | ATTR2_PALETTE(1) | ((_textObjAddr >> 5) + 8 * i);
 	}
 
-	SpriteEntry* settingsOam = oamMan.AllocOams(1);
-	settingsOam->attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_SQUARE | OBJ_Y(10);
-	settingsOam->attribute[1] = ATTR1_SIZE_16 | OBJ_X(_flags.showMenuButton ? 204 : 230);
-	settingsOam->attribute[2] = ATTR2_PRIORITY(2) | ATTR2_PALETTE(2) | (_settingsObjAddr >> 5);
+	if(_flags.showSettingsButton)
+	{
+		SpriteEntry* settingsOam = oamMan.AllocOams(1);
+		settingsOam->attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_SQUARE | OBJ_Y(10);
+		settingsOam->attribute[1] = ATTR1_SIZE_16 | OBJ_X(_flags.showMenuButton ? 204 : 230);
+		settingsOam->attribute[2] = ATTR2_PRIORITY(2) | ATTR2_PALETTE(2) | (_settingsObjAddr >> 5);
+	}
 
 	if (_flags.colorInvalidated)
 	{
@@ -67,16 +78,16 @@ void Toolbar::Update(UIManager& uiManager)
 		palMan.palette[1] = _bgColor;
 		for (int i = 0; i < 16; i++)
 		{
-			int rnew = _bgColor.r + ((_iconColor.r - _bgColor.r) * i + 7) / 15;
-			int gnew = _bgColor.g + ((_iconColor.g - _bgColor.g) * i + 7) / 15;
-			int bnew = _bgColor.b + ((_iconColor.b - _bgColor.b) * i + 7) / 15;
+			int rnew = _bgColor.r + ((_iconColor.r - _bgColor.r) * i) / 15;
+			int gnew = _bgColor.g + ((_iconColor.g - _bgColor.g) * i) / 15;
+			int bnew = _bgColor.b + ((_iconColor.b - _bgColor.b) * i) / 15;
 			palMan.palette[i + 32].color = RGB5(rnew, gnew, bnew);
 		}
 		for (int i = 0; i < 16; i++)
 		{
-			int rnew = _bgColor.r + ((_textColor.r - _bgColor.r) * i + 7) / 15;
-			int gnew = _bgColor.g + ((_textColor.g - _bgColor.g) * i + 7) / 15;
-			int bnew = _bgColor.b + ((_textColor.b - _bgColor.b) * i + 7) / 15;
+			int rnew = _bgColor.r + ((_textColor.r - _bgColor.r) * i) / 15;
+			int gnew = _bgColor.g + ((_textColor.g - _bgColor.g) * i) / 15;
+			int bnew = _bgColor.b + ((_textColor.b - _bgColor.b) * i) / 15;
 			palMan.palette[i + 16].color = RGB5(rnew, gnew, bnew);
 		}
 		_flags.colorInvalidated = 0;

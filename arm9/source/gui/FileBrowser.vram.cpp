@@ -32,34 +32,16 @@ static int compDirEntries(const FILINFO*& dir1, const FILINFO*& dir2)
 	return strcasecmp(dir1->fname, dir2->fname);
 }
 
-void FileBrowser::LoadBios()
-{
-	switch (bios_load())
-	{
-		case BIOS_LOAD_RESULT_OK:
-			break;
-		case BIOS_LOAD_RESULT_ERROR:
-			FatalError("Error while loading bios!");
-			break;
-		case BIOS_LOAD_RESULT_NOT_FOUND:
-			FatalError("Bios not found!");
-			break;
-		case BIOS_LOAD_RESULT_INVALID:
-			FatalError("Bios invalid!");
-			break;
-	}
-}
-
 void FileBrowser::LoadFolder(const char* path)
 {
 	if (f_opendir(&vram_cd->dir, path) != FR_OK)
-		FatalError("Error while reading directory!");
+		_uiContext->FatalError("Error while reading directory!");
 	int     entryCount = 0;
 	FILINFO info;
 	while (true)
 	{
 		if (f_readdir(&vram_cd->dir, &info) != FR_OK)
-			FatalError("Error while reading directory!");
+			_uiContext->FatalError("Error while reading directory!");
 		if (info.fattrib & (AM_SYS | AM_HID))
 			continue;
 		if (info.fname[0] == 0)
@@ -78,17 +60,25 @@ void FileBrowser::LoadFolder(const char* path)
 	_entryCount = entryCount;
 	if (_listRecycler)
 	{
-		_uiManager.RemoveElement(_listRecycler);
+		_uiContext->GetUIManager().RemoveElement(_listRecycler);
 		delete _listRecycler;
 	}
 	if (_adapter)
 		delete _adapter;
-	_uiManager.GetSubObjManager().SetState(_vramState);
-	_adapter = new FileBrowserListAdapter(_robotoRegular11, _sortedEntries, _entryCount);
+
+	//clear everything except the toolbar
+	_uiContext->GetUIManager().Update();
+	_uiContext->GetUIManager().VBlank();
+
+	_uiContext->GetUIManager().GetSubObjManager().SetState(_vramState);
+	_adapter = new FileBrowserListAdapter(_uiContext->GetRobotoRegular11(), _sortedEntries, _entryCount);
 	_listRecycler = new ListRecycler(0, 36, 256, 156, 5, _adapter);
 	_selectedEntry = 0;
 	_listRecycler->SetSelectedIdx(0);
-	_uiManager.AddElement(_listRecycler);
+	_uiContext->GetUIManager().AddElement(_listRecycler);
+
+	//load the text graphics for next menu
+	_uiContext->GetUIManager().VBlank();
 }
 
 void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
@@ -116,15 +106,15 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 		return;
 #else
 		if (f_open(&vram_cd->fil, path, FA_CREATE_NEW | FA_WRITE) != FR_OK)
-			FatalError("Error creating save file!");
+			_uiContext->FatalError("Error creating save file!");
 
 		UINT bw;
 		if (f_write(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_SAVE_DATA, vram_cd->save_work.saveSize, &bw) != FR_OK ||
 			bw != vram_cd->save_work.saveSize)
-			FatalError("Error creating save file!");
+			_uiContext->FatalError("Error creating save file!");
 		f_close(&vram_cd->fil);
 		if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
-			FatalError("Error creating save file!");
+			_uiContext->FatalError("Error creating save file!");
 #endif
 	}
 
@@ -132,7 +122,7 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 		vram_cd->save_work.saveSize = 512;
 
 	if (vram_cd->fil.obj.objsize < vram_cd->save_work.saveSize)
-		FatalError("Save file too small!");
+		_uiContext->FatalError("Save file too small!");
 
 	uint32_t* cluster_table = &vram_cd->save_work.save_fat_table[0];
 	uint32_t  cur_cluster = vram_cd->fil.obj.sclust;
@@ -147,7 +137,7 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 	UINT br;
 	if (f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_SAVE_DATA, vram_cd->save_work.saveSize, &br) != FR_OK ||
 		br != vram_cd->save_work.saveSize)
-		FatalError("Error while reading save file!");
+		_uiContext->FatalError("Error while reading save file!");
 	f_close(&vram_cd->fil);
 
 	vram_cd->save_work.fat_table_crc = crc16(0xFFFF, vram_cd->save_work.save_fat_table,
@@ -162,7 +152,7 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 void FileBrowser::LoadGame(const char* path)
 {
 	if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
-		FatalError("Error while opening rom!");
+		_uiContext->FatalError("Error while opening rom!");
 	vram_cd->sd_info.gba_rom_size = vram_cd->fil.obj.objsize;
 	uint32_t* cluster_table = &vram_cd->gba_rom_cluster_table[0];
 	uint32_t  cur_cluster = vram_cd->fil.obj.sclust;
@@ -174,7 +164,7 @@ void FileBrowser::LoadGame(const char* path)
 	}
 	UINT br;
 	if (f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, ROM_DATA_LENGTH, &br) != FR_OK)
-		FatalError("Error while reading rom!");
+		_uiContext->FatalError("Error while reading rom!");
 
 	const save_type_t* saveType = save_findTag();
 	if (saveType != NULL)
@@ -205,59 +195,19 @@ void FileBrowser::LoadGame(const char* path)
 	CreateLoadSave(nameBuf, saveType);
 }
 
-void FileBrowser::FatalError(const char* error)
+int FileBrowser::Run()
 {
-	Dialog* dialog = new Dialog(_robotoMedium13, "Error", _robotoRegular11, error);
-	_uiManager.AddElement(dialog);
-	_uiManager.GetSubObjPalManager().DimRows(0x3FFF);
-	_bgPalMan.DimRows(0x7FFF);
-	while (1)
-	{
-		_uiManager.Update();
-		while (*((vu16*)0x04000004) & 1);
-		while (!(*((vu16*)0x04000004) & 1));
-		_bgPalMan.Apply(BG_PALETTE_SUB);
-		_uiManager.VBlank();
-	}
-}
+	int next = 2;
+	_uiContext->GetToolbar().SetTitle("GBARunner2");
+	_uiContext->GetToolbar().SetShowBackButton(false);
+	_uiContext->GetToolbar().SetShowSettingsButton(true);
+	_uiContext->GetUIManager().Update();
+	while (*((vu16*)0x04000004) & 1);
+	while (!(*((vu16*)0x04000004) & 1));
+	_uiContext->GetUIManager().VBlank();
+	FileBrowserListEntry::LoadCommonData(_uiContext->GetUIManager());
+	_vramState = _uiContext->GetUIManager().GetSubObjManager().GetState();
 
-void FileBrowser::Run()
-{
-	REG_DISPCNT_SUB = DISPLAY_BG1_ACTIVE | DISPLAY_BG2_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D |
-		DISPLAY_SPR_1D_SIZE_32 | MODE_0_2D;
-
-	//toolbar shadow
-	for (int i = 0; i < 16; i++)
-		_bgPalMan.palette[i].color = ((u16*)BarShadow_nbfp)[i];
-	for (int i = 0; i < (64 >> 1); i++)
-		BG_GFX_SUB[i] = ((u16*)BarShadow_nbfc)[i];
-	for (int i = 0; i < 2048 / 2; i++)
-		BG_GFX_SUB[(0x3800 >> 1) + i] = ((u16*)BarShadow_nbfs)[i];
-	REG_BG1CNT_SUB = BG_32x32 | BG_PRIORITY_2 | BG_COLOR_16 | BG_MAP_BASE(7);
-	REG_BLDCNT_SUB = BLEND_ALPHA | BLEND_SRC_BG1 | BLEND_DST_BG0 | BLEND_DST_SPRITE | BLEND_DST_BACKDROP;
-	REG_BLDALPHA_SUB = 4 | (12 << 8);
-	_bgPalMan.palette[0].color = RGB5(31, 31, 31);
-
-	//dialogue bg
-	BG_GFX_SUB[32] = 0x1112;
-	for (int i = 0; i < (64 >> 1) - 1; i++)
-		BG_GFX_SUB[33 + i] = 0x1111;
-	REG_BG2CNT_SUB = BG_32x32 | BG_PRIORITY_2 | BG_COLOR_16 | BG_MAP_BASE(8);
-	_bgPalMan.palette[15 * 16 + 1].color = RGB5(31, 31, 31);
-	_bgPalMan.palette[15 * 16 + 2].color = RGB5(157 >> 3, 157 >> 3, 157 >> 3);
-
-	_robotoMedium13 = new NtftFont(RobotoMedium13_ntft);
-	_robotoRegular11 = new NtftFont(RobotoRegular11_ntft);
-	Toolbar::LoadCommonData(_uiManager);
-	Toolbar* toolbar = new Toolbar(RGB5(103 >> 3, 58 >> 3, 183 >> 3), 0x7FFF, _robotoMedium13, "GBARunner2", 0x7FFF);
-	FileBrowserListEntry::LoadCommonData(_uiManager);
-	_uiManager.AddElement(toolbar);
-	_vramState = _uiManager.GetSubObjManager().GetState();
-
-	if (f_mount(&vram_cd->fatFs, "", 1) != FR_OK)
-		FatalError("Couldn't mount sd card!");
-
-	LoadBios();
 	f_chdir("/");
 	if (f_stat("gba", NULL) == FR_OK)
 		f_chdir("gba");
@@ -293,16 +243,23 @@ void FileBrowser::Run()
 			f_chdir("..");
 			LoadFolder(".");
 		}
+		else if (_inputRepeater.GetTriggeredKeys() & (1 << 8))
+		{
+			next = 1;
+			break;
+		}
 		_listRecycler->SetSelectedIdx(_selectedEntry);
-		_uiManager.Update();
+		_uiContext->GetUIManager().Update();
 		while (*((vu16*)0x04000004) & 1);
 		while (!(*((vu16*)0x04000004) & 1));
-		_bgPalMan.Apply(BG_PALETTE_SUB);
-		_uiManager.VBlank();
+		_uiContext->GetBGPalManager().Apply(BG_PALETTE_SUB);
+		_uiContext->GetUIManager().VBlank();
 	}
-	_uiManager.GetSubOamManager().Clear();
-	_uiManager.GetSubOamManager().Apply(OAM_SUB);
-	REG_BLDCNT_SUB = 0;
-	REG_BLDALPHA_SUB = 0;
-	delete toolbar;
+	if (_listRecycler)
+		_uiContext->GetUIManager().RemoveElement(_listRecycler);
+		
+	//clear everything except the toolbar
+	_uiContext->GetUIManager().Update();
+	_uiContext->GetUIManager().VBlank();
+	return next;
 }

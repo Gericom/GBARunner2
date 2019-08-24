@@ -6530,7 +6530,11 @@ int f_printf (
 		}
 		i = 0;
 		do {
-			d = (TCHAR)(v % r); v /= r;
+			int mod;
+			v = math_divmod(v, r, &mod);
+			d = (TCHAR)mod;
+			//d = (TCHAR)(v % r);
+			//v = math_div(v, r);
 			if (d > 9) d += (c == 'x') ? 0x27 : 0x07;
 			str[i++] = d + '0';
 		} while (v && i < sizeof str / sizeof *str);

@@ -7,8 +7,12 @@
 #include "qsort.h"
 #include "fat.h"
 #include "consts.s"
+#include "gui/UIContext.h"
 #include "gui/FileBrowser.h"
+#include "gui/SettingsScreen.h"
 #include "sd_access.h"
+#include "settings.h"
+#include "bios.h"
 #include "crc16.h"
 
 #define REG_SEND_FIFO	(*((vu32*)0x04000188))
@@ -190,13 +194,66 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
 	vramheap_init();
-	FileBrowser* fileBrowser = new FileBrowser();
-	fileBrowser->Run();
-	delete fileBrowser;
+    *(vu8*)0x04000243 = 0x84;
+	*(vu8*)0x04000249 = 0x00;
+	UIContext* uiContext = new UIContext();
+	uiContext->GetUIManager().Update();
+	while (*((vu16*)0x04000004) & 1);
+	while (!(*((vu16*)0x04000004) & 1));
+	uiContext->GetUIManager().VBlank();
+	if (f_mount(&vram_cd->fatFs, "", 1) != FR_OK)
+		uiContext->FatalError("Couldn't mount sd card!");
+#ifndef ISNITRODEBUG
+	if (f_stat("0:/_gba", NULL) != FR_OK)
+		if(f_mkdir("0:/_gba") != FR_OK)
+			uiContext->FatalError("Couldn't create /_gba folder!");
+#endif
+	switch (bios_load())
+	{
+		case BIOS_LOAD_RESULT_OK:
+			break;
+		case BIOS_LOAD_RESULT_ERROR:
+			uiContext->FatalError("Error while loading bios!");
+			break;
+		case BIOS_LOAD_RESULT_NOT_FOUND:
+			uiContext->FatalError("Bios not found!");
+			break;
+		case BIOS_LOAD_RESULT_INVALID:
+			uiContext->FatalError("Bios invalid!");
+			break;
+	}
+	settings_initialize();
+
+	int next = 0;
+	while(true)
+	{
+		uiContext->ResetVram();
+		if(next == 0)
+		{
+			FileBrowser* fileBrowser = new FileBrowser(uiContext);
+			next = fileBrowser->Run();
+			delete fileBrowser;
+		}
+		else if(next == 1)
+		{
+			SettingsScreen* settings = new SettingsScreen(uiContext);
+			settings->Run();
+			delete settings;
+#ifndef ISNITRODEBUG
+			if(!settings_save())
+				uiContext->FatalError("Couldn't save settings!");
+#endif
+			next = 0;
+		}
+		else if(next == 2)
+			break;
+	}	
+	delete uiContext;
 	MI_WriteByte(&vram_cd->sd_info.nr_sectors_per_cluster, vram_cd->fatFs.csize);
 	vram_cd->sd_info.cluster_shift = 31 - __builtin_clz(vram_cd->sd_info.nr_sectors_per_cluster * 512);
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 	initialize_cache();
+	*(vu8*)0x04000243 = 0x80;
 }
 
 //gets an empty one or wipes the oldest
