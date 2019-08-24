@@ -16,6 +16,8 @@
 #include "settings.h"
 #include "SettingsScreen.h"
 
+#define STRINGIFY(x)	#x
+
 static settings_item_t sEmulationItems[] =
 {    
 	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
@@ -37,9 +39,9 @@ static settings_item_t sInputItems[] =
 
 static settings_item_t sInfoItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", GIT_COMMIT_DATE, NULL },
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit hash", GIT_COMMIT_HASH, NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "Branch", GIT_BRANCH, NULL },
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", STRINGIFY(GIT_COMMIT_DATE), NULL },
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit hash", STRINGIFY(GIT_COMMIT_HASH), NULL },
+    { SETTINGS_ITEM_MODE_SIMPLE, "Branch", STRINGIFY(GIT_BRANCH), NULL },
     { SETTINGS_ITEM_MODE_SIMPLE, "DLDI Cpu", 
 #ifdef ARM7_DLDI
 		"ARM 7"
