@@ -18,7 +18,7 @@
 
 //#define address_thumb_table_dtcm (address_dtcm + 0xFA0) //(address_dtcm + 0xF98)
 
-#define pu_data_permissions 0x33600603 //0x33600003 //0x33660003
+#define pu_data_permissions 0x33600003 //0x33600603 //0x33600003 //0x33660003
 
 //for debugging the abort handler only!
 //registers will be destroyed by a fiq interrupt though
@@ -40,6 +40,10 @@
 //In general it's better to keep it off
 //#define ENABLE_WRAM_ICACHE
 //#define POSTPONED_ICACHE
+
+//for collecting statistics about the instruction being handled
+//#define HANDLER_STATISTICS
+#define STATISTICS_ADDRESS		0x02400000		//in is-nitro expanded debug memory
 
 #ifdef __ASSEMBLER__
 @destroys r12, r13
@@ -115,8 +119,9 @@
 FIELDS(address_dtcm, 
 	reg_table, 0x40,
 	address_cpu_mode_switch_dtcm, 4 * 31,
-	address_thumb_table_dtcm, 4 * 128,
+	address_thumb_table_dtcm, 4 * 128 + 4,
 	address_arm_table_dtcm, 4 * 256,
+	address_jumptab_armLo, 4 * 512,
 	address_count_bit_table, 0x100,
 	address_write_table_32bit_dtcm, 0x108,
 	address_write_table_16bit_dtcm, 0x20C,
@@ -125,6 +130,13 @@ FIELDS(address_dtcm,
 	address_read_table_16bit_dtcm, 0x20C,
 	address_read_table_8bit_dtcm, 0x418,
 	address_DISPCNT_copy, 0x4,
+	address_BG2CNT_copy, 0x4,
+	address_BG2PA_copy, 0x2,
+	address_BG2PB_copy, 0x2,
+	address_BG2PC_copy, 0x2,
+	address_BG2PD_copy, 0x2,
+	address_BG2X_copy, 0x4,
+	address_BG2Y_copy, 0x4,
 	address_shadow_dispstat, 0x4,
 	address_WAITCNT_copy, 0x4,
 	address_dma_shadow_regs_dtcm, 0x30

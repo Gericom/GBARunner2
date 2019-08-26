@@ -15,7 +15,7 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/emu source/gui source/fat
+SOURCES		:=	source source/emu source/gui source/gui/core source/fat source/save
 INCLUDES	:=	include source
 DATA		:=	data
 
@@ -36,12 +36,35 @@ ifdef ISNITRODEBUG
 	CFLAGS	+=  -DISNITRODEBUG
 endif
 
+ifdef ARM7_DLDI
+	CFLAGS	+=  -DARM7_DLDI
+endif
+
+ifdef ENABLE_WRAM_ICACHE
+	CFLAGS	+=  -DENABLE_WRAM_ICACHE
+endif
+
+GIT_HASH := $(shell git rev-parse HEAD)
+GIT_DATE := $(shell git log -1 "--date=format:%d-%m-%Y %H:%M" --pretty=format:%cd)
+GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+
+CFLAGS += -DGIT_COMMIT_HASH="\"$(GIT_HASH)\"" -DGIT_COMMIT_DATE="\"$(GIT_DATE)\"" -DGIT_BRANCH="\"$(GIT_BRANCH)\""
+
+
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fnon-call-exceptions
 
 ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s $(INCLUDE)
 
 ifdef ISNITRODEBUG
 	ASFLAGS	+=  -DISNITRODEBUG
+endif
+
+ifdef ARM7_DLDI
+	ASFLAGS	+=  -DARM7_DLDI
+endif
+
+ifdef ENABLE_WRAM_ICACHE
+	ASFLAGS	+=  -DENABLE_WRAM_ICACHE
 endif
 
 LDFLAGS	=	-specs=../ds_arm9_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -nodefaultlibs
@@ -74,7 +97,7 @@ export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.bin)))
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
  
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -125,10 +148,32 @@ $(ARM9ELF)	:	$(OFILES)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data 
 #---------------------------------------------------------------------------------
-%.bin.o	:	%.bin
+%.ntft.o	:	%.ntft
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+
+#---------------------------------------------------------------------------------
+%.nbfc.o	:	%.nbfc
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+
+#---------------------------------------------------------------------------------
+%.nbfs.o	:	%.nbfs
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+
+#---------------------------------------------------------------------------------
+%.nbfp.o	:	%.nbfp
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
 
 -include $(DEPSDIR)/*.d
  

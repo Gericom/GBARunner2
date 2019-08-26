@@ -1,4 +1,5 @@
 #include <nds.h>
+#include <string.h>
 #include "../../common/sd_vram.h"
 #include "timer.h"
 #include "sound.h"
@@ -8,8 +9,10 @@
 #define GB_CHANNEL_1_HW_R	9
 #define GB_CHANNEL_2_HW_L	10
 #define GB_CHANNEL_2_HW_R	11
-#define GB_CHANNEL_3_HW_L	12
-#define GB_CHANNEL_3_HW_R	13
+#define GB_CHANNEL_3_HW_L_0	6
+#define GB_CHANNEL_3_HW_R_0	7
+#define GB_CHANNEL_3_HW_L_1	12
+#define GB_CHANNEL_3_HW_R_1	13
 #define GB_CHANNEL_4_HW_L	14
 #define GB_CHANNEL_4_HW_R	15
 
@@ -22,8 +25,8 @@
 
 static int sFrameSeqStep;
 
-static int sChannelLength[4];
-static int sChannelLengthCounter[4];
+static int  sChannelLength[4];
+static int  sChannelLengthCounter[4];
 static bool sChannelUseLen[4];
 
 static int sChannelFreq[4];
@@ -41,6 +44,15 @@ static int sChannel1SweepTimer;
 static int sChannel1SweepDir;
 static int sChannel1SweepAmount;
 
+static bool sChannel3IsMode64;
+static int  sChannel3CurPlayBank;
+static bool sChannel3IsEnabled;
+static s8   sChannel3WaveData[2][32];
+
+static int  sChannel4Div;
+static bool sChannel4Is7Bit;
+static int  sChannel4ShiftFreq;
+
 static int sChannelEnableL;
 static int sChannelEnableR;
 static int sMasterVolumeL;
@@ -54,33 +66,37 @@ static bool sMasterEnable;
 static int gbDutyToDs(int gbDuty)
 {
 	if (gbDuty == 0)
-		return 0;//12.5%
+		return 0; //12.5%
 	else if (gbDuty == 1)
-		return 1;//25%
+		return 1; //25%
 	else if (gbDuty == 2)
-		return 3;//50%
+		return 3; //50%
 	else
-		return 5;//75%
+		return 5; //75%
 }
 
 static void updateChannelDuty(int channel)
 {
-	switch(channel)
+	switch (channel)
 	{
 		case 0:
-			REG_SOUND[GB_CHANNEL_1_HW_L].CNT = (REG_SOUND[GB_CHANNEL_1_HW_L].CNT & ~REG_SOUNDXCNT_DUTY(7)) | REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel1Duty));
-			REG_SOUND[GB_CHANNEL_1_HW_R].CNT = (REG_SOUND[GB_CHANNEL_1_HW_R].CNT & ~REG_SOUNDXCNT_DUTY(7)) | REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel1Duty));
+			REG_SOUND[GB_CHANNEL_1_HW_L].CNT = (REG_SOUND[GB_CHANNEL_1_HW_L].CNT & ~REG_SOUNDXCNT_DUTY(7)) |
+				REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel1Duty));
+			REG_SOUND[GB_CHANNEL_1_HW_R].CNT = (REG_SOUND[GB_CHANNEL_1_HW_R].CNT & ~REG_SOUNDXCNT_DUTY(7)) |
+				REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel1Duty));
 			break;
 		case 1:
-			REG_SOUND[GB_CHANNEL_2_HW_L].CNT = (REG_SOUND[GB_CHANNEL_2_HW_L].CNT & ~REG_SOUNDXCNT_DUTY(7)) | REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel2Duty));
-			REG_SOUND[GB_CHANNEL_2_HW_R].CNT = (REG_SOUND[GB_CHANNEL_2_HW_R].CNT & ~REG_SOUNDXCNT_DUTY(7)) | REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel2Duty));
+			REG_SOUND[GB_CHANNEL_2_HW_L].CNT = (REG_SOUND[GB_CHANNEL_2_HW_L].CNT & ~REG_SOUNDXCNT_DUTY(7)) |
+				REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel2Duty));
+			REG_SOUND[GB_CHANNEL_2_HW_R].CNT = (REG_SOUND[GB_CHANNEL_2_HW_R].CNT & ~REG_SOUNDXCNT_DUTY(7)) |
+				REG_SOUNDXCNT_DUTY(gbDutyToDs(sChannel2Duty));
 			break;
 	}
 }
 
 static void updateChannelFreq(int channel)
 {
-	switch(channel)
+	switch (channel)
 	{
 		case 0:
 			REG_SOUND[GB_CHANNEL_1_HW_L].TMR = (u16)(-(33513982 / 2) / (131072 / (2048 - sChannelFreq[0]) * 8));
@@ -90,19 +106,47 @@ static void updateChannelFreq(int channel)
 			REG_SOUND[GB_CHANNEL_2_HW_L].TMR = (u16)(-(33513982 / 2) / (131072 / (2048 - sChannelFreq[1]) * 8));
 			REG_SOUND[GB_CHANNEL_2_HW_R].TMR = (u16)(-(33513982 / 2) / (131072 / (2048 - sChannelFreq[1]) * 8));
 			break;
+		case 2:
+		{
+			int freq = 2097152 / (2048 - sChannelFreq[2]);
+			REG_SOUND[GB_CHANNEL_3_HW_L_0].TMR = (u16)(-(33513982 / 2) / freq);
+			REG_SOUND[GB_CHANNEL_3_HW_R_0].TMR = (u16)(-(33513982 / 2) / freq);
+			REG_SOUND[GB_CHANNEL_3_HW_L_1].TMR = (u16)(-(33513982 / 2) / freq);
+			REG_SOUND[GB_CHANNEL_3_HW_R_1].TMR = (u16)(-(33513982 / 2) / freq);
+			break;
+		}
+		case 3:
+			{
+				int div = sChannel4Div * 8;
+				if (div == 0)
+					div = 4;
+				div *= 2 << sChannel4ShiftFreq;
+				int freq = 4194304 / div;
+				if (freq == 0)
+				{
+					REG_SOUND[GB_CHANNEL_4_HW_L].TMR = 0;
+					REG_SOUND[GB_CHANNEL_4_HW_R].TMR = 0;
+				}
+				else
+				{
+					REG_SOUND[GB_CHANNEL_4_HW_L].TMR = (u16)(-(33513982 / 2) / freq);
+					REG_SOUND[GB_CHANNEL_4_HW_R].TMR = (u16)(-(33513982 / 2) / freq);
+				}
+				break;
+			}
 	}
 }
 
-static void calcChannelVolume(int channel, int &volumeL, int &shiftL, int &volumeR, int &shiftR)
+static void calcChannelVolume(int channel, int& volumeL, int& shiftL, int& volumeR, int& shiftR)
 {
 	if (sChannelEnableL & (1 << channel))
 	{
-		int sl = 2;//always at least a division by 4
+		int sl = 2; //always at least a division by 4
 		int vl = sChannelVolume[channel] * (sMasterVolumeL + 1);
-		if (sMixVolume == 2)
-			sl = 3;//division by 16
+		if (sMixVolume == 0)
+			sl = 3; //division by 16
 		else if (sMixVolume == 1)
-			vl >>= 1;//sadly one bit is lost here
+			vl >>= 1; //sadly one bit is lost here
 		volumeL = vl;
 		shiftL = sl;
 	}
@@ -114,12 +158,12 @@ static void calcChannelVolume(int channel, int &volumeL, int &shiftL, int &volum
 
 	if (sChannelEnableR & (1 << channel))
 	{
-		int sr = 2;//always at least a division by 4
+		int sr = 2; //always at least a division by 4
 		int vr = sChannelVolume[channel] * (sMasterVolumeR + 1);
-		if (sMixVolume == 2)
-			sr = 3;//division by 16
+		if (sMixVolume == 0)
+			sr = 3; //division by 16
 		else if (sMixVolume == 1)
-			vr >>= 1;//sadly one bit is lost here
+			vr >>= 1; //sadly one bit is lost here
 		volumeR = vr;
 		shiftR = sr;
 	}
@@ -134,26 +178,51 @@ static void updateChannelVolume(int channel)
 {
 	int vl, sl, vr, sr;
 	calcChannelVolume(channel, vl, sl, vr, sr);
-	switch(channel)
+	switch (channel)
 	{
 		case 0:
-			REG_SOUND[GB_CHANNEL_1_HW_L].CNT = (REG_SOUND[GB_CHANNEL_1_HW_L].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
-			REG_SOUND[GB_CHANNEL_1_HW_R].CNT = (REG_SOUND[GB_CHANNEL_1_HW_R].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
+			REG_SOUND[GB_CHANNEL_1_HW_L].CNT = (REG_SOUND[GB_CHANNEL_1_HW_L].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+				REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
+			REG_SOUND[GB_CHANNEL_1_HW_R].CNT = (REG_SOUND[GB_CHANNEL_1_HW_R].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+				REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
 			break;
 		case 1:
-			REG_SOUND[GB_CHANNEL_2_HW_L].CNT = (REG_SOUND[GB_CHANNEL_2_HW_L].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
-			REG_SOUND[GB_CHANNEL_2_HW_R].CNT = (REG_SOUND[GB_CHANNEL_2_HW_R].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
+			REG_SOUND[GB_CHANNEL_2_HW_L].CNT = (REG_SOUND[GB_CHANNEL_2_HW_L].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+				REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
+			REG_SOUND[GB_CHANNEL_2_HW_R].CNT = (REG_SOUND[GB_CHANNEL_2_HW_R].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+				REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
 			break;
 		case 2:
-			REG_SOUND[GB_CHANNEL_3_HW_L].CNT = (REG_SOUND[GB_CHANNEL_3_HW_L].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
-			REG_SOUND[GB_CHANNEL_3_HW_R].CNT = (REG_SOUND[GB_CHANNEL_3_HW_R].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
+			if (sChannel3IsMode64 || sChannel3CurPlayBank == 0)
+			{
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT = (REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);				
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT = (REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
+				REG_SOUND[GB_CHANNEL_3_HW_L_1].CNT = (REG_SOUND[GB_CHANNEL_3_HW_L_1].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3)));
+				REG_SOUND[GB_CHANNEL_3_HW_R_1].CNT = (REG_SOUND[GB_CHANNEL_3_HW_R_1].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3)));
+			}
+			else
+			{
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT = (REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3)));
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT = (REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3)));
+				REG_SOUND[GB_CHANNEL_3_HW_L_1].CNT = (REG_SOUND[GB_CHANNEL_3_HW_L_1].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
+				REG_SOUND[GB_CHANNEL_3_HW_R_1].CNT = (REG_SOUND[GB_CHANNEL_3_HW_R_1].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+					REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
+			}
 			break;
 		case 3:
-			REG_SOUND[GB_CHANNEL_4_HW_L].CNT = (REG_SOUND[GB_CHANNEL_4_HW_L].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
-			REG_SOUND[GB_CHANNEL_4_HW_R].CNT = (REG_SOUND[GB_CHANNEL_4_HW_R].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) | REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
+			REG_SOUND[GB_CHANNEL_4_HW_L].CNT = (REG_SOUND[GB_CHANNEL_4_HW_L].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+				REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vl) | REG_SOUNDXCNT_SHIFT(sl);
+			REG_SOUND[GB_CHANNEL_4_HW_R].CNT = (REG_SOUND[GB_CHANNEL_4_HW_R].CNT & ~(REG_SOUNDXCNT_VOLUME(0x7F) |
+				REG_SOUNDXCNT_SHIFT(3))) | REG_SOUNDXCNT_VOLUME(vr) | REG_SOUNDXCNT_SHIFT(sr);
 			break;
 	}
-	
 }
 
 static void startChannel(int channel)
@@ -204,6 +273,96 @@ static void startChannel(int channel)
 				REG_SOUNDXCNT_SHIFT(sr) |
 				REG_SOUNDXCNT_VOLUME(vr);
 			break;
+		case 2:
+			REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT = 0;
+			REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT = 0;
+			REG_SOUND[GB_CHANNEL_3_HW_L_1].CNT = 0;
+			REG_SOUND[GB_CHANNEL_3_HW_R_1].CNT = 0;
+			if(sChannel3IsMode64)
+			{
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].SAD = (u32)&sChannel3WaveData[0][0];
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].SAD = (u32)&sChannel3WaveData[0][0];
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].LEN = 64 >> 2;
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].LEN = 64 >> 2;
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].PNT = 0;
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].PNT = 0;
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT =
+					REG_SOUNDXCNT_E |
+					REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+					REG_SOUNDXCNT_PAN(0) |
+					REG_SOUNDXCNT_SHIFT(sl) |
+					REG_SOUNDXCNT_VOLUME(vl);
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT =
+					REG_SOUNDXCNT_E |
+					REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+					REG_SOUNDXCNT_PAN(127) |
+					REG_SOUNDXCNT_SHIFT(sr) |
+					REG_SOUNDXCNT_VOLUME(vr);
+			}
+			else
+			{
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].SAD = (u32)&sChannel3WaveData[0][0];
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].SAD = (u32)&sChannel3WaveData[0][0];
+				REG_SOUND[GB_CHANNEL_3_HW_L_1].SAD = (u32)&sChannel3WaveData[1][0];
+				REG_SOUND[GB_CHANNEL_3_HW_R_1].SAD = (u32)&sChannel3WaveData[1][0];
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].LEN = 32 >> 2;
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].LEN = 32 >> 2;
+				REG_SOUND[GB_CHANNEL_3_HW_L_1].LEN = 32 >> 2;
+				REG_SOUND[GB_CHANNEL_3_HW_R_1].LEN = 32 >> 2;
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].PNT = 0;
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].PNT = 0;
+				REG_SOUND[GB_CHANNEL_3_HW_L_1].PNT = 0;
+				REG_SOUND[GB_CHANNEL_3_HW_R_1].PNT = 0;
+				REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT =
+					REG_SOUNDXCNT_E |
+					REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+					REG_SOUNDXCNT_PAN(0) |
+					REG_SOUNDXCNT_SHIFT(sl) |
+					REG_SOUNDXCNT_VOLUME(sChannel3CurPlayBank == 0 ? vl : 0);
+				REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT =
+					REG_SOUNDXCNT_E |
+					REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+					REG_SOUNDXCNT_PAN(127) |
+					REG_SOUNDXCNT_SHIFT(sr) |
+					REG_SOUNDXCNT_VOLUME(sChannel3CurPlayBank == 0 ? vr : 0);
+				REG_SOUND[GB_CHANNEL_3_HW_L_1].CNT =
+					REG_SOUNDXCNT_E |
+					REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+					REG_SOUNDXCNT_PAN(0) |
+					REG_SOUNDXCNT_SHIFT(sl) |
+					REG_SOUNDXCNT_VOLUME(sChannel3CurPlayBank == 1 ? vl : 0);
+				REG_SOUND[GB_CHANNEL_3_HW_R_1].CNT =
+					REG_SOUNDXCNT_E |
+					REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+					REG_SOUNDXCNT_PAN(127) |
+					REG_SOUNDXCNT_SHIFT(sr) |
+					REG_SOUNDXCNT_VOLUME(sChannel3CurPlayBank == 1 ? vr : 0);
+			}
+			break;
+		case 3:
+			REG_SOUND[GB_CHANNEL_4_HW_L].CNT = 0;
+			REG_SOUND[GB_CHANNEL_4_HW_R].CNT = 0;
+			REG_SOUND[GB_CHANNEL_4_HW_L].CNT =
+				REG_SOUNDXCNT_E |
+				REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PSG_NOISE) |
+				REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+				REG_SOUNDXCNT_PAN(0) |
+				REG_SOUNDXCNT_SHIFT(sl) |
+				REG_SOUNDXCNT_VOLUME(vl);
+			REG_SOUND[GB_CHANNEL_4_HW_R].CNT =
+				REG_SOUNDXCNT_E |
+				REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PSG_NOISE) |
+				REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) |
+				REG_SOUNDXCNT_PAN(127) |
+				REG_SOUNDXCNT_SHIFT(sr) |
+				REG_SOUNDXCNT_VOLUME(vr);
+			break;
 	}
 	sChannelPlaying |= 1 << channel;
 	vram_cd->sound_emu_work.reg_gb_nr52 = sChannelPlaying | (sMasterEnable << 7);
@@ -220,6 +379,16 @@ static void stopChannel(int channel)
 		case 1:
 			REG_SOUND[GB_CHANNEL_2_HW_L].CNT = 0;
 			REG_SOUND[GB_CHANNEL_2_HW_R].CNT = 0;
+			break;
+		case 2:
+			REG_SOUND[GB_CHANNEL_3_HW_L_0].CNT = 0;
+			REG_SOUND[GB_CHANNEL_3_HW_R_0].CNT = 0;
+			REG_SOUND[GB_CHANNEL_3_HW_L_1].CNT = 0;
+			REG_SOUND[GB_CHANNEL_3_HW_R_1].CNT = 0;
+			break;
+		case 3:
+			REG_SOUND[GB_CHANNEL_4_HW_L].CNT = 0;
+			REG_SOUND[GB_CHANNEL_4_HW_R].CNT = 0;
 			break;
 	}
 	sChannelPlaying &= ~(1 << channel);
@@ -242,7 +411,7 @@ static void stopChannel(int channel)
  */
 static void frameSeqUpdateLength()
 {
-	for(int i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 		if ((sChannelPlaying & (1 << i)) && sChannelUseLen[i] && sChannelLengthCounter[i] > 0)
 			if (--sChannelLengthCounter[i] == 0)
 				stopChannel(i);
@@ -259,12 +428,12 @@ static void frameSeqUpdateLength()
  */
 static void frameSeqUpdateVolume()
 {
-	for(int i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		if (i == 2 || !(sChannelPlaying & (1 << i)))
 			continue;
 		if (sChannelEnvSweep[i] == 0)
-			return;
+			continue;
 		if (++sChannelVolumeTimer[i] == sChannelEnvSweep[i])
 		{
 			int newVol = sChannelVolume[i] + sChannelEnvDir[i];
@@ -309,13 +478,13 @@ static void frameSeqUpdateSweep()
 	if (++sChannel1SweepTimer == sChannel1SweepTime)
 	{
 		int delta = (sChannel1FreqShadow >> sChannel1SweepAmount) * sChannel1SweepDir;
-		if(sChannel1FreqShadow + delta >= 0 && sChannel1FreqShadow <= 2047)
+		if (sChannel1FreqShadow + delta >= 0 && sChannel1FreqShadow <= 2047)
 		{
 			sChannel1FreqShadow += delta;
 			sChannelFreq[0] = sChannel1FreqShadow;
 			updateChannelFreq(0);
 		}
-		else if(sChannel1FreqShadow + delta >= 2048)
+		else if (sChannel1FreqShadow + delta >= 2048)
 			stopChannel(0);
 		sChannel1SweepTimer = 0;
 	}
@@ -338,11 +507,11 @@ extern "C" void gbs_frameSeqTick()
 	// 7      -           Clock       -
 	// ---------------------------------------
 	// Rate   256 Hz      64 Hz       128 Hz
-	if((sFrameSeqStep & 1) == 0)
+	if ((sFrameSeqStep & 1) == 0)
 		frameSeqUpdateLength();
-	if((sFrameSeqStep & 3) == 2)
+	if ((sFrameSeqStep & 3) == 2)
 		frameSeqUpdateSweep();
-	if(sFrameSeqStep == 7)
+	if (sFrameSeqStep == 7)
 		frameSeqUpdateVolume();
 
 	sFrameSeqStep = (sFrameSeqStep + 1) & 7;
@@ -400,6 +569,15 @@ void gbs_init()
 	sChannel1SweepDir = 0;
 	sChannel1SweepAmount = 0;
 
+	sChannel3IsMode64 = false;
+	sChannel3CurPlayBank = 0;
+	sChannel3IsEnabled = false;
+	memset(sChannel3WaveData, 0, sizeof(sChannel3WaveData));
+
+	sChannel4Div = 0;
+	sChannel4Is7Bit = false;
+	sChannel4ShiftFreq = 0;
+
 	sChannelEnableL = 0;
 	sChannelEnableR = 0;
 	sMasterVolumeL = 0;
@@ -410,11 +588,11 @@ void gbs_init()
 
 	sMasterEnable = false;
 
-	//setup timer 1 for the frame sequencer
-	REG_TM[1].CNT_H = 0;
-	REG_TM[1].CNT_L = TIMER_FREQ(512 * 1024);
-	REG_TM[1].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_1024;
-	REG_IE |= (1 << 4);
+	//setup timer 0 for the frame sequencer
+	REG_TM[0].CNT_H = 0;
+	REG_TM[0].CNT_L = TIMER_FREQ(512 * 1024);
+	REG_TM[0].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_1024;
+	REG_IE |= (1 << 3);
 }
 
 //assumes an 8 bit write
@@ -422,34 +600,34 @@ void gbs_writeReg(u8 reg, u8 val)
 {
 	if (!sMasterEnable && reg != 0x84)
 		return;
-	switch(reg)
+	switch (reg)
 	{
-		case 0x60://NR10
+		case 0x60: //NR10
 			sChannel1SweepTime = (val >> 4) & 7;
 			sChannel1SweepDir = (val & 8) ? -1 : 1;
 			sChannel1SweepAmount = val & 7;
 			break;
-		case 0x62://NR11
+		case 0x62: //NR11
 			sChannelLength[0] = val & 0x3F;
 			sChannelLengthCounter[0] = 64 - sChannelLength[0];
 			sChannel1Duty = val >> 6;
 			updateChannelDuty(0);
 			break;
-		case 0x63://NR12
+		case 0x63: //NR12
 			sChannelVolume[0] = val >> 4;
 			sChannelEnvDir[0] = (val & 0x8) ? 1 : -1;
 			sChannelEnvSweep[0] = val & 7;
 			updateChannelVolume(0);
 			break;
-		case 0x64://NR13
+		case 0x64: //NR13
 			sChannelFreq[0] = (sChannelFreq[0] & 0x700) | val;
 			updateChannelFreq(0);
 			break;
-		case 0x65://NR14
+		case 0x65: //NR14
 			sChannelFreq[0] = (sChannelFreq[0] & 0xFF) | ((val & 7) << 8);
 			updateChannelFreq(0);
 			sChannelUseLen[0] = (val >> 6) & 1;
-			if(val & 0x80)
+			if (val & 0x80)
 			{
 				if (sChannelLengthCounter[0] == 0)
 					sChannelLengthCounter[0] = 64;
@@ -460,27 +638,27 @@ void gbs_writeReg(u8 reg, u8 val)
 				startChannel(0);
 			}
 			break;
-		case 0x68://NR21
+		case 0x68: //NR21
 			sChannelLength[1] = val & 0x3F;
 			sChannelLengthCounter[1] = 64 - sChannelLength[1];
 			sChannel2Duty = val >> 6;
 			updateChannelDuty(1);
 			break;
-		case 0x69://NR22
+		case 0x69: //NR22
 			sChannelVolume[1] = val >> 4;
 			sChannelEnvDir[1] = (val & 0x8) ? 1 : -1;
 			sChannelEnvSweep[1] = val & 7;
 			updateChannelVolume(1);
 			break;
-		case 0x6C://NR23
+		case 0x6C: //NR23
 			sChannelFreq[1] = (sChannelFreq[1] & 0x700) | val;
 			updateChannelFreq(1);
 			break;
-		case 0x6D://NR24
+		case 0x6D: //NR24
 			sChannelFreq[1] = (sChannelFreq[1] & 0xFF) | ((val & 7) << 8);
 			updateChannelFreq(1);
 			sChannelUseLen[1] = (val >> 6) & 1;
-			if(val & 0x80)
+			if (val & 0x80)
 			{
 				if (sChannelLengthCounter[1] == 0)
 					sChannelLengthCounter[1] = 64;
@@ -489,25 +667,80 @@ void gbs_writeReg(u8 reg, u8 val)
 				startChannel(1);
 			}
 			break;
-		case 0x70://NR30
+		case 0x70: //NR30
+			sChannel3IsMode64 = (val >> 5) & 1;
+			sChannel3CurPlayBank = (val >> 6) & 1;
+			sChannel3IsEnabled = (val >> 7) & 1;
+			if (!sChannel3IsEnabled)
+				stopChannel(2);
+			else
+				updateChannelVolume(2);
 			break;
-		case 0x72://NR31
+		case 0x72: //NR31
+			sChannelLength[2] = val;
+			sChannelLengthCounter[2] = 256 - sChannelLength[2];
 			break;
-		case 0x73://NR32
+		case 0x73: //NR32
+			if (val & 0x80)
+				sChannelVolume[2] = 12; //75%
+			else
+			{
+				int vol = (val >> 5) & 3;
+				if (vol == 0)
+					sChannelVolume[2] = 0;
+				else if (vol == 1)
+					sChannelVolume[2] = 15;
+				else if (vol == 2)
+					sChannelVolume[2] = 8;
+				else
+					sChannelVolume[2] = 4;
+			}
+			updateChannelVolume(2);
 			break;
-		case 0x74://NR33
+		case 0x74: //NR33
+			sChannelFreq[2] = (sChannelFreq[2] & 0x700) | val;
+			updateChannelFreq(2);
 			break;
-		case 0x75://NR34
+		case 0x75: //NR34
+			sChannelFreq[2] = (sChannelFreq[2] & 0xFF) | ((val & 7) << 8);
+			updateChannelFreq(2);
+			sChannelUseLen[2] = (val >> 6) & 1;
+			if (val & 0x80)
+			{
+				if (sChannelLengthCounter[2] == 0)
+					sChannelLengthCounter[2] = 256;
+				if(sChannel3IsEnabled)
+					startChannel(2);
+			}
 			break;
-		case 0x78://NR41
+		case 0x78: //NR41
+			sChannelLength[3] = val & 0x3F;
+			sChannelLengthCounter[3] = 64 - sChannelLength[3];
 			break;
-		case 0x79://NR42
+		case 0x79: //NR42
+			sChannelVolume[3] = val >> 4;
+			sChannelEnvDir[3] = (val & 0x8) ? 1 : -1;
+			sChannelEnvSweep[3] = val & 7;
+			updateChannelVolume(3);
 			break;
-		case 0x7C://NR43
+		case 0x7C: //NR43
+			sChannel4Div = val & 7;
+			sChannel4Is7Bit = (val >> 3) & 1;
+			sChannel4ShiftFreq = (val >> 4) & 0xF;
+			updateChannelFreq(3);
 			break;
-		case 0x7D://NR44
+		case 0x7D: //NR44
+			sChannelUseLen[3] = (val >> 6) & 1;
+			if (val & 0x80)
+			{
+				if (sChannelLengthCounter[3] == 0)
+					sChannelLengthCounter[3] = 64;
+				sChannelVolume[3] = vram_cd->sound_emu_work.reg_gb_nr41_42 >> 12;
+				sChannelVolumeTimer[3] = 0;
+				startChannel(3);
+			}
 			break;
-		case 0x80://NR50
+		case 0x80: //NR50
 			sMasterVolumeL = (val >> 4) & 7;
 			sMasterVolumeR = val & 7;
 			updateChannelVolume(0);
@@ -515,7 +748,7 @@ void gbs_writeReg(u8 reg, u8 val)
 			updateChannelVolume(2);
 			updateChannelVolume(3);
 			break;
-		case 0x81://NR51
+		case 0x81: //NR51
 			sChannelEnableL = (val >> 4) & 0xF;
 			sChannelEnableR = val & 0xF;
 			updateChannelVolume(0);
@@ -524,7 +757,7 @@ void gbs_writeReg(u8 reg, u8 val)
 			updateChannelVolume(3);
 			break;
 
-		case 0x84://NR52
+		case 0x84: //NR52
 			if (!(val & 0x80))
 			{
 				sMasterEnable = false;
@@ -536,6 +769,25 @@ void gbs_writeReg(u8 reg, u8 val)
 			}
 			else
 				sMasterEnable = true;
+			break;
+		case 0x90:
+		case 0x91:
+		case 0x92:
+		case 0x93:
+		case 0x94:
+		case 0x95:
+		case 0x96:
+		case 0x97:
+		case 0x98:
+		case 0x99:
+		case 0x9A:
+		case 0x9B:
+		case 0x9C:
+		case 0x9D:
+		case 0x9E:
+		case 0x9F:
+			sChannel3WaveData[1 - sChannel3CurPlayBank][(reg & 0xF) << 1] = ((val & 0xF0) | (val >> 4)) - 128;
+			sChannel3WaveData[1 - sChannel3CurPlayBank][((reg & 0xF) << 1) + 1] = (((val & 0xF) << 4) | (val & 0xF)) - 128;
 			break;
 	}
 }

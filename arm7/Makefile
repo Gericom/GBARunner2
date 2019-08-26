@@ -30,10 +30,20 @@ CFLAGS	:=	-g -Wall -O3\
 		$(ARCH)
 
 CFLAGS	+=	$(INCLUDE) -DARM7
-CXXFLAGS	:=	$(CFLAGS) -fno-exceptions -fno-rtti
+
+ifdef ARM7_DLDI
+	CFLAGS	+=  -DARM7_DLDI
+endif
+
+CXXFLAGS	:=	$(CFLAGS) -fno-exceptions -fno-rtti -fno-threadsafe-statics 
 
 
 ASFLAGS	:=	-g $(ARCH)
+
+ifdef ARM7_DLDI
+	ASFLAGS	+=  -DARM7_DLDI
+endif
+
 LDFLAGS	=	-specs=../ds_arm7_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*).map
 
 LIBS	:=	-lnds7

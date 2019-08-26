@@ -9,17 +9,33 @@
 address_write_table_32bit:
 //0x04000000
 .word write_address_dispcontrol
-//0x04000004-0x0400005C
-.rept 23
+//0x04000004-0x0400001C
+.rept 7
+.word write_address_nomod_32
+.endr
+//0x04000020
+.word gfx_writeBg2PAPB
+//0x04000024
+.word gfx_writeBg2PCPD
+//0x04000028
+.word gfx_writeBg2X
+//0x0400002C
+.word gfx_writeBg2Y
+//0x04000028-0x0400005C
+.rept 12
 .word write_address_nomod_32
 .endr
 //0x04000060-0x04000084
 .rept 10
 .word write_address_snd_32
 .endr
-//0x04000088-0x0400009C
-.rept 6
+//0x04000088
 .word write_address_ignore
+//0x0400008C
+.word write_address_ignore
+//0x04000090-0x0400009C
+.rept 4
+.word write_address_snd_waveram_32
 .endr
 //0x040000A0
 .word write_address_snd_fifo_A
@@ -30,27 +46,27 @@ address_write_table_32bit:
 //0x040000AC
 .word write_address_ignore
 //0x040000B0
-.word write_dma_shadow_32 //write_address_dma_src
+.word write_dma_shadow_src_internal_32 //write_address_dma_src
 //0x040000B4
-.word write_dma_shadow_32 //write_address_dma_dst
+.word write_dma_shadow_dst_internal_32 //write_address_dma_dst
 //0x040000B8
 .word write_dma_size_control //write_address_dma_size_control
 //0x040000BC
-.word write_dma_shadow_32 //write_address_dma_src
+.word write_dma_shadow_src_all_32 //write_address_dma_src
 //0x040000C0
-.word write_dma_shadow_32 //write_address_dma_dst
+.word write_dma_shadow_dst_internal_32 //write_address_dma_dst
 //0x040000C4
 .word write_dma_size_control //write_address_dma_size_control
 //0x040000C8
-.word write_dma_shadow_32 //write_address_dma_src
+.word write_dma_shadow_src_all_32 //write_address_dma_src
 //0x040000CC
-.word write_dma_shadow_32 //write_address_dma_dst
+.word write_dma_shadow_dst_internal_32 //write_address_dma_dst
 //0x040000D0
 .word write_dma_size_control //write_address_dma_size_control
 //0x040000D4
-.word write_dma_shadow_32 //write_address_dma_src
+.word write_dma_shadow_src_all_32 //write_address_dma_src
 //0x040000D8
-.word write_dma_shadow_32 //write_address_dma_dst
+.word write_dma_shadow_dst_all_32 //write_address_dma_dst
 //0x040000DC
 .word write_dma_size_control
 //0x040000E0-0x040000FC
@@ -93,26 +109,62 @@ address_write_table_16bit:
 .word write_address_ignore
 //0x04000004
 .word write_address_dispstat
-//0x04000006-0x0400005E
-.rept 45
+//0x04000006
+.word write_address_ignore
+//0x04000008
+.word write_address_nomod_16
+//0x0400000A
+.word write_address_nomod_16
+//0x0400000C
+.word gfx_writeBg2Cnt
+//0x0400000E-0x0400001E
+.rept 9
+.word write_address_nomod_16
+.endr
+//0x04000020
+.word gfx_writeBg2PA
+//0x04000022
+.word gfx_writeBg2PB
+//0x04000024
+.word gfx_writeBg2PC
+//0x04000026
+.word gfx_writeBg2PD
+//0x04000028
+.word gfx_writeBg2X_L
+//0x0400002A
+.word gfx_writeBg2X_H
+//0x0400002C
+.word gfx_writeBg2Y_L
+//0x0400002E
+.word gfx_writeBg2Y_H
+//0x04000030-0x0400005E
+.rept 24
 .word write_address_nomod_16
 .endr
 //0x04000060-0x04000084
 .rept 19
 .word write_address_snd_16
 .endr
-//0x04000086-0x040000AC
-.rept 21
+//0x04000086-0x0400008E
+.rept 5
+.word write_address_ignore
+.endr
+//0x04000090-0x0400009E
+.rept 8
+.word write_address_snd_waveram_16
+.endr
+//0x040000A0-0x040000AE
+.rept 8
 .word write_address_ignore
 .endr
 //0x040000B0
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000B2
-.word write_dma_shadow_16 //write_address_dma_src_top16
+.word write_dma_shadow_src_internal_hi16 //write_address_dma_src_top16
 //0x040000B4
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000B6
-.word write_dma_shadow_16 //write_address_dma_dst_top16
+.word write_dma_shadow_dst_internal_hi16 //write_address_dma_dst_top16
 //0x040000B8
 .word write_dma_shadow_16 //write_address_dma_size
 //0x040000BA
@@ -120,11 +172,11 @@ address_write_table_16bit:
 //0x040000BC
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000BE
-.word write_dma_shadow_16 //write_address_dma_src_top16
+.word write_dma_shadow_src_all_hi16 //write_address_dma_src_top16
 //0x040000C0
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000C2
-.word write_dma_shadow_16 //write_address_dma_dst_top16
+.word write_dma_shadow_dst_internal_hi16 //write_address_dma_dst_top16
 //0x040000C4
 .word write_dma_shadow_16 //write_address_dma_size
 //0x040000C6
@@ -132,11 +184,11 @@ address_write_table_16bit:
 //0x040000C8
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000CA
-.word write_dma_shadow_16 //write_address_dma_src_top16
+.word write_dma_shadow_src_all_hi16 //write_address_dma_src_top16
 //0x040000CC
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000CE
-.word write_dma_shadow_16 //write_address_dma_dst_top16
+.word write_dma_shadow_dst_internal_hi16 //write_address_dma_dst_top16
 //0x040000D0
 .word write_dma_shadow_16 //write_address_dma_size
 //0x040000D2
@@ -144,11 +196,11 @@ address_write_table_16bit:
 //0x040000D4
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000D6
-.word write_dma_shadow_16 //write_address_dma_src_top16
+.word write_dma_shadow_src_all_hi16 //write_address_dma_src_top16
 //0x040000D8
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000DA
-.word write_dma_shadow_16 //write_address_dma_dst_top16
+.word write_dma_shadow_dst_all_hi16 //write_address_dma_dst_top16
 //0x040000DC
 .word write_dma_shadow_16 //write_address_dma_size
 //0x040000DE
@@ -227,29 +279,65 @@ address_write_table_8bit:
 .rept 37
 .word write_address_snd_8
 .endr
-//0x04000085-0x040000AF
-.rept 43
+//0x04000085-0x0400008F
+.rept 11
+.word write_address_ignore
+.endr
+//0x04000090-0x0400009F
+.rept 16
+.word write_address_snd_waveram_8
+.endr
+//0x040000A0-0x040000AF
+.rept 16
 .word write_address_ignore
 .endr
 //0x040000B0-0x040000DF
-.rept 10
 .word write_dma_shadow_8
-.endr
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_src_internal_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_dst_internal_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
 .word write_dma_control_bot8
 .word write_dma_control_top8
-.rept 10
 .word write_dma_shadow_8
-.endr
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_src_all_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_dst_internal_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
 .word write_dma_control_bot8
 .word write_dma_control_top8
-.rept 10
 .word write_dma_shadow_8
-.endr
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_src_all_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_dst_internal_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
 .word write_dma_control_bot8
 .word write_dma_control_top8
-.rept 10
 .word write_dma_shadow_8
-.endr
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_src_all_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
+.word write_dma_shadow_dst_all_hi8
+.word write_dma_shadow_8
+.word write_dma_shadow_8
 .word write_dma_control_bot8
 .word write_dma_control_top8
 //0x040000E0-0x040000FF

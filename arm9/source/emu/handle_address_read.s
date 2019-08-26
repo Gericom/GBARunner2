@@ -9,7 +9,7 @@ bios_op = 0xE3A02004 //[0188h+8] after swi execution; reads between 0x1C8 and 0x
 
 .global read_address_from_handler_32bit
 read_address_from_handler_32bit:
-	cmp r9, #0x0F000000
+	cmp r9, #0x10000000
 	ldrlo pc, [pc, r9, lsr #22]
 	b read_address_undefined_memory_32
 
@@ -27,6 +27,7 @@ read_address_from_handler_32bit:
 	.word read_address_from_handler_rom_32
 	.word read_address_from_handler_rom_32
 	.word read_address_from_handler_eeprom_32
+	.word read_address_from_handler_sram_32
 	.word read_address_from_handler_sram_32
 
 read_address_from_handler_bios_32:
@@ -69,9 +70,25 @@ read_address_from_handler_io_32:
 	b read_address_undefined_memory_32
 
 read_address_from_handler_vram_32:
-	add r10, r9, #0x3F0000
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
+	cmp r10, r12
+		bicge r10, #0x8000
+
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r12, r13, #7
+	cmp r12, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r10, r13
+		addge r10, #0x3F0000
 	ldr r10, [r10]
 	bx lr
+	
+	//add r10, r9, #0x3F0000
+	//ldr r10, [r10]
+	//bx lr
 
 read_address_from_handler_rom_32:
 	bic r10, r9, #0x0E000000
@@ -142,8 +159,8 @@ read_address_from_handler_eeprom_32:
 read_address_from_handler_sram_32:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x0FF00000) //#0x0BC00000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x000FF000) //#0x00010000
 	ldrb r10, [r10]
 	orr r10, r10, lsl #8
 	orr r10, r10, lsl #16
@@ -151,7 +168,7 @@ read_address_from_handler_sram_32:
 
 .global read_address_from_handler_16bit
 read_address_from_handler_16bit:
-	cmp r9, #0x0F000000
+	cmp r9, #0x010000000
 	ldrlo pc, [pc, r9, lsr #22]
 	b read_address_undefined_memory_16
 
@@ -169,6 +186,7 @@ read_address_from_handler_16bit:
 	.word read_address_from_handler_rom_16
 	.word read_address_from_handler_rom_16
 	.word read_address_from_handler_eeprom_16
+	.word read_address_from_handler_sram_16
 	.word read_address_from_handler_sram_16
 
 read_address_from_handler_bios_16:
@@ -208,7 +226,20 @@ read_address_from_handler_io_16:
 	b read_address_undefined_memory_16
 
 read_address_from_handler_vram_16:
-	add r10, r9, #0x3F0000
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
+	cmp r10, r12
+		bicge r10, #0x8000
+
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r12, r13, #7
+	cmp r12, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r10, r13
+		addge r10, #0x3F0000
+
 	ldrh r10, [r10]
 	tst r9, #1
 		movne r10, r10, ror #8
@@ -290,8 +321,8 @@ read_address_from_handler_eeprom_16:
 read_address_from_handler_sram_16:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x0FF00000) //#0x0BC00000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x000FF000) //#0x00010000
 	ldrb r10, [r10]
 	orr r10, r10, lsl #8
 	tst r9, #1
@@ -300,7 +331,7 @@ read_address_from_handler_sram_16:
 
 .global read_address_from_handler_8bit
 read_address_from_handler_8bit:
-	cmp r9, #0x0F000000
+	cmp r9, #0x10000000
 	ldrlo pc, [pc, r9, lsr #22]
 	b read_address_undefined_memory_8
 
@@ -318,6 +349,7 @@ read_address_from_handler_8bit:
 	.word read_address_from_handler_rom_8
 	.word read_address_from_handler_rom_8
 	.word read_address_from_handler_eeprom_8
+	.word read_address_from_handler_sram_8
 	.word read_address_from_handler_sram_8
 
 read_address_from_handler_bios_8:
@@ -361,7 +393,19 @@ read_address_from_handler_io_8:
 	b read_address_undefined_memory_8
 
 read_address_from_handler_vram_8:
-	add r10, r9, #0x3F0000
+	bic r10, r9, #0xFE0000
+	ldr r12,= 0x06018000
+	cmp r10, r12
+		bicge r10, #0x8000
+
+	ldr r13,= DISPCNT_copy
+	ldrh r13, [r13]
+	and r12, r13, #7
+	cmp r12, #3
+	ldrlt r13,= 0x06010000
+	ldrge r13,= 0x06014000
+	cmp r10, r13
+		addge r10, #0x3F0000
 	ldrb r10, [r10]
 	bx lr
 
@@ -434,8 +478,8 @@ read_address_from_handler_eeprom_8:
 read_address_from_handler_sram_8:
 	ldr r11,= 0x01FF0000
 	bic r10, r9, r11
-	sub r10, r10, #0x0BC00000
-	sub r10, r10, #0x00010000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x0FF00000) //#0x0BC00000
+	sub r10, r10, #((0x0E000000 - MAIN_MEMORY_ADDRESS_SAVE_DATA) & 0x000FF000) //#0x00010000
 	ldrb r10, [r10]
 	bx lr
 

@@ -22,7 +22,7 @@ all: $(TARGET)_isnitro.nds
 
 #---------------------------------------------------------------------------------
 $(TARGET)_isnitro.nds	:	arm7/$(TARGET).elf arm9/$(TARGET).elf
-	cmd /c "runbash.bat isnitro.sh \"-c $(TARGET)_isnitro.nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf -d nitrofiles\""
+	cmd /c "runbash.bat isnitro.sh \"-c $(TARGET)_isnitro.nds -b icon.bmp GBARunner2;Gericom -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf -d nitrofiles\""
 	dlditool FatInNitroFS.dldi $(TARGET)_isnitro.nds
 
 #---------------------------------------------------------------------------------

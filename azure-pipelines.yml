@@ -1,0 +1,83 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+variables:
+  DEVKITPRO: $(Agent.TempDirectory)\bar\devkitPro
+  DEVKITARM: $(Agent.TempDirectory)\bar\devkitPro\devkitARM
+  CURRENT_DATE: $[format('{0:yyyyMMdd\-HHmmss}', pipeline.startTime)]
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: DownloadSecureFile@1
+  inputs:
+    secureFile: 'devkitPro.zip.001'
+
+- task: DownloadSecureFile@1
+  inputs:
+    secureFile: 'devkitPro.zip.002'
+
+- task: DownloadSecureFile@1
+  inputs:
+    secureFile: 'devkitPro.zip.003'
+
+- task: DownloadSecureFile@1
+  inputs:
+    secureFile: 'devkitPro.zip.004'
+
+- script: |
+    cd $(Agent.TempDirectory)
+    copy /b *.zip.00* newzip.zip
+    powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
+    md $(Build.Repository.LocalPath)\build
+  displayName: 'Prepare environment'
+
+- script: |
+    cd $(Build.Repository.LocalPath)
+    make
+    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm9dldi.nds    
+    make clean
+  displayName: 'Build arm9dldi'
+
+- script: |
+    cd $(Build.Repository.LocalPath)
+    make all ENABLE_WRAM_ICACHE=1
+    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm9dldi_wramicache.nds
+    make clean
+  displayName: 'Build arm9dldi_wramicache'
+
+- script: |
+    cd $(Build.Repository.LocalPath)
+    make all ARM7_DLDI=1
+    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi.nds    
+    make clean
+  displayName: 'Build arm7dldi'
+
+- script: |
+    cd $(Build.Repository.LocalPath)
+    make all ARM7_DLDI=1 ENABLE_WRAM_ICACHE=1
+    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_wramicache.nds    
+    make clean
+  displayName: 'Build arm7dldi_wramicache'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.Repository.LocalPath)\\build'
+    artifact: 'GBARunner2 Build'
+
+- task: short-git-version-hash-extractor@1
+
+- task: GitHubRelease@0
+  condition: not(eq(variables['Build.Reason'], 'PullRequest'))
+  inputs:
+    gitHubConnection: Gericom2
+    repositoryName: '$(Build.Repository.Name)'
+    action: 'create'
+    target: '$(Build.SourceVersion)'
+    tagSource: 'manual'
+    tag: 'v$(CURRENT_DATE)_$(ShortVersionHash)'
+    assets: '$(Build.Repository.LocalPath)/build/*'
+    addChangeLog: false

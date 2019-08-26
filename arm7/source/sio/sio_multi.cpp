@@ -20,10 +20,10 @@ static bool sReceivedSlaveData;
 
 static u64 getUsCounter()
 {
-	u64 time = REG_WIFI_US_COUNT3 << 48;
-	time |= REG_WIFI_US_COUNT2 << 32;
-	time |= REG_WIFI_US_COUNT1 << 16;
-	time |= REG_WIFI_US_COUNT0;
+	u64 time = (u64)REG_WIFI_US_COUNT3 << 48;
+	time |= (u64)REG_WIFI_US_COUNT2 << 32;
+	time |= (u64)REG_WIFI_US_COUNT1 << 16;
+	time |= (u64)REG_WIFI_US_COUNT0;
 	return time;
 }
 

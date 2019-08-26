@@ -81,7 +81,7 @@ write_address_snd_16:
 
 	strh r10, [r13, r12]
 
-	orr r12, #(2 << 8) //4 bytes
+	orr r12, #(2 << 8) //2 bytes
 
 	ldr r13,= 0x04000188
 1:
@@ -110,7 +110,7 @@ write_address_snd_8:
 
 	strb r10, [r13, r12]
 
-	orr r12, #(1 << 8) //4 bytes
+	orr r12, #(1 << 8) //1 byte
 
 	ldr r13,= 0x04000188
 1:
@@ -120,5 +120,56 @@ write_address_snd_8:
 	ldr r10,= 0xAA5500FA //update gb sound reg command
 	str r10, [r13] //command
 	str r12, [r13]  //reg + len
+	str r11, [r13] //val
+	bx lr
+
+.global write_address_snd_waveram_32
+write_address_snd_waveram_32:
+	and r12, r9, #0xFF
+
+	orr r12, #(4 << 8) //4 bytes
+
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
+	ldr r10,= 0xAA5500FA //update gb sound reg command
+	str r10, [r13] //command
+	str r12, [r13] //reg + len
+	str r11, [r13] //val
+	bx lr
+
+.global write_address_snd_waveram_16
+write_address_snd_waveram_16:
+	and r12, r9, #0xFF
+
+	orr r12, #(2 << 8) //2 bytes
+
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
+	ldr r10,= 0xAA5500FA //update gb sound reg command
+	str r10, [r13] //command
+	str r12, [r13] //reg + len
+	str r11, [r13] //val
+	bx lr
+
+.global write_address_snd_waveram_8
+write_address_snd_waveram_8:
+	and r12, r9, #0xFF
+
+	orr r12, #(1 << 8) //1 byte
+
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
+	ldr r10,= 0xAA5500FA //update gb sound reg command
+	str r10, [r13] //command
+	str r12, [r13] //reg + len
 	str r11, [r13] //val
 	bx lr

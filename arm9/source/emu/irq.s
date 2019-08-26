@@ -2,10 +2,6 @@
 
 #include "consts.s"
 
-.global fake_irq_flags
-fake_irq_flags:
-	.word 0
-
 .global read_address_ie
 read_address_ie:
 	ldr r13,= 0x4000210
@@ -55,9 +51,6 @@ read_address_if_bottom8:
 	//tst r11, #1
 	//orrne r10, #1
 	bx lr
-
-fake_irq_enable:
-	.word 0
 
 .global read_address_if_top8
 read_address_if_top8:
@@ -110,6 +103,13 @@ write_address_ie_bottom8:
 	//orrne r11, r11, #1	//fifo sync as early vblank
 	//strb r11, [r13, #2]
 	bx lr
+
+fake_irq_enable:
+	.word 0
+
+.global fake_irq_flags
+fake_irq_flags:
+	.word 0
 
 .global write_address_ie_top8
 write_address_ie_top8:
@@ -188,8 +188,6 @@ write_address_ie_if:
 irq_handler:
 	STMFD   SP!, {R0-R3,R12,LR}
 
-	//check for arm7 interrupt
-
 	//make use of the backwards compatible version
 	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
 	mov r0, #0xFFFFFFFF
@@ -201,20 +199,66 @@ irq_handler:
 	beq cap_control
 irq_cont:
 	ldr r1, [r12, #0x214]
+	ldrh r2, fake_irq_flags
+	orr r1, r2
+	ldr r3, [r12, #0x210]
+	ldrh r2, fake_irq_enable
+	orr r3, r2
+	and r1, r3
+	tst r1, #(1 << 1) //hblank
+		beq 1f
+	ldrh r2, [r12, #6]
+	cmp r2, #160
+		blt irq_cont_handle_gba //1f //gba normal scanlines
+	cmp r2, #192
+		bge irq_cont_handle_gba //1f //vblank
+
+	//clear hblank irq flag
+	mov r2, #(1 << 1)
+	str r2, [r12, #0x214]
+
+	//check if any irqs are left
+	bics r1, #(1 << 1)
+		beq finish_nohandle
+
+1:
+	//vcount irq priority
+	tst r1, #(1 << 2)
+		bne irq_cont_handle_gba
+
+	//test for arm7->arm9 irq
 	tst r1, #(1 << 16)
-	bne irq_handler_arm7_irq
+		bne irq_handler_arm7_irq
 
 irq_cont_handle_gba:
+	ldr r2, [r12, #0x210]
+	bic r2, #(1 << 16)
 	ldr r1,= pu_data_permissions
+	str r2, [r12, #0x210]
 	mcr p15, 0, r1, c5, c0, 2
 
 	ADR     LR, loc_138
 	LDR     PC, [R12,#-4]
 loc_138:
+	
+	mov r0, #0xFFFFFFFF
+	mcr p15, 0, r0, c5, c0, 0
+	mov r12, #0x04000000
+	ldr r1, [r12, #0x210]
+	ldr r2,= pu_data_permissions
+	orr r1, #(1 << 16)
+	str r1, [r12, #0x210]
+	mcr p15, 0, r2, c5, c0, 2
+
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
+	ldr r12,= save_save_work_state_uncached
+	ldrb r12, [r12]
+	cmp r12, #3 //sdsave request
+	beq sdsave_request
+
 	//check for sio irq
 	ldr r12,= ((sio_work + 16) | 0x00800000)
 	ldrb r2, [r12]
@@ -230,78 +274,72 @@ irq_handler_arm7_irq:
 	str r1, [r2]
 
 irq_handler_arm7_irq_snd:
-	ldr r12,= (sound_sound_emu_work | 0x00800000)
-1:
-	ldrb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 1)]
-	cmp r2, #SOUND_EMU_QUEUE_LEN
-	bge 4f
-
-	ldrb r2, [r12, #1]
-	cmp r2, #0
-	beq 5f
-
-	ldrb r2, [r12, #3]
-	add r3, r2, #1
-	cmp r3, #SOUND_EMU_QUEUE_LEN
-	subge r3, #SOUND_EMU_QUEUE_LEN
-	strb r3, [r12, #3]
-
-	add r3, r12, r2, lsl #2
-	ldr r1, [r3, #4]
-
-	ldrb lr, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)]
+	ldr r12,= sound_sound_emu_work_uncached
+	ldrb lr, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)] //resp_write_ptr
+//1:
+	ldrb r3, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 3)] //resp_read_ptr
 	add r2, lr, #1
-	cmp r2, #SOUND_EMU_QUEUE_LEN
-	subge r2, #SOUND_EMU_QUEUE_LEN
-	strb r2, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)]
+	subs r2, r3, r2
+	addmis r2, #SOUND_EMU_QUEUE_LEN
+		beq 4f //response queue full
 
-	ldmia r1, {r0, r1, r2, r3}
+	ldrb r2, [r12, #2] //req_write_ptr
+	ldrb r3, [r12, #3] //req_read_ptr
+	cmp r2, r3
+		beq 4f //request queue empty
 
+	add r0, r12, r3, lsl #2
+	ldr r1, [r0, #4] //read address from req_queue
+
+	add r3, #1
+	and r3, #(SOUND_EMU_QUEUE_LEN - 1)
+	strb r3, [r12, #3] //req_read_ptr
+
+	ldmia r1, {r0, r1, r2, r3} //fetch 16 samples
 	add lr, r12, lr, lsl #4
 	add lr, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 4)
-	stmia lr, {r0, r1, r2, r3}
+	stmia lr, {r0, r1, r2, r3} //store in resp_queue
 
-	mov r1, #1
-	add r3, r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4))
-2:
-	swpb r1, r1, [r3]
-	cmp r1, #0
-	bne 2b
-	ldrb r2, [r3, #1]
-	add r2, #1
-	strb r2, [r3, #1]
-	strb r1, [r3]
+	ldrb lr, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)] //resp_write_ptr
+	add lr, #1
+	and lr, #(SOUND_EMU_QUEUE_LEN - 1)
+	strb lr, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)] //resp_write_ptr
+	//b 1b
 
-	mov r1, #1
-3:
-	swpb r1, r1, [r12]
-	cmp r1, #0
-	bne 3b
-	ldrb r2, [r12, #1]
-	sub r2, #1
-	strb r2, [r12, #1]
-	strb r1, [r12]
+	ldrb r2, [r12, #2] //req_write_ptr
+	ldrb r3, [r12, #3] //req_read_ptr	
+	cmp r2, r3
+		bne 5f //request queue not empty, don't clear irq
 
-	cmp r2, #0
-	bgt 1b
 4:
-	ldr r0,= 0xAA5500F9
-	mov r1, #0x04000000
-	str r0, [r1, #0x188]
+	mov r1, #(1 << 16)
+	mov r12, #0x04000000
+	str r1, [r12, #0x214]
 
 5:
 	mov r12, #0x04000000
-	mov r1, #(1 << 16)
-	str r1, [r12, #0x214]
-
 	ldr r3, [r12, #0x210]
 	ldr r2, fake_irq_enable
 	orr r3, r2
 
 	ldr r2,= fake_irq_flags
 	ldr r1, [r2]
-	orr r1, #(3 << 9)
+
+	ldr r0,= dma_shadow_regs_dtcm
+	ldrh lr, [r0, #0x16]
+	tst lr, #(1 << 14)
+	orrne r1, #(1 << 9) //dma 1
+
+	ldrh lr, [r0, #0x22]
+	tst lr, #(1 << 14)
+	orrne r1, #(1 << 10) //dma 2
+
 	str r1, [r2]
+	
+	ldr r2, [r12, #0x214]
+	bic r2, #(1 << 16)
+	orr r1, r2
+
 
 //enable icache by pressing the R button
 #if defined(ENABLE_WRAM_ICACHE) && defined(POSTPONED_ICACHE)
@@ -316,10 +354,20 @@ irq_handler_arm7_irq_snd:
 
 	bne irq_cont_handle_gba
 
+finish_nohandle:
 	ldr r1,= pu_data_permissions
 	mcr p15, 0, r1, c5, c0, 2
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
+
+sdsave_request:
+	mov r12, #0x04000000
+	mov r1, #(1 << 16)
+	str r1, [r12, #0x214]
+
+	ldr r12,= sd_write_save
+	blx r12
+	b finish_nohandle
 
 cap_control:
 	eor r1, #0x00010000
@@ -332,4 +380,35 @@ cap_control:
 	streqb r2, [r12, #0x243]
 	orr r1, #0x80000000
 	str r1, [r12, #0x64]
+
+	ldr r2,= 0x07000400
+	ldr r3,= 0xC0080C10
+	ldr r0, [r2]
+	cmp r0, r3
+	beq irq_cont
+
+	//fix sub oams
+	mov r1, #0
+1:
+	mov r0, #0
+2:
+	orr r3, r1, #0x0C00 //bitmap obj
+	add r3, #16
+	strh r3, [r2], #2
+	orr r3, r0, #0xC000 //64x64
+	add r3, #8
+	strh r3, [r2], #2
+	mov r3, r1, lsr #3
+	mov r3, r3, lsl #5
+	add r3, r3, r0, lsr #3
+	orr r3, #0xF000 //fully visible
+	strh r3, [r2], #4
+
+	add r0, #64
+	cmp r0, #256
+	blt 2b
+
+	add r1, #64
+	cmp r1, #192
+	blt 1b
 	b irq_cont

@@ -42,12 +42,18 @@ write_address_timer_counter:
 	strh r11, [r13]
 
 	ldrh r12, [r9, #2]
+	orr r11, r12, lsl #16
 	tst r12, #4 //if slave mode, we don't have to fix the reload value
 	moveq r12, r11, lsl #17
 	moveq r12, r12, lsr #16
 	strh r12, [r9]
 
 	//send info to arm7
+	ldr r13,= 0x04000188
+1:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 1b
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]
@@ -57,12 +63,12 @@ write_address_timer_counter:
 write_address_timer_control:
 	tst r11, #0x80
 	streqh r11, [r9] //if the timer is not set to run, we don't have to fix anything
-	bxeq lr
+	beq 1f
 
 	ldrh r12, [r9]
 	tst r12, #0x80
 	strneh r11, [r9] //if the timer was already running, we don't have to fix anything
-	bxne lr
+	bne 1f
 
 	ldr r13,= timer_shadow_regs_dtcm
 	ldr r12,= (ADDRESS_TIMER_BASE + 2)
@@ -75,6 +81,16 @@ write_address_timer_control:
 	moveq r12, r12, lsr #16
 	strh r12, [r9, #-2]
 	strh r11, [r9]
+
+1:
+	ldr r13,= 0x04000188
+2:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 2b
+	ldr r12,= 0x04000188
+	str r9, [r12]
+	str r11, [r12]
 	bx lr
 
 .global write_address_timer
@@ -96,6 +112,11 @@ write_address_timer:
 	str r13, [r9]
 
 1:
+	ldr r13,= 0x04000188
+2:
+	ldr r10, [r13, #-4]
+	tst r10, #1
+	beq 2b
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]

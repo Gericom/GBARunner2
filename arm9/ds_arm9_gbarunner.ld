@@ -32,9 +32,9 @@ __secure_area__ = .;
 
 	.text :   /* ALIGN (4): */
 	{
-		*(EXCLUDE_FILE (*.itcm*) .text)
+		*(EXCLUDE_FILE (*.itcm* *.vram*) .text)
 
-		*(.text.*)
+		*(EXCLUDE_FILE (*.vram*) .text.*)
 		*(.stub)
 		/* .gnu.warning sections are handled specially by elf32.em.  */
 		*(.gnu.warning)
@@ -50,22 +50,6 @@ __secure_area__ = .;
 	} >ewram =0xff
 
 	__text_end = . ;
-
-	.rodata :
-	{
-		*(.rodata)
-		*all.rodata*(*)
-		*(.roda)
-		*(.rodata.*)
-		*(.gnu.linkonce.r*)
-		SORT(CONSTRUCTORS)
-		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >ewram = 0xff
-
-	.ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >ewram
- 	__exidx_start = .;
-	ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } >ewram
- 	__exidx_end = .;
 
 	/*	Ensure the __preinit_array_start label is properly aligned.  We
 		could instead move the label definition inside the section, but
@@ -92,30 +76,6 @@ __secure_area__ = .;
 	} >ewram = 0xff
 
 	PROVIDE (__fini_array_end = .);
-
-	.ctors :
-	{
-	/*	gcc uses crtbegin.o to find the start of the constructors, so
-		we make sure it is first.  Because this is a wildcard, it
-		doesn't matter if the user does not actually link against
-		crtbegin.o; the linker won't look for a file to match a
-		wildcard.  The wildcard also means that it doesn't matter which
-		directory crtbegin.o is in.  */
-		KEEP (*crtbegin.o(.ctors))
-		KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
-		KEEP (*(SORT(.ctors.*)))
-		KEEP (*(.ctors))
-		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >ewram = 0xff
-
-	.dtors :
-	{
-		KEEP (*crtbegin.o(.dtors))
-		KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
-		KEEP (*(SORT(.dtors.*)))
-		KEEP (*(.dtors))
-		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
-	} >ewram = 0xff
 
 	.eh_frame :
 	{
@@ -167,6 +127,7 @@ __secure_area__ = .;
 
 	.itcm __itcm_start : AT (__itcm_lma)
 	{
+		*(.itcm.addrhack1)
 		*(.itcm)
 		*itcm.*(.text)
 		. = ALIGN(4);
@@ -187,13 +148,69 @@ __secure_area__ = .;
 
 	.vram __vram_start : AT (__vram_lma)
 	{
+		bios.o
 		*(.vram)
 		*vram.*(.text)
-		. = ALIGN(32);
-		__vram_end = ABSOLUTE(.);
+		*vram.*(.text.*)
+		. = ALIGN(32);		
 	} >vram = 0xff
 
-	__dtcm2_lma = __vram_lma + (__vram_end - __vram_start);
+	.ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >vram
+ 	__exidx_start = .;
+	ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } >vram
+ 	__exidx_end = .;
+
+	.ctors :
+	{
+	/*	gcc uses crtbegin.o to find the start of the constructors, so
+		we make sure it is first.  Because this is a wildcard, it
+		doesn't matter if the user does not actually link against
+		crtbegin.o; the linker won't look for a file to match a
+		wildcard.  The wildcard also means that it doesn't matter which
+		directory crtbegin.o is in.  */
+		KEEP (*crtbegin.o(.ctors))
+		KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
+		KEEP (*(SORT(.ctors.*)))
+		KEEP (*(.ctors))
+		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
+	} >vram = 0xff
+
+	.dtors :
+	{
+		KEEP (*crtbegin.o(.dtors))
+		KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
+		KEEP (*(SORT(.dtors.*)))
+		KEEP (*(.dtors))
+		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
+	} >vram = 0xff
+
+	.rodata :
+	{
+		*(.rodata)
+		*all.rodata*(*)
+		*(.roda)
+		*(.rodata.*)
+		*(.gnu.linkonce.r*)
+		SORT(CONSTRUCTORS)
+		. = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
+	} >vram = 0xff
+
+	__vram_end = .;
+	
+	.bss (NOLOAD): 
+	{
+		__bss_start = ABSOLUTE(.);
+		__bss_start__ = ABSOLUTE(.);
+		*(.dynbss)
+		*(.gnu.linkonce.b*)
+		*(.bss*)
+		*(COMMON)
+		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
+		__bss_end__ = ABSOLUTE(.) ;
+		__end__ = ABSOLUTE(.) ;
+	} >vram = 0xff
+
+	__dtcm2_lma = __vram_lma + (__bss_end__ - __vram_start);
 
 	.dtcm2 __dtcm2_start : AT (__dtcm2_lma)
 	{
@@ -214,18 +231,6 @@ __secure_area__ = .;
 		__sbss_end = ABSOLUTE(.);
 	} >dtcm 
 
-	.bss __bss_vma (NOLOAD): 
-	{
-		__bss_start = ABSOLUTE(.);
-		__bss_start__ = ABSOLUTE(.);
-		*(.dynbss)
-		*(.gnu.linkonce.b*)
-		*(.bss*)
-		*(COMMON)
-		. = ALIGN(4);    /* REQUIRED. LD is flaky without it. */
-		__bss_end__ = ABSOLUTE(.) ;
-		__end__ = ABSOLUTE(.) ;
-	} AT>ewram 
 
 
 
