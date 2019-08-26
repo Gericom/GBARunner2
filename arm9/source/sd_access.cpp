@@ -167,7 +167,7 @@ PUT_IN_VRAM void initialize_cache()
 	vram_cd->sioWork.rcnt = 0;
 	vram_cd->sioWork.sioCntRead = 0;
 	vram_cd->sioWork.sioIrqFlag = 0;
-	
+
 	//vram_cd->save_work.save_enabled = 0;
 	//vram_cd->save_work.save_state = SAVE_WORK_STATE_CLEAN;
 #ifdef HANDLER_STATISTICS
@@ -264,6 +264,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	vram_cd->sd_info.cluster_shift = 31 - __builtin_clz(vram_cd->sd_info.nr_sectors_per_cluster * 512);
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 	initialize_cache();
+	REG_SEND_FIFO = 0xAA560000;
 	*(vu8*)0x04000243 = 0x80;
 }
 

@@ -61,6 +61,9 @@ static void txDoneCallback(void* arg)
 		}
 	}*/
 
+	if (gSioWork.id == SIO_ID_MASTER && sTransfering && !(REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3) && *((u16*)&WIFI_RAM->txBuf[0]) == 0)
+		finishTransfer(true);
+
 #ifdef SIO_MULTI_PRESEND
 	if (gSioWork.id == SIO_ID_MASTER && sTransfering)
 	{
@@ -98,12 +101,12 @@ static void rxDoneCallback(void* arg)
 		int hdrLen = rxRamRead(base + 8);
 		int len = ((hdrLen + 3) & ~3) + 12;
 
-		if((gSioWork.id == SIO_ID_MASTER && rxRamRead(base + 12 + 4 + 6) == 0x2500) ||
-			(gSioWork.id == SIO_ID_SLAVE_0 && rxRamRead(base + 12 + 4 + 6) == 0xE7E0))
-			//(gSioWork.id == SIO_ID_MASTER && rxRamRead(base + 12 + 4) == 0xE7E0) ||
-			//(gSioWork.id == SIO_ID_SLAVE_0 && rxRamRead(base + 12 + 4) == 0x2500))//WIFI_RAM->firmData.wifiData.macAddress.address16[0] &&
-			//rxRamRead(base + 12 + 6) == WIFI_RAM->firmData.wifiData.macAddress.address16[1] &&
-			//rxRamRead(base + 12 + 8) == WIFI_RAM->firmData.wifiData.macAddress.address16[2])
+		if((gSioWork.id == SIO_ID_MASTER && rxRamRead(base + 12 + 4 + 6 + 0) == gSioWork.multiMacs[1].address16[0] && 
+											rxRamRead(base + 12 + 4 + 6 + 2) == gSioWork.multiMacs[1].address16[1] &&
+											rxRamRead(base + 12 + 4 + 6 + 4) == gSioWork.multiMacs[1].address16[2]) ||
+			(gSioWork.id == SIO_ID_SLAVE_0 && rxRamRead(base + 12 + 4 + 6 + 0) == gSioWork.multiMacs[0].address16[0] &&
+											  rxRamRead(base + 12 + 4 + 6 + 2) == gSioWork.multiMacs[0].address16[1] &&
+											  rxRamRead(base + 12 + 4 + 6 + 4) == gSioWork.multiMacs[0].address16[2]))
 		{			
 			u16 data = rxRamRead(base + 12 + 16);
 			if (gSioWork.id == SIO_ID_MASTER)

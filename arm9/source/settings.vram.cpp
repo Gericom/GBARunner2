@@ -23,6 +23,10 @@ u32 gEmuSettingWramICache;
 static const char* sEmuSettingSkipIntroName = "skipIntro";
 u32 gEmuSettingSkipIntro;
 
+static const char* sLinkSectionName = "link";
+static const char* sLinkSettingMasterMac = "masterMac";
+static const char* sLinkSettingSlaveMac = "slaveMac";
+
 static void loadDefaultSettings()
 {
     gEmuSettingUseBottomScreen = false;
@@ -41,6 +45,29 @@ static bool parseBoolean(const char* str, bool def = false)
     return def;
 }
 
+static void parseMacAddress(const char* str, u8* dst)
+{
+    int len = strlen(str);
+    if(len != 12)
+        return;
+    for(int i = 0; i < 12; i += 2)
+    {
+        char topChar = to_upper(str[i]);
+        int top;
+        if(topChar >= '0' && topChar <= '9')
+            top = topChar - '0';
+        else
+            top = topChar - 'A' + 0xA;
+        char bottomChar = to_upper(str[i + 1]);
+        int bottom;
+        if(bottomChar >= '0' && bottomChar <= '9')
+            bottom = bottomChar - '0';
+        else
+            bottom = bottomChar - 'A' + 0xA;
+        dst[i >> 1] = (top << 4) | bottom;
+    }
+}
+
 static void iniPropertyCallback(void* arg, const char* section, const char* key, const char* value)
 {
     if(!strcmp(section, sEmulationSectionName))
@@ -55,6 +82,13 @@ static void iniPropertyCallback(void* arg, const char* section, const char* key,
             gEmuSettingWramICache = parseBoolean(value, true);
         else if(!strcmp(key, sEmuSettingSkipIntroName))
             gEmuSettingSkipIntro = parseBoolean(value, false);
+    }
+    else if(!strcmp(section, sLinkSectionName))
+    {
+        if(!strcmp(key, sLinkSettingMasterMac))
+            parseMacAddress(value, vram_cd->sioWork.masterMac);
+        else if(!strcmp(key, sLinkSettingSlaveMac))
+            parseMacAddress(value, vram_cd->sioWork.slaveMac);
     }
 }
 

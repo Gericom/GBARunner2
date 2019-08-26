@@ -221,6 +221,9 @@ int main()
 					}
 					break;
 				}
+			case 0xAA560000: //sio reinit
+				sio_init();
+				break;
 			case 0x040000A0:
 				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;

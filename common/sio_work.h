@@ -25,4 +25,12 @@ typedef struct
     u16 sioCntRead;
 
 	u8 sioIrqFlag;
+
+    u8 padding[3];
+
+    u8 masterMac[6];
+    u16 padding2;
+
+    u8 slaveMac[6];
+    u16 padding3;
 } sio_work_t;

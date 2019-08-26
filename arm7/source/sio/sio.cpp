@@ -88,20 +88,20 @@ void sio_writeReg16(u16 addr, u16 val)
 void sio_init()
 {
     memset(&gSioWork, 0, sizeof(gSioWork));
-	if (WIFI_RAM->firmData.wifiData.macAddress.address[0] == 0x00 &&
-		WIFI_RAM->firmData.wifiData.macAddress.address[1] == 0x25 &&
-		WIFI_RAM->firmData.wifiData.macAddress.address[2] == 0xA0 &&
-		WIFI_RAM->firmData.wifiData.macAddress.address[3] == 0x0C &&
-		WIFI_RAM->firmData.wifiData.macAddress.address[4] == 0x74 &&
-		WIFI_RAM->firmData.wifiData.macAddress.address[5] == 0x3C)
+	if (WIFI_RAM->firmData.wifiData.macAddress.address[0] == vram_cd->sioWork.slaveMac[0] /*0x00*/ &&
+		WIFI_RAM->firmData.wifiData.macAddress.address[1] == vram_cd->sioWork.slaveMac[1] /*0x25*/ &&
+		WIFI_RAM->firmData.wifiData.macAddress.address[2] == vram_cd->sioWork.slaveMac[2] /*0xA0*/ &&
+		WIFI_RAM->firmData.wifiData.macAddress.address[3] == vram_cd->sioWork.slaveMac[3] /*0x0C*/ &&
+		WIFI_RAM->firmData.wifiData.macAddress.address[4] == vram_cd->sioWork.slaveMac[4] /*0x74*/ &&
+		WIFI_RAM->firmData.wifiData.macAddress.address[5] == vram_cd->sioWork.slaveMac[5] /*0x3C*/)
 	{
 		gSioWork.id = SIO_ID_SLAVE_0;
-		gSioWork.multiMacs[0].address[0] = 0xE0;
-		gSioWork.multiMacs[0].address[1] = 0xE7;
-		gSioWork.multiMacs[0].address[2] = 0x51;
-		gSioWork.multiMacs[0].address[3] = 0x6E;
-		gSioWork.multiMacs[0].address[4] = 0xB1;
-		gSioWork.multiMacs[0].address[5] = 0x92;
+		gSioWork.multiMacs[0].address[0] = vram_cd->sioWork.masterMac[0] /*0xE0*/;
+		gSioWork.multiMacs[0].address[1] = vram_cd->sioWork.masterMac[1] /*0xE7*/;
+		gSioWork.multiMacs[0].address[2] = vram_cd->sioWork.masterMac[2] /*0x51*/;
+		gSioWork.multiMacs[0].address[3] = vram_cd->sioWork.masterMac[3] /*0x6E*/;
+		gSioWork.multiMacs[0].address[4] = vram_cd->sioWork.masterMac[4] /*0xB1*/;
+		gSioWork.multiMacs[0].address[5] = vram_cd->sioWork.masterMac[5] /*0x92*/;
 		gSioWork.multiMacs[1] = WIFI_RAM->firmData.wifiData.macAddress;
 
 		REG_WIFI_BSSID.address16[0] = 0;// gSioWork.multiMacs[0].address16[0];
@@ -112,12 +112,12 @@ void sio_init()
 	{
 		gSioWork.id = SIO_ID_MASTER;
 		gSioWork.multiMacs[0] = WIFI_RAM->firmData.wifiData.macAddress;
-		gSioWork.multiMacs[1].address[0] = 0x00;
-		gSioWork.multiMacs[1].address[1] = 0x25;
-		gSioWork.multiMacs[1].address[2] = 0xA0;
-		gSioWork.multiMacs[1].address[3] = 0x0C;
-		gSioWork.multiMacs[1].address[4] = 0x74;
-		gSioWork.multiMacs[1].address[5] = 0x3C;
+		gSioWork.multiMacs[1].address[0] = vram_cd->sioWork.slaveMac[0] /*0x00*/;
+		gSioWork.multiMacs[1].address[1] = vram_cd->sioWork.slaveMac[1] /*0x25*/;
+		gSioWork.multiMacs[1].address[2] = vram_cd->sioWork.slaveMac[2] /*0xA0*/;
+		gSioWork.multiMacs[1].address[3] = vram_cd->sioWork.slaveMac[3] /*0x0C*/;
+		gSioWork.multiMacs[1].address[4] = vram_cd->sioWork.slaveMac[4] /*0x74*/;
+		gSioWork.multiMacs[1].address[5] = vram_cd->sioWork.slaveMac[5] /*0x3C*/;
 
 		REG_WIFI_BSSID.address16[0] = 0;// gSioWork.multiMacs[1].address16[0];
 		REG_WIFI_BSSID.address16[1] = 0;// gSioWork.multiMacs[1].address16[1];
