@@ -59,16 +59,16 @@ static_assert(sizeof(wifi_ram_t) == WIFI_RAM_SIZE, "Invalid wifi ram length!");
 
 #define WIFI_RAM					((wifi_ram_t*)0x4804000)
 
-#define WIFI_CHIPID_DS_PHAT			0x1440
-#define WIFI_CHIPID_DS_LITE			0xC340
+#define WIFI_VERSION_DS_PHAT		0x1440
+#define WIFI_VERSION_DS_LITE		0xC340
 
-#define REG_WIFI_CHIPID				(*(vu16*)0x4808000)
-#define REG_WIFI_MODE_RST			(*(vu16*)0x4808004)
-#define REG_WIFI_MODE_WEP			(*(vu16*)0x4808006)
+#define REG_WIFI_VERSION			(*(vu16*)0x4808000)
+#define REG_WIFI_MAC_CMD			(*(vu16*)0x4808004)
+#define REG_WIFI_MAC_CONFIG			(*(vu16*)0x4808006)
 
-#define REG_WIFI_TXSTATCNT			(*(vu16*)0x4808008)
+#define REG_WIFI_TX_CONFIG			(*(vu16*)0x4808008)
 
-#define REG_WIFI_800A				(*(vu16*)0x480800A)
+#define REG_WIFI_RX_CONFIG			(*(vu16*)0x480800A)
 
 #define WIFI_IRQ_RX_END				(1 << 0)
 #define WIFI_IRQ_TX_END				(1 << 1)
@@ -86,93 +86,93 @@ static_assert(sizeof(wifi_ram_t) == WIFI_RAM_SIZE, "Invalid wifi ram length!");
 #define WIFI_IRQ_TBTT				(1 << 14)	//Target Beacon Transmission Time (TBTT)
 #define WIFI_IRQ_PRE_TBTT			(1 << 15)
 
-#define REG_WIFI_IF					(*(vu16*)0x4808010)
-#define REG_WIFI_IE					(*(vu16*)0x4808012)
+#define REG_WIFI_ISR				(*(vu16*)0x4808010)
+#define REG_WIFI_IMR				(*(vu16*)0x4808012)
 
-#define REG_WIFI_MACADDR			(*(volatile wifi_macaddr_t*)0x4808018)
+#define REG_WIFI_MAC_ADRS			(*(volatile wifi_macaddr_t*)0x4808018)
 #define REG_WIFI_BSSID				(*(volatile wifi_macaddr_t*)0x4808020)
 
 #define REG_WIFI_KSID				(*(vu16*)0x4808028) //key related?
 #define REG_WIFI_AID				(*(vu16*)0x480802A)
-#define REG_WIFI_RETRYLIMIT			(*(vu16*)0x480802C)
+#define REG_WIFI_RETRY_LIMIT		(*(vu16*)0x480802C)
 
-#define REG_WIFI_WEP_CNT			(*(vu16*)0x4808032)
+#define REG_WIFI_WEP_CONFIG			(*(vu16*)0x4808032)
 
 
-#define WIFI_POWER_ENABLE			0
-#define WIFI_POWER_DISABLE			1
+#define WIFI_SHUTDOWN_POWERON		0
+#define WIFI_SHUTDOWN_POWEROFF		1
 
-#define REG_WIFI_POWER				(*(vu16*)0x4808036)
+#define REG_WIFI_SHUTDOWN			(*(vu16*)0x4808036)
 
-#define WIFI_POWERSAVE_AUTO_WAKEUP	1
-#define WIFI_POWERSAVE_AUTO_SLEEP	2 //target measurement pilot transmission time (tmptt) power save
+#define WIFI_WAKEUP_CTRL_AUTO_WAKEUP	1
+#define WIFI_WAKEUP_CTRL_AUTO_SLEEP		2 //target measurement pilot transmission time (tmptt) power save
 
-#define REG_WIFI_POWERSAVE			(*(vu16*)0x4808038)
-#define REG_WIFI_POWERSTATE			(*(vu16*)0x480803C)
-#define REG_WIFI_POWERFORCE			(*(vu16*)0x4808040)
+#define REG_WIFI_WAKEUP_CTRL		(*(vu16*)0x4808038)
+#define REG_WIFI_SET_POWER			(*(vu16*)0x480803C)
+#define REG_WIFI_SET_POWER_FORCE	(*(vu16*)0x4808040)
 
-#define REG_WIFI_RANDOM				(*(vu16*)0x4808044)
+#define REG_WIFI_MSEQ16				(*(vu16*)0x4808044)
 
-#define REG_WIFI_8048				(*(vu16*)0x4808048)
+#define REG_WIFI_MP_POWER_SEQ		(*(vu16*)0x4808048)
 
-#define REG_WIFI_DTIM_COUNTER		(*(vu16*)0x4808088)
-#define REG_WIFI_BEACON_INTERVAL	(*(vu16*)0x480808C)
-#define REG_WIFI_DTIM_INTERVAL		(*(vu16*)0x480808E)
+#define REG_WIFI_BCN_PARAM			(*(vu16*)0x4808088)
+#define REG_WIFI_BEACON_PERIOD		(*(vu16*)0x480808C)
+#define REG_WIFI_TIM_COUNT			(*(vu16*)0x480808E)
 
-#define REG_WIFI_PREAMBLE			(*(vu16*)0x48080BC)
+#define REG_WIFI_TX_PREAMBLE_TYPE	(*(vu16*)0x48080BC)
 
-#define WIFI_RXFILTER_BSSID			(1 << 10)
+#define WIFI_BUFFERING_SELECT_BSSID	(1 << 10)
 
-#define REG_WIFI_RXFILTER			(*(vu16*)0x48080D0)
+#define REG_WIFI_BUFFERING_SELECT	(*(vu16*)0x48080D0)
 
-#define REG_WIFI_80D4				(*(vu16*)0x48080D4)
-#define REG_WIFI_80D8				(*(vu16*)0x48080D8)
+#define REG_WIFI_RESPONSE_CONTROL	(*(vu16*)0x48080D4)
+#define REG_WIFI_OVF_THRESHOLD		(*(vu16*)0x48080D8)
 
-#define REG_WIFI_RX_LEN_CROP		(*(vu16*)0x48080DA)
+#define REG_WIFI_DEFRAG_OFFSET		(*(vu16*)0x48080DA)
 
-#define WIFI_RXFILTER2_DATA_IGNORE	(1 << 0)
+#define WIFI_DS_MASK_DATA_IGNORE	(1 << 0)
 
-#define REG_WIFI_RXFILTER2			(*(vu16*)0x48080E0)
+#define REG_WIFI_DS_MASK			(*(vu16*)0x48080E0)
 
-#define REG_WIFI_US_COUNTCNT		(*(vu16*)0x48080E8)
-#define REG_WIFI_US_COMPARECNT		(*(vu16*)0x48080EA)
+#define REG_WIFI_TSF_ENABLE			(*(vu16*)0x48080E8)
+#define REG_WIFI_TBTT_ENABLE		(*(vu16*)0x48080EA)
 
-#define REG_WIFI_80EC				(*(vu16*)0x48080EC)
-#define REG_WIFI_CMD_COUNTCNT		(*(vu16*)0x48080EE)
+#define REG_WIFI_NAV_ENABLE			(*(vu16*)0x48080EC)
+#define REG_WIFI_TMPTT_ENABLE		(*(vu16*)0x48080EE)
 
-#define REG_WIFI_US_COMPARE0		(*(vu16*)0x48080F0)
-#define REG_WIFI_US_COMPARE1		(*(vu16*)0x48080F2)
-#define REG_WIFI_US_COMPARE2		(*(vu16*)0x48080F4)
-#define REG_WIFI_US_COMPARE3		(*(vu16*)0x48080F6)
+#define REG_WIFI_NEXT_TBTT_TSF_0	(*(vu16*)0x48080F0)
+#define REG_WIFI_NEXT_TBTT_TSF_1	(*(vu16*)0x48080F2)
+#define REG_WIFI_NEXT_TBTT_TSF_2	(*(vu16*)0x48080F4)
+#define REG_WIFI_NEXT_TBTT_TSF_3	(*(vu16*)0x48080F6)
 
-#define REG_WIFI_US_COUNT0			(*(vu16*)0x48080F8)
-#define REG_WIFI_US_COUNT1			(*(vu16*)0x48080FA)
-#define REG_WIFI_US_COUNT2			(*(vu16*)0x48080FC)
-#define REG_WIFI_US_COUNT3			(*(vu16*)0x48080FE)
+#define REG_WIFI_TSF_0				(*(vu16*)0x48080F8)
+#define REG_WIFI_TSF_1				(*(vu16*)0x48080FA)
+#define REG_WIFI_TSF_2				(*(vu16*)0x48080FC)
+#define REG_WIFI_TSF_3				(*(vu16*)0x48080FE)
 
-#define REG_WIFI_TX_PRE_TBTT		(*(vu16*)0x4808110)
+#define REG_WIFI_PRE_TBTT			(*(vu16*)0x4808110)
 
-#define REG_WIFI_8120				(*(vu16*)0x4808120)
-#define REG_WIFI_8122				(*(vu16*)0x4808122)
-#define REG_WIFI_8124				(*(vu16*)0x4808124)
-#define REG_WIFI_8128				(*(vu16*)0x4808128)
+#define REG_WIFI_RDY_TIMEOUT		(*(vu16*)0x4808120)
+#define REG_WIFI_RX_TIMEOUT			(*(vu16*)0x4808122)
+#define REG_WIFI_TBTT_ACT_TIME		(*(vu16*)0x4808124)
+#define REG_WIFI_TMPTT_ACT_TIME		(*(vu16*)0x4808128)
 
-#define REG_WIFI_8130				(*(vu16*)0x4808130)
+#define REG_WIFI_TIMEOUT_PARAM		(*(vu16*)0x4808130)
 
-#define REG_WIFI_8132				(*(vu16*)0x4808132)
+#define REG_WIFI_ACK_CCA_TIMEOUT	(*(vu16*)0x4808132)
 
-#define REG_WIFI_ACTIVE_ZONE_TIME	(*(vu16*)0x4808134)
-#define REG_WIFI_TX_TIMESTAMP_OFFS	(*(vu16*)0x4808140)
+#define REG_WIFI_ACTIVE_ZONE_TIMER	(*(vu16*)0x4808134)
+#define REG_WIFI_TSF_TXOFFSET		(*(vu16*)0x4808140)
 
-#define REG_WIFI_8142				(*(vu16*)0x4808142)
-#define REG_WIFI_8144				(*(vu16*)0x4808144)
-#define REG_WIFI_8146				(*(vu16*)0x4808146)
-#define REG_WIFI_8148				(*(vu16*)0x4808148)
-#define REG_WIFI_814A				(*(vu16*)0x480814A)
-#define REG_WIFI_814C				(*(vu16*)0x480814C)
+#define REG_WIFI_TSF_RXOFFSET		(*(vu16*)0x4808142)
+#define REG_WIFI_CCA_DELAY			(*(vu16*)0x4808144)
+#define REG_WIFI_TXPE_OFF_DELAY		(*(vu16*)0x4808146)
+#define REG_WIFI_TX_DELAY			(*(vu16*)0x4808148)
+#define REG_WIFI_RX_DELAY			(*(vu16*)0x480814A)
+#define REG_WIFI_TRX_PE_INTERVAL	(*(vu16*)0x480814C)
 
-#define REG_WIFI_8150				(*(vu16*)0x4808150)
-#define REG_WIFI_8154				(*(vu16*)0x4808154)
+#define REG_WIFI_RF_WAKEUP_TIME			(*(vu16*)0x4808150)
+#define REG_WIFI_MultiAck_Delay_TIME	(*(vu16*)0x4808154)
 
 #define WIFI_RF_PIN_TXMAIN			(1 << 1)
 #define WIFI_RF_PIN_TXON			(1 << 6)
@@ -180,12 +180,12 @@ static_assert(sizeof(wifi_ram_t) == WIFI_RAM_SIZE, "Invalid wifi ram length!");
 
 #define REG_WIFI_RF_PINS			(*(vu16*)0x480819C)
 
-#define REG_WIFI_81A0				(*(vu16*)0x48081A0)
-#define REG_WIFI_81A2				(*(vu16*)0x48081A2)
+#define REG_WIFI_TRPE_DIRECT_CTL	(*(vu16*)0x48081A0)
+#define REG_WIFI_SERIAL_DAT_SELECT	(*(vu16*)0x48081A2)
 
 #define REG_WIFI_RF_STAT			(*(vu16*)0x4808214)
 
-#define REG_WIFI_8254				(*(vu16*)0x4808254)
+#define REG_WIFI_DDO_PARA_DAT		(*(vu16*)0x4808254)
 
 #define REG_WIFI_82B8				(*(vu16*)0x48082B8)
 

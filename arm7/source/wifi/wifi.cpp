@@ -13,50 +13,50 @@ wifi_work_t gWifiWork;
 
 void wifi_irqPreTbtt()
 {
-	REG_WIFI_IF = WIFI_IRQ_PRE_TBTT;
+	REG_WIFI_ISR = WIFI_IRQ_PRE_TBTT;
 }
 
 void wifi_irqTbtt()
 {
-	REG_WIFI_IF = WIFI_IRQ_TBTT;
+	REG_WIFI_ISR = WIFI_IRQ_TBTT;
 }
 
 void wifi_irqActEnd()
 {
-	REG_WIFI_IF = WIFI_IRQ_ACT_END;
-	REG_WIFI_TXREQ_EN_RESET = WIFI_TXREQ_LOC_ALL;
+	REG_WIFI_ISR = WIFI_IRQ_ACT_END;
+	REG_WIFI_QUEUE_CLOSE = WIFI_TXQ_TXQ_ALL;
 }
 
 void wifi_irqRfWakeup()
 {
-	REG_WIFI_IF = WIFI_IRQ_RF_WAKEUP;
+	REG_WIFI_ISR = WIFI_IRQ_RF_WAKEUP;
 }
 
 void wifi_irqTxErr()
 {
-	REG_WIFI_IF = WIFI_IRQ_TX_ERROR;
+	REG_WIFI_ISR = WIFI_IRQ_TX_ERROR;
 }
 
 void wifi_irqRxCntup()
 {
-	REG_WIFI_IF = WIFI_IRQ_RX_COUNT;
+	REG_WIFI_ISR = WIFI_IRQ_RX_COUNT;
 }
 
 void wifi_irqCntOvf()
 {
-	REG_WIFI_IF = WIFI_IRQ_RX_COUNT_OVERFLOW | WIFI_IRQ_TX_ERROR_OVERFLOW;
+	REG_WIFI_ISR = WIFI_IRQ_RX_COUNT_OVERFLOW | WIFI_IRQ_TX_ERROR_OVERFLOW;
 }
 
 void wifi_irqMpEnd()
 {
-	REG_WIFI_IF = WIFI_IRQ_MP_END;
+	REG_WIFI_ISR = WIFI_IRQ_MP_END;
 }
 
 extern "C" void wifi_irq()
 {
 	while(true)
 	{
-		u16 irqFlags = REG_WIFI_IF & REG_WIFI_IE;
+		u16 irqFlags = REG_WIFI_ISR & REG_WIFI_IMR;
 		if (!irqFlags)
 			break;
 		if (irqFlags & WIFI_IRQ_TX_START)
@@ -90,7 +90,7 @@ bool wifi_setMode(u8 mode)
 {
 	if(mode > 3)
 		return false;
-	REG_WIFI_MODE_WEP = (REG_WIFI_MODE_WEP & 0xFFF8) | mode;
+	REG_WIFI_MAC_CONFIG = (REG_WIFI_MAC_CONFIG & 0xFFF8) | mode;
 	return true;
 }
 
@@ -98,16 +98,16 @@ bool wifi_setWepMode(u8 mode)
 {
 	if(mode > 3)
 		return false;
-	REG_WIFI_MODE_WEP = (REG_WIFI_MODE_WEP & 0xFFC7) | (mode << 3);
+	REG_WIFI_MAC_CONFIG = (REG_WIFI_MAC_CONFIG & 0xFFC7) | (mode << 3);
 	return true;
 }
 
 void wifi_setMacAddress(const wifi_macaddr_t* address)
 {
 	//write in 16 bits, wifi ram does not support byte writes
-	REG_WIFI_MACADDR.address16[0] = address->address16[0];
-	REG_WIFI_MACADDR.address16[1] = address->address16[1];
-	REG_WIFI_MACADDR.address16[2] = address->address16[2];
+	REG_WIFI_MAC_ADRS.address16[0] = address->address16[0];
+	REG_WIFI_MAC_ADRS.address16[1] = address->address16[1];
+	REG_WIFI_MAC_ADRS.address16[2] = address->address16[2];
 }
 
 void wifi_setBssid(const wifi_macaddr_t* bssid)
@@ -120,30 +120,30 @@ void wifi_setBssid(const wifi_macaddr_t* bssid)
 
 void wifi_setRetryLimit(u8 limit)
 {
-	REG_WIFI_RETRYLIMIT = limit;
+	REG_WIFI_RETRY_LIMIT = limit;
 }
 
 void wifi_setUseTmpttPowerSave(bool powerSave)
 {
 	if (powerSave)
-		REG_WIFI_POWERSAVE |= WIFI_POWERSAVE_AUTO_SLEEP;
+		REG_WIFI_WAKEUP_CTRL |= WIFI_WAKEUP_CTRL_AUTO_SLEEP;
 	else
 	{
-		REG_WIFI_POWERSAVE &= ~WIFI_POWERSAVE_AUTO_SLEEP;
-		REG_WIFI_8048 = 0;
+		REG_WIFI_WAKEUP_CTRL &= ~WIFI_WAKEUP_CTRL_AUTO_SLEEP;
+		REG_WIFI_MP_POWER_SEQ = 0;
 	}
 }
 
 void wifi_setPowerState(int state)
 {
-	REG_WIFI_POWERSTATE = state;
+	REG_WIFI_SET_POWER = state;
 }
 
 bool wifi_setBeaconInterval(u16 interval)
 {
 	if (interval < 10 || interval > 1000)
 		return false;
-	REG_WIFI_BEACON_INTERVAL = interval;
+	REG_WIFI_BEACON_PERIOD = interval;
 	return true;
 }
 
@@ -151,8 +151,8 @@ bool wifi_setDtimInterval(u8 interval)
 {
 	if (interval == 0)
 		return false;
-	REG_WIFI_DTIM_INTERVAL = interval;
-	REG_WIFI_DTIM_COUNTER = 0;
+	REG_WIFI_TIM_COUNT = interval;
+	REG_WIFI_BCN_PARAM = 0;
 }
 
 void wifi_updateTxTimeStampOffset()
@@ -161,10 +161,10 @@ void wifi_updateTxTimeStampOffset()
 	if(gWifiWork.use2Mbps)
 	{
 		offset -= 0x6161;
-		if (REG_WIFI_PREAMBLE & 2)
+		if (REG_WIFI_TX_PREAMBLE_TYPE & 2)
 			offset -= 0x6060;
 	}
-	REG_WIFI_TX_TIMESTAMP_OFFS = offset;
+	REG_WIFI_TSF_TXOFFSET = offset;
 }
 
 void wifi_setUse2Mbps(bool use2Mbps)
@@ -176,9 +176,9 @@ void wifi_setUse2Mbps(bool use2Mbps)
 void wifi_setShortPreamble(bool shortPreamble)
 {
 	if(shortPreamble)
-		REG_WIFI_PREAMBLE |= 6;
+		REG_WIFI_TX_PREAMBLE_TYPE |= 6;
 	else
-		REG_WIFI_PREAMBLE &= ~6;
+		REG_WIFI_TX_PREAMBLE_TYPE &= ~6;
 	wifi_updateTxTimeStampOffset();
 }
 
@@ -187,11 +187,11 @@ bool wifi_setChannel(int channel)
 	if(channel < 1 || channel > 14)
 		return false;
 	channel -= 1;
-	int oldPower = REG_WIFI_POWERFORCE;
-	REG_WIFI_POWERFORCE = 0x8001;
+	int oldPower = REG_WIFI_SET_POWER_FORCE;
+	REG_WIFI_SET_POWER_FORCE = 0x8001;
 	while(true)
 	{
-		u16 powerState = REG_WIFI_POWERSTATE;
+		u16 powerState = REG_WIFI_SET_POWER;
 		u16 stat = REG_WIFI_RF_STAT;
 		if((powerState >> 8) == 2 && (stat == 0 || stat == 2))
 			break;
@@ -234,38 +234,38 @@ bool wifi_setChannel(int channel)
 			n += 15;
 		}
 	}
-	REG_WIFI_POWERFORCE = oldPower;
-	REG_WIFI_8048 = 3;
+	REG_WIFI_SET_POWER_FORCE = oldPower;
+	REG_WIFI_MP_POWER_SEQ = 3;
 }
 
 bool wifi_setActiveZoneTime(u16 time)
 {
 	if (time < 10)
 		return false;
-	REG_WIFI_ACTIVE_ZONE_TIME = time;
+	REG_WIFI_ACTIVE_ZONE_TIMER = time;
 }
 
 void wifi_initRF()
 {
 	//initialize the mac tx rx registers from firmware
 	wifi_flashdata_t* flashData = &WIFI_RAM->firmData.wifiData;
-	REG_WIFI_8146 = flashData->wifi8146;
-	REG_WIFI_8148 = flashData->wifi8148;
-	REG_WIFI_814A = flashData->wifi814A;
-	REG_WIFI_814C = flashData->wifi814C;
-	REG_WIFI_8120 = flashData->wifi8120;
-	REG_WIFI_8122 = flashData->wifi8122;
-	REG_WIFI_8154 = flashData->wifi8154;
-	REG_WIFI_8144 = flashData->wifi8144;
-	REG_WIFI_8132 = flashData->wifi8132_1;
-	REG_WIFI_8132 = flashData->wifi8132_2;
-	REG_WIFI_TX_TIMESTAMP_OFFS = flashData->wifiTxTimestampOffs;
-	REG_WIFI_8142 = flashData->wifi8142;
-	REG_WIFI_POWERSAVE = flashData->wifiPowersave;
-	REG_WIFI_8124 = flashData->wifi8124;
-	REG_WIFI_8128 = flashData->wifi8128;
-	REG_WIFI_8150 = flashData->wifi8150;
-	REG_WIFI_RF_CNT = ((flashData->rfBitsPerEntry >> 7) << 8) | (flashData->rfBitsPerEntry & 0x7F);
+	REG_WIFI_TXPE_OFF_DELAY = flashData->wifi8146;
+	REG_WIFI_TX_DELAY = flashData->wifi8148;
+	REG_WIFI_RX_DELAY = flashData->wifi814A;
+	REG_WIFI_TRX_PE_INTERVAL = flashData->wifi814C;
+	REG_WIFI_RDY_TIMEOUT = flashData->wifi8120;
+	REG_WIFI_RX_TIMEOUT = flashData->wifi8122;
+	REG_WIFI_MultiAck_Delay_TIME = flashData->wifi8154;
+	REG_WIFI_CCA_DELAY = flashData->wifi8144;
+	REG_WIFI_ACK_CCA_TIMEOUT = flashData->wifi8132_1;
+	REG_WIFI_ACK_CCA_TIMEOUT = flashData->wifi8132_2;
+	REG_WIFI_TSF_TXOFFSET = flashData->wifiTxTimestampOffs;
+	REG_WIFI_TSF_RXOFFSET = flashData->wifi8142;
+	REG_WIFI_WAKEUP_CTRL = flashData->wifiPowersave;
+	REG_WIFI_TBTT_ACT_TIME = flashData->wifi8124;
+	REG_WIFI_TMPTT_ACT_TIME = flashData->wifi8128;
+	REG_WIFI_RF_WAKEUP_TIME = flashData->wifi8150;
+	REG_WIFI_RFR_CONFIG = ((flashData->rfBitsPerEntry >> 7) << 8) | (flashData->rfBitsPerEntry & 0x7F);
 	if(flashData->rfType == 3)
 	{
 		//write rf calibration data for version 3
@@ -290,9 +290,9 @@ void wifi_initRF()
 
 void wifi_wakeup()
 {
-	REG_WIFI_POWER = WIFI_POWER_ENABLE;
+	REG_WIFI_SHUTDOWN = WIFI_SHUTDOWN_POWERON;
 	swiDelay(8 * 0x20BA);//we should wait for 8ms
-	REG_WIFI_BB_POWER = 0;
+	REG_WIFI_RFR_D_CTRL = 0;
 	if (WIFI_RAM->firmData.wifiData.rfType == 2)
 	{
 		u8 val = wifi_readBBReg(WIFI_BB_REG_01);
@@ -310,42 +310,47 @@ void wifi_shutdown()
 		wifi_writeRF(0xC008);
 	u8 val = wifi_readBBReg(WIFI_BB_REG_GAIN);
 	wifi_writeBBReg(WIFI_BB_REG_GAIN, val | 0x3F);
-	REG_WIFI_BB_POWER = 0x800D;
-	REG_WIFI_POWER = WIFI_POWER_DISABLE;
+	REG_WIFI_RFR_D_CTRL = 0x800D;
+	REG_WIFI_SHUTDOWN = WIFI_SHUTDOWN_POWEROFF;
 }
 
 void wifi_initMac()
 {
-	REG_WIFI_MODE_RST = 0;
-	REG_WIFI_TXSTATCNT = 0;
-	REG_WIFI_800A = 0;
-	REG_WIFI_IE = 0;
-	REG_WIFI_IF = 0xFFFF;
-	REG_WIFI_8254 = 0;
-	REG_WIFI_TXREQ_RESET = 0xFFFF;
-	REG_WIFI_TXREQ_BEACON = 0;
-	REG_WIFI_DTIM_INTERVAL = 1;
-	REG_WIFI_DTIM_COUNTER = 0;
+	REG_WIFI_MAC_CMD = 0;
+	REG_WIFI_TX_CONFIG = 0;
+	REG_WIFI_RX_CONFIG = 0;
+	REG_WIFI_IMR = 0;
+	REG_WIFI_ISR = 0xFFFF;
+	REG_WIFI_DDO_PARA_DAT = 0;
+	REG_WIFI_TXQ_RESET = 0xFFFF;
+	REG_WIFI_BEACON_ADRS = 0;
+	REG_WIFI_TIM_COUNT = 1;
+	REG_WIFI_BCN_PARAM = 0;
 	REG_WIFI_AID = 0;
 	REG_WIFI_KSID = 0;
-	REG_WIFI_US_COUNTCNT = 0;
-	REG_WIFI_US_COMPARECNT = 0;
-	REG_WIFI_CMD_COUNTCNT = 1;
-	REG_WIFI_80EC = 0x3F03;
-	REG_WIFI_81A2 = 1;
-	REG_WIFI_81A0 = 0;
-	REG_WIFI_TX_PRE_TBTT = 0x800;
-	REG_WIFI_PREAMBLE = 1;
-	REG_WIFI_80D4 = 3;
-	REG_WIFI_80D8 = 4;
-	REG_WIFI_RX_LEN_CROP = 0x602;
-	REG_WIFI_TXBUF_GAPDISP = 0;
-	REG_WIFI_8130 = 0x146;
+	REG_WIFI_TSF_ENABLE = 0;
+	REG_WIFI_TBTT_ENABLE = 0;
+	REG_WIFI_TMPTT_ENABLE = 1;
+	REG_WIFI_NAV_ENABLE = 0x3F03;
+	REG_WIFI_SERIAL_DAT_SELECT = 1;
+	REG_WIFI_TRPE_DIRECT_CTL = 0;
+	REG_WIFI_PRE_TBTT = 0x800;
+	REG_WIFI_TX_PREAMBLE_TYPE = 1;
+	REG_WIFI_RESPONSE_CONTROL = 3;
+	REG_WIFI_OVF_THRESHOLD = 4;
+	REG_WIFI_DEFRAG_OFFSET = 0x602;
+	REG_WIFI_WDMA_JUMP_CNT = 0;
+	REG_WIFI_TIMEOUT_PARAM = 0x146;
 }
 
 void wifi_init()
 {
 	memset(&gWifiWork, 0, sizeof(gWifiWork));
+
+	//from dswifi
+#define REG_GPIO_WIFI (*(vu16*)0x4004C04)
+	REG_GPIO_WIFI = (REG_GPIO_WIFI & 1) | (1 << 8);
+	swiDelay(0xA3A47); //5ms
 
 	//enable power
 	(*(vu32*)0x04000304) |= 2;
@@ -377,35 +382,35 @@ void wifi_init()
 
 void wifi_stop()
 {
-	REG_WIFI_IE = 0;
-	REG_WIFI_MODE_RST = 0;
-	REG_WIFI_US_COMPARECNT = 0;
-	REG_WIFI_US_COUNTCNT = 0;
-	REG_WIFI_TXSTATCNT = 0;
-	REG_WIFI_800A = 0;
-	REG_WIFI_TXREQ_EN_RESET = 0xFFFF;
-	REG_WIFI_TXREQ_RESET = 0xFFFF;
+	REG_WIFI_IMR = 0;
+	REG_WIFI_MAC_CMD = 0;
+	REG_WIFI_TBTT_ENABLE = 0;
+	REG_WIFI_TSF_ENABLE = 0;
+	REG_WIFI_TX_CONFIG = 0;
+	REG_WIFI_RX_CONFIG = 0;
+	REG_WIFI_QUEUE_CLOSE = 0xFFFF;
+	REG_WIFI_TXQ_RESET = 0xFFFF;
 }
 
 void wifi_start()
 {
 	wifi_stop();
-	REG_WIFI_WEP_CNT = 0x8000;
-	REG_WIFI_ACTIVE_ZONE_TIME = 0xFFFF;
+	REG_WIFI_WEP_CONFIG = 0x8000;
+	REG_WIFI_ACTIVE_ZONE_TIMER = 0xFFFF;
 	REG_WIFI_AID = 0;
 	REG_WIFI_KSID = 0;
-	REG_WIFI_POWERSAVE = 0xF;
+	REG_WIFI_WAKEUP_CTRL = 0xF;
 	wifi_initTx();
 	wifi_initRx();
-	REG_WIFI_RXCNT = 0x8000;
-	REG_WIFI_IF = 0xFFFF;
-	REG_WIFI_IE = WIFI_IRQ_TX_END | WIFI_IRQ_RX_END;
+	REG_WIFI_MDP_CONFIG = 0x8000;
+	REG_WIFI_ISR = 0xFFFF;
+	REG_WIFI_IMR = WIFI_IRQ_TX_END | WIFI_IRQ_RX_END;
 
-	REG_WIFI_TXSTATCNT = 0;
-	REG_WIFI_800A = 0;
+	REG_WIFI_TX_CONFIG = 0;
+	REG_WIFI_RX_CONFIG = 0;
 
-	REG_WIFI_MODE_RST = 1;
-	REG_WIFI_8048 = 0;
+	REG_WIFI_MAC_CMD = 1;
+	REG_WIFI_MP_POWER_SEQ = 0;
 	wifi_setUseTmpttPowerSave(false);
 	//REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_CMD;
 	wifi_setPowerState(2);

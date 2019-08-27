@@ -20,10 +20,10 @@ static bool sReceivedSlaveData;
 
 static u64 getUsCounter()
 {
-	u64 time = (u64)REG_WIFI_US_COUNT3 << 48;
-	time |= (u64)REG_WIFI_US_COUNT2 << 32;
-	time |= (u64)REG_WIFI_US_COUNT1 << 16;
-	time |= (u64)REG_WIFI_US_COUNT0;
+	u64 time = (u64)REG_WIFI_TSF_3 << 48;
+	time |= (u64)REG_WIFI_TSF_2 << 32;
+	time |= (u64)REG_WIFI_TSF_1 << 16;
+	time |= (u64)REG_WIFI_TSF_0;
 	return time;
 }
 
@@ -61,7 +61,7 @@ static void txDoneCallback(void* arg)
 		}
 	}*/
 
-	if (gSioWork.id == SIO_ID_MASTER && sTransfering && !(REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3) && *((u16*)&WIFI_RAM->txBuf[0]) == 0)
+	if (gSioWork.id == SIO_ID_MASTER && sTransfering && !(REG_WIFI_TXREQ_BUSY & WIFI_TXQ_TXQ2) && *((u16*)&WIFI_RAM->txBuf[0]) == 0)
 		finishTransfer(true);
 
 #ifdef SIO_MULTI_PRESEND
@@ -78,7 +78,7 @@ static void txDoneCallback(void* arg)
 
 static u32 wrapRxPtr(u32 ptr)
 {
-	u32 start = REG_WIFI_RXBUF_BEGIN & 0x1FFE;
+	u32 start = REG_WIFI_RXBUF_STR & 0x1FFE;
 	u32 end = REG_WIFI_RXBUF_END & 0x1FFE;
 	if (ptr >= end)
 		ptr -= end - start;
@@ -95,9 +95,9 @@ static void rxDoneCallback(void* arg)
 	if (gSioWork.mode != SIO_MODE_MULTI)
 		return;
 	int count = 0;
-	while(REG_WIFI_RXBUF_WR_CSR != REG_WIFI_RXBUF_RD_CSR)
+	while(REG_WIFI_RXBUF_CUR != REG_WIFI_RXBUF_BNR)
 	{
-		int base = REG_WIFI_RXBUF_RD_CSR << 1;
+		int base = REG_WIFI_RXBUF_BNR << 1;
 		int hdrLen = rxRamRead(base + 8);
 		int len = ((hdrLen + 3) & ~3) + 12;
 
@@ -150,11 +150,11 @@ static void rxDoneCallback(void* arg)
 				};
 				packet.packet.ieeeHeader.addr3.address[0] = vram_cd->sioWork.sioMultiSend & 0xFF;
 				packet.packet.ieeeHeader.addr3.address[1] = vram_cd->sioWork.sioMultiSend >> 8;
-				while (REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3);
+				while (REG_WIFI_TXREQ_BUSY & WIFI_TXQ_TXQ2);
 				dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
 				wifi_setRetryLimit(7);
-				REG_WIFI_TXREQ_LOC3 = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
-				REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;
+				REG_WIFI_TXQ2_ADR = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
+				REG_WIFI_QUEUE_OPEN = WIFI_TXQ_TXQ_ALL;
 			#endif
 				finishTransfer(false);
 				//sio_multiSendWrite(sMultiData[SIO_ID_MASTER]);
@@ -193,7 +193,7 @@ static void rxDoneCallback(void* arg)
 			REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;*/
 		}
 
-		REG_WIFI_RXBUF_RD_CSR = wrapRxPtr(base + len) >> 1;
+		REG_WIFI_RXBUF_BNR = wrapRxPtr(base + len) >> 1;
 
 		//if (++count == 6)
 		//	break;
@@ -215,8 +215,8 @@ void sio_multiStart()
     vram_cd->sioWork.sioCntRead = (gSioWork.id << 4) | (1 << 3) | (gSioWork.id == SIO_ID_MASTER ? 0 : (1 << 2));
     wifi_setTxDoneCallback(txDoneCallback, NULL);
 	wifi_setRxDoneCallback(rxDoneCallback, NULL);
-	REG_WIFI_RXFILTER = 0x0FFF;//0x381;
-	REG_WIFI_RXFILTER2 = 8;
+	REG_WIFI_BUFFERING_SELECT = 0x0FFF;//0x381;
+	REG_WIFI_DS_MASK = 8;
 }
 
 void sio_multiSendWrite(u16 data)
@@ -294,10 +294,10 @@ void sio_multiCntWrite(u16 val)
         };
 		packet.packet.ieeeHeader.addr3.address[0] = vram_cd->sioWork.sioMultiSend & 0xFF;
 		packet.packet.ieeeHeader.addr3.address[1] = vram_cd->sioWork.sioMultiSend >> 8;
-		while (REG_WIFI_TXREQ_BUSY & WIFI_TXREQ_LOC3);
+		while (REG_WIFI_TXREQ_BUSY & WIFI_TXQ_TXQ2);
         dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
 		wifi_setRetryLimit(7);
-        REG_WIFI_TXREQ_LOC3 = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
-        REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;
+        REG_WIFI_TXQ2_ADR = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
+        REG_WIFI_QUEUE_OPEN = WIFI_TXQ_TXQ_ALL;
     }
 }

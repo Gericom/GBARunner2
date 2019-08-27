@@ -105,6 +105,33 @@
     <ClCompile Include="source\gamePatches.vram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\INIReader.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\INIWriter.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\settings.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\SettingsCategoryListAdapter.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\SettingsCategoryListEntry.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\SettingsItemListAdapter.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\SettingsItemListEntry.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\SettingsScreen.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui\UIContext.vram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="build\BarShadow_nbfc.h">
@@ -242,6 +269,33 @@
     <ClInclude Include="source\gamePatches.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\INIReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\INIWriter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\SettingsCategoryListAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\SettingsCategoryListEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\SettingsItemListAdapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\SettingsItemListEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\SettingsScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gui\UIContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="source\aborthandler_asm.s" />
@@ -281,5 +335,6 @@
     <None Include="source\emu\cpuArmHi.s" />
     <None Include="source\emu\cpuThumb.s" />
     <None Include="source\emu\cpuArmLo.s" />
+    <None Include="source\emu\sio.s" />
   </ItemGroup>
 </Project>

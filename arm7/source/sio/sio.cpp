@@ -45,7 +45,7 @@ void sio_updateMode(u16 cnt, u16 rcnt)
             case SIO_MODE_GPIO:
             case SIO_MODE_NORMAL:
             case SIO_MODE_JOY:
-				REG_WIFI_RXFILTER = 0;
+				REG_WIFI_BUFFERING_SELECT = 0;
 				wifi_setTxDoneCallback(NULL, NULL);
                 break;
             case SIO_MODE_MULTI:

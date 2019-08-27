@@ -113,16 +113,38 @@
     <ClCompile Include="source\gbsound.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\save.cpp" />
+    <ClCompile Include="source\sio\sio.cpp" />
+    <ClCompile Include="source\sio\sio_multi.cpp" />
     <ClCompile Include="source\sound.cpp" />
+    <ClCompile Include="source\wifi\spi.cpp" />
+    <ClCompile Include="source\wifi\wifi.cpp" />
+    <ClCompile Include="source\wifi\wifi_bb.cpp" />
+    <ClCompile Include="source\wifi\wifi_flash.cpp" />
+    <ClCompile Include="source\wifi\wifi_mac.cpp" />
+    <ClCompile Include="source\wifi\wifi_rf.cpp" />
+    <ClCompile Include="source\wifi\wifi_rx.cpp" />
+    <ClCompile Include="source\wifi\wifi_tx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\dldi_handler.h" />
     <ClInclude Include="source\fifo.h" />
     <ClInclude Include="source\gbsound.h" />
+    <ClInclude Include="source\irq.h" />
     <ClInclude Include="source\lock.h" />
     <ClInclude Include="source\save.h" />
+    <ClInclude Include="source\sio\sio.h" />
+    <ClInclude Include="source\sio\sio_multi.h" />
     <ClInclude Include="source\sound.h" />
     <ClInclude Include="source\timer.h" />
+    <ClInclude Include="source\wifi\nvram.h" />
+    <ClInclude Include="source\wifi\spi.h" />
+    <ClInclude Include="source\wifi\wifi.h" />
+    <ClInclude Include="source\wifi\wifi_bb.h" />
+    <ClInclude Include="source\wifi\wifi_common.h" />
+    <ClInclude Include="source\wifi\wifi_flash.h" />
+    <ClInclude Include="source\wifi\wifi_rf.h" />
+    <ClInclude Include="source\wifi\wifi_rx.h" />
+    <ClInclude Include="source\wifi\wifi_tx.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="crt0\ds_gbarunner_arm7_crt0.s" />

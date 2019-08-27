@@ -95,6 +95,7 @@
   <ItemGroup>
     <ClInclude Include="common\save_work.h" />
     <ClInclude Include="common\sd_vram.h" />
+    <ClInclude Include="common\sio_work.h" />
     <ClInclude Include="common\sound_emu.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

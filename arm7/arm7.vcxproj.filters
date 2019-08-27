@@ -30,6 +30,36 @@
     <ClCompile Include="source\gbsound.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\wifi\spi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\wifi\wifi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\wifi\wifi_bb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\wifi\wifi_flash.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\wifi\wifi_mac.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\wifi\wifi_rf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\wifi\wifi_rx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\wifi\wifi_tx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sio\sio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sio\sio_multi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\dldi_handler.h">
@@ -51,6 +81,42 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\gbsound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\irq.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\nvram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\spi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\wifi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\wifi_bb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\wifi_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\wifi_flash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\wifi_rf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\wifi_rx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\wifi\wifi_tx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sio\sio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sio\sio_multi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

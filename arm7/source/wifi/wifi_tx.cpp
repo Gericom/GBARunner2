@@ -6,7 +6,7 @@ static wifi_tx_done_callback_t sTxDoneCallback;
 static void* sTxDoneCallbackArg;
 void wifi_irqTxStart()
 {
-	REG_WIFI_IF = WIFI_IRQ_TX_START;
+	REG_WIFI_ISR = WIFI_IRQ_TX_START;
 	//hmm?
 	/*if(REG_WIFI_CHIPID != WIFI_CHIPID_DS_PHAT && 
 		(REG_WIFI_RF_PINS & (WIFI_RF_PIN_TXMAIN | WIFI_RF_PIN_TXON)) == (WIFI_RF_PIN_TXMAIN | WIFI_RF_PIN_TXON) &&
@@ -27,7 +27,7 @@ void wifi_irqTxStart()
 
 void wifi_irqTxEnd()
 {
-	REG_WIFI_IF = WIFI_IRQ_TX_END;
+	REG_WIFI_ISR = WIFI_IRQ_TX_END;
 	if(sTxDoneCallback)
 		sTxDoneCallback(sTxDoneCallbackArg);
 }
@@ -36,7 +36,7 @@ void wifi_irqTxEnd()
 void wifi_initTx()
 {
 	sTxDoneCallback = 0;
-	REG_WIFI_TXREQ_EN_SET = WIFI_TXREQ_LOC_ALL;
+	REG_WIFI_QUEUE_OPEN = WIFI_TXQ_TXQ_ALL;
 }
 
 void wifi_setTxDoneCallback(wifi_tx_done_callback_t callback, void* arg)

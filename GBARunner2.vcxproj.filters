@@ -29,5 +29,8 @@
     <ClInclude Include="common\save_work.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="common\sio_work.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

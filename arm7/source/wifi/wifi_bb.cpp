@@ -5,28 +5,28 @@
 static bool waitBBReady()
 {
 	for (int i = 0; i < 10240; i++)
-		if (!REG_WIFI_BB_BUSY)
+		if (!REG_WIFI_BCR_STATUS)
 			return true;
 	return false;
 }
 
 u8 wifi_readBBReg(u8 reg)
 {
-	REG_WIFI_BB_CNT = reg | WIFI_BB_CNT_READ;
+	REG_WIFI_BCR_CMDADR = reg | WIFI_BCR_CMDADR_READ;
 	waitBBReady();
-	return REG_WIFI_BB_READ;
+	return REG_WIFI_BCR_RDAT;
 }
 
 bool wifi_writeBBReg(u8 reg, u8 val)
 {
-	REG_WIFI_BB_WRITE = val;
-	REG_WIFI_BB_CNT = reg | WIFI_BB_CNT_WRITE;
+	REG_WIFI_BCR_WDAT = val;
+	REG_WIFI_BCR_CMDADR = reg | WIFI_BCR_CMDADR_WRITE;
 	return waitBBReady();
 }
 
 void wifi_initBB()
 {
-	REG_WIFI_BB_MODE = WIFI_BB_MODE_NORMAL;
+	REG_WIFI_BCR_CONFIG = WIFI_BCR_CONFIG_NORMAL;
 	for(int i = 0; i < 0x69; i++)
 		wifi_writeBBReg(i, WIFI_RAM->firmData.wifiData.bbConfig[i]);
 
