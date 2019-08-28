@@ -7,7 +7,7 @@ read_address_sio_cnt_32:
 	//store register value into shadow register
 	ldr r13,= ((sio_work + 8) | 0x00800000) //uncached start of shadow registers - register base
 	ldr r10, [r13]
-	bic r10, #0x7C
+	bic r10, #0xFC
 	ldrh r11, [r13, #6]
 	orr r10, r11
 	bx lr
@@ -17,7 +17,7 @@ read_address_sio_cnt_16:
 	//store register value into shadow register
 	ldr r13,= ((sio_work + 8) | 0x00800000) //uncached start of shadow registers - register base
 	ldrh r10, [r13]
-	bic r10, #0x7C
+	bic r10, #0xFC
 	ldrh r11, [r13, #6]
 	orr r10, r11
 	bx lr
@@ -55,10 +55,10 @@ write_address_sio_16:
 	cmp r12, #0x128
 	bne 1f
 	
-	tst r11, #0x80
-	ldrh r10, [r13, #6]
-	orr r10, #0x80
-	strh r10, [r13, #6]
+	//tst r11, #0x80
+	//ldrh r10, [r13, #6]
+	//orr r10, #0x80
+	//strh r10, [r13, #6]
 
 1:
 	strh r11, [r13, r12]
@@ -71,6 +71,13 @@ write_address_sio_16:
 	beq 2b
 	str r9, [r13] //command
 	str r11, [r13] //val
+	bx lr
+
+.global read_address_sio_rcnt_16
+read_address_sio_rcnt_16:
+	//store register value into shadow register
+	ldr r13,= ((sio_work + 12) | 0x00800000) //uncached start of shadow registers - register base
+	ldrh r10, [r13]
 	bx lr
 
 .global write_address_sio_rcnt_8_hi

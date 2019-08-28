@@ -219,7 +219,7 @@ address_read_table_16bit:
 .word read_address_nomod_16
 //0x04000110-0x0400011E
 .rept 8
-.word write_address_ignore
+.word read_address_undefined_memory_16
 .endr
 //0x04000120
 .word read_address_sio_16
@@ -235,14 +235,16 @@ address_read_table_16bit:
 .word read_address_ignore
 //0x0400012C-0x0400012E
 .rept 2
-.word read_address_ignore
+.word read_address_undefined_memory_16
 .endr
 //0x04000130
 .word read_address_nomod_16
 //0x04000132
 .word read_address_nomod_16
-//0x04000134-0x040001FE
-.rept 102
+//0x04000134
+.word read_address_sio_rcnt_16
+//0x04000136-0x040001FE
+.rept 101
 .word read_address_ignore
 .endr
 //0x04000200
