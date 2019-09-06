@@ -290,10 +290,18 @@ irq_handler_arm7_irq:
 	ldrh lr, [r0, #0x16]
 	tst lr, #(1 << 14)
 	orrne r1, #(1 << 9) //dma 1
+	//if no repeat, stop dma
+	tst lr, #(1 << 9)
+	biceq lr, #0x8000
+	streqh lr, [r0, #0x16]
 
 	ldrh lr, [r0, #0x22]
 	tst lr, #(1 << 14)
 	orrne r1, #(1 << 10) //dma 2
+	//if no repeat, stop dma
+	tst lr, #(1 << 9)
+	biceq lr, #0x8000
+	streqh lr, [r0, #0x22]
 
 	str r1, [r2]
 	
