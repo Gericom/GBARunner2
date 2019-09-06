@@ -116,31 +116,6 @@ void sio_multiOnCmdRecv(u8 cmd, u8 arg0, u16 arg1, u16 arg2)
 	
 		//send data to master
 		sio_sendSimplePacket(&gSioWork.multiMacs[0], SIO_CMD_DATA, 0, vram_cd->sioWork.sioMultiSend, 0);
-		// static struct { wifi_pkt_tx_t packet; u32 checksum; } packet =
-		// {
-		// 	{
-		// 		{
-		// 			0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 4
-		// 		},
-		// 		{
-		// 			{0,2,0,0,0,0,0,0,0,0,0}, 0,
-		// 			gSioWork.multiMacs[0],
-		// 			//{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
-		// 			WIFI_RAM->firmData.wifiData.macAddress, //source ds
-		// 			{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},//WIFI_RAM->firmData.wifiData.macAddress,
-		// 			//gSioWork.multiMacs[0], //mac address of master ds for ap filtering
-		// 			{0,0}
-		// 		}
-		// 	},
-		// 	0
-		// };
-		// packet.packet.ieeeHeader.addr3.address[0] = vram_cd->sioWork.sioMultiSend & 0xFF;
-		// packet.packet.ieeeHeader.addr3.address[1] = vram_cd->sioWork.sioMultiSend >> 8;
-		// while (REG_WIFI_TXREQ_BUSY & WIFI_TXQ_TXQ2);
-		// dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
-		// wifi_setRetryLimit(7);
-		// REG_WIFI_TXQ2_ADR = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
-		// REG_WIFI_QUEUE_OPEN = WIFI_TXQ_TXQ_ALL;
 	#endif
 		finishTransfer(false);
 		//sio_multiSendWrite(sMultiData[SIO_ID_MASTER]);
@@ -228,30 +203,5 @@ void sio_multiCntWrite(u16 val)
 			finishTransfer(false);
 		else
 			sio_sendSimplePacket(&gSioWork.multiMacs[1], SIO_CMD_DATA, 0, vram_cd->sioWork.sioMultiSend, 0);
-		// static struct { wifi_pkt_tx_t packet; u32 checksum; } packet =
-        // {
-        //     {
-        //         {
-        //             0, 0, 0, 0, 0x14, sizeof(wifi_pkt_ieee_header_t) + 4
-        //         },
-        //         {
-        //             {0,2,0,0,0,0,0,0,0,0,0}, 0, 
-        //             //{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, //broadcast
-		// 			gSioWork.multiMacs[1],
-        //             WIFI_RAM->firmData.wifiData.macAddress, //source ds
-		// 			{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},//WIFI_RAM->firmData.wifiData.macAddress,
-        //             //WIFI_RAM->firmData.wifiData.macAddress, //mac address of master ds for ap filtering
-        //             {0,0}
-        //         }
-        //     },
-        //     0
-        // };
-		// packet.packet.ieeeHeader.addr3.address[0] = vram_cd->sioWork.sioMultiSend & 0xFF;
-		// packet.packet.ieeeHeader.addr3.address[1] = vram_cd->sioWork.sioMultiSend >> 8;
-		// while (REG_WIFI_TXREQ_BUSY & WIFI_TXQ_TXQ2);
-        // dmaCopyWords(3, &packet, (void*)&WIFI_RAM->txBuf[0], sizeof(packet));
-		// wifi_setRetryLimit(7);
-        // REG_WIFI_TXQ2_ADR = 0x8000 | (WIFI_RAM_TX_BUF_OFFSET >> 1);
-        // REG_WIFI_QUEUE_OPEN = WIFI_TXQ_TXQ_ALL;
     }
 }

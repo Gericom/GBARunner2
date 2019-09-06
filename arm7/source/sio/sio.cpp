@@ -5,6 +5,7 @@
 #include "../wifi/wifi_tx.h"
 #include "../wifi/wifi_rx.h"
 #include "sio_multi.h"
+#include "sio_normal.h"
 #include "sio.h"
 
 sio_arm7_work_t gSioWork;
@@ -43,13 +44,15 @@ void sio_updateMode(u16 cnt, u16 rcnt)
         //mode switch
         switch(mode)
         {
-            case SIO_MODE_GPIO:
-            case SIO_MODE_NORMAL:
+            case SIO_MODE_GPIO:            
             case SIO_MODE_JOY:
             case SIO_MODE_UART:
                 vram_cd->sioWork.sioCntRead = (gSioWork.id == SIO_ID_MASTER ? 0 : (1 << 2));
 				//REG_WIFI_BUFFERING_SELECT = 0;
 				wifi_setTxDoneCallback(NULL, NULL);
+                break;
+            case SIO_MODE_NORMAL:
+                sio_normalStart();
                 break;
             case SIO_MODE_MULTI:
                 sio_multiStart();
@@ -65,8 +68,11 @@ static void writeCntReg(u16 val)
     switch(gSioWork.multiModes[gSioWork.id])
     {
         case SIO_MODE_GPIO:
-        case SIO_MODE_NORMAL:
         case SIO_MODE_JOY:
+        case SIO_MODE_UART:
+            break;
+        case SIO_MODE_NORMAL:
+            sio_normalCntWrite(val);
             break;
         case SIO_MODE_MULTI:
             sio_multiCntWrite(val);
@@ -128,9 +134,11 @@ static void rxDoneCallback(void* arg)
             switch(gSioWork.multiModes[gSioWork.id])
             {
                 case SIO_MODE_GPIO:
-                case SIO_MODE_NORMAL:
                 case SIO_MODE_JOY:
                 case SIO_MODE_UART:
+                    break;
+                case SIO_MODE_NORMAL:
+                    sio_normalOnCmdRecv(cmd, arg0, arg1, arg2);
                     break;
                 case SIO_MODE_MULTI:
                     sio_multiOnCmdRecv(cmd, arg0, arg1, arg2);
