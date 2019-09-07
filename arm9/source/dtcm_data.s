@@ -14,7 +14,10 @@ cpu_mode_switch_dtcm:
 	.word pu_data_permissions
 	.word data_abort_handler_cont_finish
 	.word 0x08088008 //arm low instruction mask
-.rept 12
+.global dbgDatarightsTmp
+dbgDatarightsTmp:
+	.word 0
+.rept 11
 	.word 0
 .endr
 	.word data_abort_handler_arm_usr_sys //usr

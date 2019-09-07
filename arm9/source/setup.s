@@ -61,11 +61,10 @@ itcm_setup_copyloop:
 	//map the gba cartridge to the arm7 and nds card too
 	ldr r0,= 0x4000204
 	ldrh r1, [r0]
+	orr r1, #0x80 //gba slot to arm7 (for is-nitro-emulator)
 #ifdef ARM7_DLDI
-	orr r1, #0x80
 	orr r1, #0x800 //card to arm7
 #else
-	bic r1, #0x80
 	bic r1, #0x800 //card to arm9
 #endif
 	bic r1, #0x8000	//set memory priority to arm9
@@ -781,8 +780,16 @@ nibble_to_char:
 
 .global undef_inst_handler
 undef_inst_handler:
-	//TODO: if this is an is-nitro breakpoint (arm 0xE7FFFFFF; thumb 0xEFFF), pass control to the debugger
-
+	mrc p15, 0, sp, c5, c0, 2
+	eor sp, #0x33
+	eor sp, #0x3300
+	eor sp, #0x330000
+	eor sp, #0x33000000
+	cmp sp, #0
+	movne sp, #1 //0 = unlocked, 1 = locked
+	add sp, #address_dtcm
+	strb sp, [sp, #0x4C]
+	
 	//make use of the backwards compatible version
 	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
 	mov sp, #0xFFFFFFFF
@@ -819,9 +826,10 @@ no_bkpt:
 	bic r0, #(1 << 12) //and cache
 	mcr p15, 0, r0, c1, c0, 0
 
-	ldr r0,= 0x06202000
-	ldr r1,= 0x46444E55
-	str r1, [r0]
+	//ldr r0,= 0x06202000
+	//ldr r1,= 0x46444E55
+	//str r1, [r0]
+	mov r0, lr
 
 /*	mov r0, lr
 	ldr r1,= nibble_to_char
@@ -963,6 +971,16 @@ fiq_hook:
 	MRS     SP, CPSR
 	ORR     SP, SP, #0xC0
 	MSR     CPSR_cxsf, SP
+	
+	mrc p15, 0, sp, c5, c0, 2
+	eor sp, #0x33
+	eor sp, #0x3300
+	eor sp, #0x330000
+	eor sp, #0x33000000
+	cmp sp, #0
+	movne sp, #1 //0 = unlocked, 1 = locked
+	add sp, #address_dtcm
+	strb sp, [sp, #0x4C]
 
 	//make use of the backwards compatible version
 	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
@@ -988,8 +1006,12 @@ fiq_hook_cp15_done:
 	MSR     SPSR_cxsf, LR
 	LDMFD   SP!, {R12,LR}
 
-	ldr sp,= pu_data_permissions
-	mcr p15, 0, sp, c5, c0, 2
+	mov sp, #address_dtcm
+	ldrb sp, [sp, #0x4C]
+	cmp sp, #1
+
+	ldreq sp,= pu_data_permissions
+	mcreq p15, 0, sp, c5, c0, 2
 
 	SUBS    PC, LR, #4
 
