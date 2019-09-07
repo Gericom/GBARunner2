@@ -122,6 +122,7 @@ static void updateChannelFreq(int channel)
 					div = 4;
 				div *= 2 << sChannel4ShiftFreq;
 				int freq = 4194304 / div;
+				freq *= 8;
 				if (freq == 0)
 				{
 					REG_SOUND[GB_CHANNEL_4_HW_L].TMR = 0;
