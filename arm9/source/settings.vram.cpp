@@ -18,6 +18,8 @@ static const char* sEmuSettingAutoSaveName = "autoSave";
 u32 gEmuSettingAutoSave;
 static const char* sEmuSettingCenterMaskName = "centerMask";
 u32 gEmuSettingCenterMask;
+static const char* sEmuSettingMainMemICacheName = "mainMemICache";
+u32 gEmuSettingMainMemICache;
 static const char* sEmuSettingWramICacheName = "wramICache";
 u32 gEmuSettingWramICache;
 static const char* sEmuSettingSkipIntroName = "skipIntro";
@@ -28,6 +30,7 @@ static void loadDefaultSettings()
     gEmuSettingUseBottomScreen = false;
     gEmuSettingAutoSave = true;
     gEmuSettingCenterMask = true;
+    gEmuSettingMainMemICache = true;
     gEmuSettingWramICache = true;
     gEmuSettingSkipIntro = false;
 }
@@ -51,6 +54,8 @@ static void iniPropertyCallback(void* arg, const char* section, const char* key,
             gEmuSettingAutoSave = parseBoolean(value, true);
         else if(!strcmp(key, sEmuSettingCenterMaskName))
             gEmuSettingCenterMask = parseBoolean(value, true);
+        else if(!strcmp(key, sEmuSettingMainMemICacheName))
+            gEmuSettingMainMemICache = parseBoolean(value, true);
         else if(!strcmp(key, sEmuSettingWramICacheName))
             gEmuSettingWramICache = parseBoolean(value, true);
         else if(!strcmp(key, sEmuSettingSkipIntroName))
@@ -76,6 +81,7 @@ bool settings_save()
     writer.WriteBooleanProperty(sEmuSettingUseBottomScreenName, gEmuSettingUseBottomScreen);
     //writer.WriteBooleanProperty(sEmuSettingAutoSaveName, gEmuSettingAutoSave);
     writer.WriteBooleanProperty(sEmuSettingCenterMaskName, gEmuSettingCenterMask);
+    writer.WriteBooleanProperty(sEmuSettingMainMemICacheName, gEmuSettingMainMemICache);
     //writer.WriteBooleanProperty(sEmuSettingWramICacheName, gEmuSettingWramICache);
     writer.WriteBooleanProperty(sEmuSettingSkipIntroName, gEmuSettingSkipIntro);
     f_close(&vram_cd->fil);
