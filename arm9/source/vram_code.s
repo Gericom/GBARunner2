@@ -341,6 +341,16 @@ gba_start_bkpt_vram:
 	ldr r0,= 0x05000000
 	ldr r1,= 0x7FFF
 	strh r1, [r0]
+
+	ldr r2,= gEmuSettingMainMemICache
+	ldr r2, [r2]
+	cmp r2, #1
+	beq 1f
+	//disable main memory i-cache
+	mrc p15, 0, r0, c2, c0, 1
+	bic r0, #(1 << 5)
+	mcr p15, 0, r0, c2, c0, 1
+1:
 	mrc p15, 0, r0, c1, c0, 0
 	//orr r0, #(1<<15)
 	orr r0, #(1 | (1 << 2))	//enable pu and data cache
@@ -358,6 +368,9 @@ gba_start_bkpt_vram:
 
 	mcr	p15, 0, r0, c7, c10, 4
 
-	//to boot without intro set this to 0xB4
-	ldr r0,= (gGbaBios + 0x68)
+	ldr r2,= gEmuSettingSkipIntro
+	ldr r2, [r2]
+	cmp r2, #1
+	ldrne r0,= (gGbaBios + 0x68) //with intro
+	ldreq r0,= (gGbaBios + 0xB4) //without intro
 	bx r0

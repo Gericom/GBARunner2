@@ -228,6 +228,6 @@ extern "C" DRESULT disk_ioctl (
 		return res;
 	}*/
 
-	return RES_PARERR;
+	return RES_OK;
 }
 

@@ -14,6 +14,7 @@ class Toolbar : public UIElement
 	XBGR1555 _iconColor;
 	XBGR1555 _textColor;
 	u16      _textObjAddr;
+	u16      _backArrowObjAddr;
 	u16      _settingsObjAddr;
 
 	union
@@ -26,7 +27,7 @@ class Toolbar : public UIElement
 			vu32 cursorInvalidated : 1;
 			vu32 : 12;
 			vu32 showBackButton : 1;
-			vu32 showClearButton : 1;
+			vu32 showSettingsButton : 1;
 			vu32 showSearchButton : 1;
 			vu32 showMenuButton : 1;
 			vu32 showCursor : 1;
@@ -50,6 +51,8 @@ public:
 		SetIconColor(iconColor);
 		SetTextColor(textColor);
 		SetTitle(title);
+		SetShowBackButton(false);
+		SetShowSettingsButton(true);
 	}
 
 	void Initialize(UIManager& uiManager);
@@ -78,6 +81,16 @@ public:
 	{
 		_font = font;
 		_flags.titleInvalidated = true;
+	}
+
+	void SetShowBackButton(bool showBackButton)
+	{
+		_flags.showBackButton = showBackButton;
+	}
+
+	void SetShowSettingsButton(bool showSettingsButton)
+	{
+		_flags.showSettingsButton = showSettingsButton;
 	}
 
 	void SetTitle(const char* title);

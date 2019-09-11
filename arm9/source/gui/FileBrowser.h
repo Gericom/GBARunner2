@@ -5,6 +5,7 @@
 #include "core/ListRecycler.h"
 #include "fat/ff.h"
 #include "save/Save.h"
+#include "UIContext.h"
 class NtftFont;
 
 class FileBrowser
@@ -13,11 +14,7 @@ class FileBrowser
 	FILINFO  _entries[64];
 	FILINFO* _sortedEntries[64];
 
-	PaletteManager _bgPalMan;
-	UIManager      _uiManager;
-
-	NtftFont* _robotoMedium13;
-	NtftFont* _robotoRegular11;
+	UIContext* _uiContext;
 
 	ListRecycler*           _listRecycler;
 	FileBrowserListAdapter* _adapter;
@@ -32,10 +29,9 @@ class FileBrowser
 	void LoadFolder(const char* path);
 	void CreateLoadSave(const char* path, const save_type_t* saveType);
 	void LoadGame(const char* path);
-	void FatalError(const char* error);
 public:
-	FileBrowser()
-		: _listRecycler(NULL), _adapter(NULL), _inputRepeater(0x3F3, 20, 8), _selectedEntry(0)
+	FileBrowser(UIContext* uiContext)
+		: _uiContext(uiContext), _listRecycler(NULL), _adapter(NULL), _inputRepeater(0x3F3, 20, 8), _selectedEntry(0)
 	{
 	}
 
@@ -47,5 +43,5 @@ public:
 			delete _adapter;
 	}
 
-	void Run();
+	int Run();
 };

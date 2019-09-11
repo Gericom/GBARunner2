@@ -7,7 +7,7 @@ ListRecycler::ListRecycler(int x, int y, int width, int height, int paddingY, Li
 	  _selectedElement(-1)
 {
 	_elementHeight = _adapter->GetElementHeight();
-	_holderCount = 2 + math_div(_height, _elementHeight);
+	_holderCount = 3 + math_div(_height, _elementHeight);
 	_holders = new ElementHolder*[_holderCount];
 	for (int i = 0; i < _holderCount; i++)
 		_holders[i] = _adapter->CreateElementHolder();
@@ -75,7 +75,7 @@ void ListRecycler::UpdateElementPositions()
 		if (!_holders[i]->GetIsBound())
 			continue;
 		int newY = _paddingY + _holders[i]->GetItemPosition() * _elementHeight + _scrollY;
-		if (newY + _elementHeight < 0 || newY > _height)
+		if (newY + _elementHeight < -((_elementHeight + 1) >> 1) || newY > _height + ((_elementHeight + 1) >> 1))
 		{
 			if (_holders[i]->GetItemPosition() == _firstElement)
 				_firstElement++;
@@ -88,13 +88,13 @@ void ListRecycler::UpdateElementPositions()
 		_holders[i]->GetItemElement()->SetOffset(_x, _y + newY);
 	}
 	int firstY = _paddingY + _firstElement * _elementHeight + _scrollY;
-	while (_firstElement > 0 && firstY > 0)
+	while (_firstElement > 0 && firstY > -((_elementHeight + 1) >> 1))
 	{
 		SetupListItem(--_firstElement);
 		firstY = _paddingY + _firstElement * _elementHeight + _scrollY;
 	}
 	int lastY = _paddingY + _lastElement * _elementHeight + _scrollY;
-	while (_lastElement < _adapter->GetItemCount() - 1 && lastY + _elementHeight < _height)
+	while (_lastElement < _adapter->GetItemCount() - 1 && lastY + _elementHeight < _height + ((_elementHeight + 1) >> 1))
 	{
 		SetupListItem(++_lastElement);
 		lastY = _paddingY + _lastElement * _elementHeight + _scrollY;

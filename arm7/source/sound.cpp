@@ -1,7 +1,7 @@
 #include <nds.h>
 #include <string.h>
 #include "timer.h"
-#include "fifo.h"
+#include "../../common/fifo.h"
 #include "../../common/sd_vram.h"
 #include "lock.h"
 #include "sound.h"
@@ -222,6 +222,8 @@ void gba_sound_fifo_write(uint32_t samps)
 
 void gba_sound_set_src(uint32_t address)
 {
+	if(srcAddress == address - 16 || srcAddress == address || srcAddress == address + 16)
+		return;
 	srcAddress = address;
 	REG_TM[3].CNT_H = 0;
 	sampcnter = 0;

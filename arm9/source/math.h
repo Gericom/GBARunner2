@@ -21,6 +21,8 @@ extern "C" {
 #endif
 
 int math_div(int a, int b);
+int math_mod(int a, int b);
+int math_divmod(int a, int b, int* rem);
 
 #ifdef __cplusplus
 }

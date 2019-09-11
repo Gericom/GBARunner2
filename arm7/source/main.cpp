@@ -5,7 +5,7 @@
 #include "gbsound.h"
 #include "save.h"
 #include "dldi_handler.h"
-#include "fifo.h"
+#include "../../common/fifo.h"
 #include "../../common/common_defs.s"
 
 static void vblank_handler()
@@ -184,6 +184,17 @@ int main()
 						reg++;
 						val >>= 8;
 					}
+					break;
+				}
+			case 0xAA550100: //get rtc data
+				{
+					u8 dateTime[8];
+					u8 cmd = READ_TIME_AND_DATE;
+					rtcTransaction(&cmd, 1, dateTime, 7);
+					cmd = READ_STATUS_REG1;
+					rtcTransaction(&cmd, 1, &dateTime[7], 1);
+					REG_SEND_FIFO = *(u32*)&dateTime[0];
+					REG_SEND_FIFO = *(u32*)&dateTime[4];
 					break;
 				}
 			case 0x040000A0:
