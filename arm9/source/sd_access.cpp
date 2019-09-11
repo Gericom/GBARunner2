@@ -1,6 +1,7 @@
 #include <nds/arm9/sprite.h>
 #include <nds/arm9/background.h>
 #include "vram.h"
+#include "../../common/fifo.h"
 #include "vector.h"
 #include "string.h"
 #include "vramheap.h"
@@ -14,9 +15,7 @@
 #include "settings.h"
 #include "bios.h"
 #include "crc16.h"
-
-#define REG_SEND_FIFO	(*((vu32*)0x04000188))
-#define REG_RECV_FIFO	(*((vu32*)0x04100000))
+#include "emu/romGpio.h"
 
 typedef enum KEYPAD_BITS
 {
@@ -253,6 +252,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	vram_cd->sd_info.cluster_shift = 31 - __builtin_clz(vram_cd->sd_info.nr_sectors_per_cluster * 512);
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 	initialize_cache();
+	rio_init(RIO_NONE);
 	*(vu8*)0x04000243 = 0x80;
 }
 

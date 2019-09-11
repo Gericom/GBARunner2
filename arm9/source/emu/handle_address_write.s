@@ -99,7 +99,7 @@ write_address_from_handler_16bit:
 	.word write_address_ignore
 	.word write_address_from_handler_vram_16
 	.word write_address_ignore
-	.word write_address_ignore
+	.word write_address_from_handler_rom_gpio_16
 	.word write_address_ignore
 	.word write_address_ignore
 	.word write_address_ignore
@@ -142,6 +142,21 @@ write_address_from_handler_vram_16:
 1:
 	add r10, #0x3F0000
 	strh r11, [r10]
+	bx lr
+
+write_address_from_handler_rom_gpio_16:
+	ldr r13,= 0x080000C4
+	subs r13, r9, r13
+		bxlt lr
+	cmp r13, #0x4
+		bxgt lr
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r3,lr}
+	mov r0, r9
+	mov r1, r11
+	ldr r12,= rio_write
+	blx r12
+	pop {r0-r3,lr}
 	bx lr
 
 write_address_from_handler_sram_16:
