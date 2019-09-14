@@ -32,6 +32,8 @@
 
 //#define ABT_NO_FIQ
 
+#define ENABLE_HICODE
+
 //enabling the wram icache can significantly improve
 //speed in some games (dk3, rayman3, riviera), however
 //it may lead to crashes depending on the game.

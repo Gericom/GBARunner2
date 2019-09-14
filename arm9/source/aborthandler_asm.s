@@ -36,8 +36,27 @@ data_abort_handler:
 data_abort_handler_thumb:
 	ldrh r10, [r11, #-8]
 	//todo: fill up this interlock
+#ifdef ENABLE_HICODE
+	cmp r11, #0x08000000
+		bge data_abort_handler_thumb_load_from_cache
+data_abort_handler_thumb_cont:
+#endif
 	add r12, r12, #(address_thumb_table_dtcm - reg_table)
 	ldr pc, [r12, r10, lsr #7] //todo: this construct actually involves an interlock!
+
+#ifdef ENABLE_HICODE
+data_abort_handler_thumb_load_from_cache:
+	sub r14, r11, #8	
+	bic r14, #0xFE000000
+	and r10, r14, #0x800
+    orr r13, r14, r10, lsl #19	//set
+	mcr p15, 3, r13, c15, c0, 0 //set index
+	mrc p15, 3, r13, c15, c3, 0 //read data
+	tst r14, #2
+		moveq r13, r13, lsl #16
+	mov r10, r13, lsr #16
+	b data_abort_handler_thumb_cont
+#endif
 
 .global data_abort_handler_arm_irq
 data_abort_handler_arm_irq:
@@ -58,6 +77,11 @@ data_abort_handler_arm_svc:
 .global data_abort_handler_cont_finish
 data_abort_handler_cont_finish:
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
+
+#ifdef ENABLE_HICODE
+	cmp lr, #(0x13 << 27)
+	beq data_abort_handler_cont2_svc
+#endif
 
 	//lr still contains spsr << 27
 	cmp lr, #(0x12 << 27)
@@ -87,6 +111,22 @@ data_abort_handler_cont2:
 	ldr lr, [r13], #(-4 * 15 - 1)
 
 	subs pc, lr, #4
+
+#ifdef ENABLE_HICODE
+data_abort_handler_cont2_svc:
+	ldr lr, [r13, #4] //pu_data_permissions
+	sub r12, r13, #(4 * 15)
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x13)
+	ldmia r12, {r0-r14}
+	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
+
+	mcr p15, 0, lr, c5, c0, 2
+
+	//assume the dtcm is always accessible
+	ldr lr, [r13], #(-4 * 15 - 1)
+
+	subs pc, lr, #4
+#endif
 
 //data_abort_handler_r15_dst:
 //	pop {lr}
@@ -135,12 +175,30 @@ address_calc_unknown:
 //	mov r0, r0, lsl #4
 //	orr r2, r2, r3, lsl #8
 //	strh r2, [r12], #2
-
+	msr cpsr_c, #0x91	//enable fiqs
+	mov r0, r10
+	mov r1, r11
 	b .
 
+#ifdef ENABLE_HICODE
+abt_handleArm_load_from_cache:
+	sub r14, r11, #8	
+	bic r14, #0xFE000000
+	and r10, r14, #0x800
+    orr r13, r14, r10, lsl #19	//set
+	mcr p15, 3, r13, c15, c0, 0 //set index
+	mrc p15, 3, r10, c15, c3, 0 //read data
+	b abt_handleArm_cont
+#endif
+
 .global abt_handleArm
-abt_handleArm:	
+abt_handleArm:
 	ldr r10, [r11, #-8]
+#ifdef ENABLE_HICODE
+	cmp r11, #0x08000000
+		bge abt_handleArm_load_from_cache
+abt_handleArm_cont:
+#endif
 	ldr r14, [r12, #0x48] //0x08088008
 .global addrhack1
 addrhack1:
@@ -154,6 +212,10 @@ handleArmHi:
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
 	cmp lr, #(0x12 << 27)
 	beq data_abort_handler_arm_irq
+#ifdef ENABLE_HICODE
+	cmp lr, #(0x13 << 27)
+	beq data_abort_handler_arm_svc
+#endif
 
 .global data_abort_handler_arm_usr_sys
 data_abort_handler_arm_usr_sys:

@@ -156,7 +156,11 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c6, c2, 0
 
 	//region 3	oam vram region	0x06010000-0x06017FFF	2 << 14		-/-/-
+#ifdef ENABLE_HICODE
+	mov r0, #0
+#else
 	ldr r0,= (1 | (14 << 1) | 0x06010000)
+#endif
 	mcr p15, 0, r0, c6, c3, 0
 
 	//bios protection + itcm
@@ -193,7 +197,11 @@ vram_setup_copyloop:
 
 	ldr r0,= pu_data_permissions
 	mcr p15, 0, r0, c5, c0, 2
+#ifdef ENABLE_HICODE
+	ldr r0,= 0x33663303
+#else
 	ldr r0,= 0x33660303
+#endif
 	mcr p15, 0, r0, c5, c0, 3
 
 	//only instruction and data cache for (fake) cartridge
@@ -204,7 +212,9 @@ vram_setup_copyloop:
 	//orr r1, #(1 << 6)
 	//orr r1, #(1 << 7)
 	mov r0, #((1 << 5) | (1 << 6))
-
+#ifdef ENABLE_HICODE
+	orr r0, #(1 << 3)
+#endif
 
 #if defined(ENABLE_WRAM_ICACHE) && !defined(POSTPONED_ICACHE)
 	orr r0, #(1 << 0)
@@ -694,6 +704,23 @@ instruction_abort_handler:
 	cmp lr, #0x0E000000
 	bge instruction_abort_handler_error
 instruction_abort_handler_cont:
+#ifdef ENABLE_HICODE
+	//cmp lr, #ROM_ADDRESS_MAX
+	//blt 1f
+	mcr p15, 0, r13, c5, c0, 0
+	add r13, #1
+	add r13, #(16 * 1024)
+	push {r0-r3,r12,lr}
+	sub r0, lr, #4
+	bl hic_mapCode
+	ldr lr,= pu_data_permissions
+	mcr p15, 0, lr, c5, c0, 2
+	pop {r0-r3,r12,lr}
+	sub r13, #(16 * 1024)
+	sub r13, #1
+	subs pc, lr, #4
+1:
+#endif
 	bic lr, #0x06000000
 	sub lr, #0x05000000
 	sub lr, #0x00FC0000

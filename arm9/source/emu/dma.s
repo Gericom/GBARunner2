@@ -101,6 +101,10 @@ write_dma_control_\offs:
 	//invalidate icache
 	mov r12, #0
 	mcr p15, 0, r12, c7, c5, 0
+#ifdef ENABLE_HICODE
+	//unmap code
+	mcr	p15, 0, r12, c6, c3, 0
+#endif
 #endif
 	//fix mode
 	mov r12, r11, lsr #12

@@ -73,6 +73,10 @@ bios_cpuset_cache_patch:
 	PUSH    {R4,R5,LR}
 	mov r4, #0
 	mcr p15, 0, r4, c7, c5, 0
+#ifdef ENABLE_HICODE
+	//unmap code
+	mcr	p15, 0, r4, c6, c3, 0
+#endif
 	//don't use the armv5 interworking!
 	ldr r4,= (gGbaBios + 0xB4F)
 	bx r4
@@ -82,6 +86,10 @@ bios_cpufastset_cache_patch:
 	STMFD   SP!, {R4-R10,LR}
 	mov r4, #0
 	mcr p15, 0, r4, c7, c5, 0
+#ifdef ENABLE_HICODE
+	//unmap code
+	mcr	p15, 0, r4, c6, c3, 0
+#endif
 	//don't use the armv5 interworking!
 	ldr r4,= (gGbaBios + 0xBC8)
 	bx r4
