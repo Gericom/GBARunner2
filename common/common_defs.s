@@ -1,7 +1,7 @@
 #ifndef __COMMON_DEFS_H__
 #define __COMMON_DEFS_H__
 
-#define ARM7_DLDI
+//#define ARM7_DLDI
 
 //#define USE_DSI_16MB
 //#define USE_3DS_32MB
