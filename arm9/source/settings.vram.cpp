@@ -82,7 +82,7 @@ bool settings_save()
     //writer.WriteBooleanProperty(sEmuSettingAutoSaveName, gEmuSettingAutoSave);
     writer.WriteBooleanProperty(sEmuSettingCenterMaskName, gEmuSettingCenterMask);
     writer.WriteBooleanProperty(sEmuSettingMainMemICacheName, gEmuSettingMainMemICache);
-    //writer.WriteBooleanProperty(sEmuSettingWramICacheName, gEmuSettingWramICache);
+    writer.WriteBooleanProperty(sEmuSettingWramICacheName, gEmuSettingWramICache);
     writer.WriteBooleanProperty(sEmuSettingSkipIntroName, gEmuSettingSkipIntro);
     f_close(&vram_cd->fil);
     return true;

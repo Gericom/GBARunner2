@@ -166,7 +166,7 @@ PUT_IN_VRAM void initialize_cache()
 
 extern "C" PUT_IN_VRAM void sd_write_save()
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	if (!vramcd_uncached->save_work.save_enabled || vramcd_uncached->save_work.save_state != SAVE_WORK_STATE_SDSAVE)
 		return;
 	uint16_t crc = crc16(0xFFFF, vram_cd->save_work.save_fat_table, sizeof(vram_cd->save_work.save_fat_table));
@@ -200,6 +200,10 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	while (*((vu16*)0x04000004) & 1);
 	while (!(*((vu16*)0x04000004) & 1));
 	uiContext->GetUIManager().VBlank();
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+	if(!*((vu32*)0x04004008))
+		uiContext->FatalError("SCFG Locked!");
+#endif
 	if (f_mount(&vram_cd->fatFs, "", 1) != FR_OK)
 		uiContext->FatalError("Couldn't mount sd card!");
 #ifndef ISNITRODEBUG

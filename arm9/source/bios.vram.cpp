@@ -91,7 +91,7 @@ static void applyPatches()
 {
 	//Make bios jump to 02040000
 	//todo: check if this is even needed anymore, it may be handled by prefetch abort just fine
-	gGbaBios[0xCC >> 2] = 0xE3A0E781;
+	//gGbaBios[0xCC >> 2] = 0xE3A0E781;
 
 	//fix post boot redirect
 	//todo: maybe I should correctly implement that register instead

@@ -1,5 +1,6 @@
 #include <nds/arm9/sprite.h>
 #include <nds/arm9/background.h>
+#include "sd_access.h"
 #include "vram.h"
 #include "vramheap.h"
 #include "vector.h"
@@ -25,7 +26,7 @@ static settings_item_t sEmulationItems[] =
     //{ SETTINGS_ITEM_MODE_CHECK, "Enable autosaving", "Writes back the save to sd after a game saves", &gEmuSettingAutoSave },
     { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", &gEmuSettingCenterMask },
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", &gEmuSettingMainMemICache },    
-	//{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", &gEmuSettingWramICache },
+	{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", &gEmuSettingWramICache },
     { SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", &gEmuSettingSkipIntro }
 };
 
@@ -61,11 +62,13 @@ static settings_item_t sInfoItems[] =
 		"ARM 9"
 #endif
 		, NULL },
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Wram i-cache", 
-#ifdef ENABLE_WRAM_ICACHE
-		"On"
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Version", 
+#if defined(USE_DSI_16MB)
+		"DSi"
+#elif defined(USE_3DS_32MB)
+		"3DS"
 #else
-		"Off"
+		"DS"
 #endif
 		, NULL }
 };

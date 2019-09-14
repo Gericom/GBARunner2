@@ -70,6 +70,21 @@ itcm_setup_copyloop:
 	bic r1, #0x8000	//set memory priority to arm9
 	strh r1, [r0]
 
+#if defined(USE_DSI_16MB)
+	//enable 16 MB mode
+	ldr r0,= 0x04004008
+	ldr r1, [r0]
+	bic r1, #(3 << 14)
+	orr r1, #(2 << 14)
+	str r1, [r0]
+#elif defined(USE_3DS_32MB)
+	//enable 32 MB mode
+	ldr r0,= 0x04004008
+	ldr r1, [r0]
+	orr r1, #(3 << 14)
+	str r1, [r0]
+#endif
+
 	//abcd to arm9
 	ldr r0,= 0x4000240
 	mov r1, #0x80
@@ -172,7 +187,13 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c6, c4, 0
 
 	//main memory
+#if defined(USE_DSI_16MB)
+	ldr r0,= (1 | (23 << 1) | 0x0C000000)
+#elif defined(USE_3DS_32MB)
+	ldr r0,= (1 | (24 << 1) | 0x0C000000)
+#else
 	ldr r0,= (1 | (21 << 1) | 0x02000000)
+#endif
 	mcr p15, 0, r0, c6, c5, 0
 
 	//ldr r0,= (1 | (14 << 1) | 0x03000000)
@@ -695,8 +716,8 @@ instruction_abort_handler:
 	bge instruction_abort_handler_error
 instruction_abort_handler_cont:
 	bic lr, #0x06000000
-	sub lr, #0x05000000
-	sub lr, #0x00FC0000
+	add lr, #GBA_ADDR_TO_DS_HIGH
+	add lr, #GBA_ADDR_TO_DS_LOW
 	subs pc, lr, #4
 
 instruction_abort_handler_error:
@@ -712,8 +733,8 @@ instruction_abort_handler_error:
 	ldr r12, [r13, #1]
 	subs pc, lr, #4
 instruction_abort_handler_error_cont:
-	add r12, lr, #0x5000000
-	add r12, #0x0FC0000
+	sub r12, lr, #GBA_ADDR_TO_DS_HIGH
+	sub r12, #GBA_ADDR_TO_DS_LOW
 	cmp r12, #0x08000000
 	blt instruction_abort_handler_error_2
 	cmp r12, #0x0E000000

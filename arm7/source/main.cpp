@@ -28,6 +28,14 @@ int main()
 
 	*((vu32*)0x0380FFFC) = (vu32)&my_irq_handler;
 
+#if defined(USE_DSI_16MB)
+	//enable 16 MB mode
+	*((vu32*)0x04004008) = (*((vu32*)0x04004008) & ~(3 << 14)) | (2 << 14); 
+#elif defined(USE_3DS_32MB)
+	//enable 32 MB mode
+	*((vu32*)0x04004008) = (*((vu32*)0x04004008) & ~(3 << 14)) | (3 << 14); 
+#endif
+
 	REG_IME = 1;
 
 	//*((vu16*)0x04000004) = 0x20 | (160 << 8);

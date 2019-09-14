@@ -135,11 +135,8 @@ read_address_from_handler_rom_32:
 	bx lr
 
 read_address_from_handler_rom_in_mem_32:
-	//bic r10, r9, #0x06000000
-	//sub r10, r10, #0x05000000
-	//sub r10, r10, #0x00FC0000
-	add r10, r10, #0x02000000
-	add r10, r10, #0x00040000
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0xFF000000)
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0x00FF0000)
 	ldr r10, [r10]
 	bx lr
 
@@ -293,11 +290,8 @@ read_address_from_handler_rom_16:
 	bx lr
 
 read_address_from_handler_rom_in_mem_16:
-	//bic r10, r9, #0x06000000
-	//sub r10, r10, #0x05000000
-	//sub r10, r10, #0x00FC0000
-	add r10, r10, #0x02000000
-	add r10, r10, #0x00040000
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0xFF000000)
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0x00FF0000)
 	ldrh r10, [r10]
 	tst r9, #1
 		movne r10, r10, ror #8
@@ -454,11 +448,8 @@ read_address_from_handler_rom_8:
 	bx lr
 
 read_address_from_handler_rom_in_mem_8:
-	//bic r10, r9, #0x06000000
-	//sub r10, r10, #0x05000000
-	//sub r10, r10, #0x00FC0000
-	add r10, r10, #0x02000000
-	add r10, r10, #0x00040000
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0xFF000000)
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0x00FF0000)
 	ldrb r10, [r10]
 	bx lr
 
