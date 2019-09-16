@@ -70,11 +70,11 @@ extern "C" ITCM_CODE __attribute__ ((noinline)) void read_sd_sectors_safe(sec_t 
 //map cd to arm7
 //REG_VRAMCNT_CD = VRAM_CD_ARM7;
 	//REG_VRAMCNT_C = VRAM_C_ARM7;
-	dc_invalidate_range(buffer, numSectors * 512);
 	REG_SEND_FIFO = 0xAA5500DF;
 	REG_SEND_FIFO = sector;
 	REG_SEND_FIFO = numSectors;
 	REG_SEND_FIFO = (uint32_t)buffer;//arm7_address;
+	dc_invalidate_range(buffer, numSectors * 512);
 	//wait for response
 	do
 	{
@@ -193,6 +193,7 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
 	vramheap_init();
+	*(vu32*)0x04000000 = 0xA0000;
     *(vu8*)0x04000243 = 0x84;
 	*(vu8*)0x04000249 = 0x00;
 	UIContext* uiContext = new UIContext();
