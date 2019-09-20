@@ -29,9 +29,9 @@ write_address_from_handler_io_32:
 	bic r9, #3 //force align
 	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
-	bxge lr
-	mov r13, r13, lsr #1
+		bxge lr
 	ldr r12,= write_table_32bit_dtcm_new
+	mov r13, r13, lsr #1
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 
@@ -109,10 +109,10 @@ write_address_from_handler_16bit:
 	.word write_address_from_handler_sram_16
 
 write_address_from_handler_io_16:
+	ldr r12,= write_table_16bit_dtcm_new
 	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
-	bxge lr
-	ldr r12,= write_table_16bit_dtcm_new
+		bxge lr
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 
@@ -200,8 +200,8 @@ write_address_from_handler_io_8:
 	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
 	bxge lr
-	mov r13, r13, lsl #1
 	ldr r12,= write_table_8bit_dtcm_new
+	mov r13, r13, lsl #1
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 

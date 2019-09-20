@@ -33,9 +33,9 @@ thumb6_address_calc:
 .macro create_thumb7_variant l, bw
 .global thumb7_address_calc_\l\bw
 thumb7_address_calc_\l\bw:
+	ldr r9, [r12, #0x5C] //0xE0809000
 	and r12, r10, #(7 << 3)
 	and r13, r10, #(7 << 6)
-	ldr r9,= 0xE0809000
 	orr r8, r12, r13, lsl #13
 	orr r8, r9, r8, lsr #3
 	str r8, 1f
@@ -83,9 +83,9 @@ create_thumb7_variant 1,1
 .macro create_thumb8_variant x, y
 .global thumb8_address_calc_\x\y
 thumb8_address_calc_\x\y:
+	ldr r9, [r12, #0x5C] //0xE0809000
 	and r12, r10, #(7 << 3)
 	and r13, r10, #(7 << 6)
-	ldr r9,= 0xE0809000
 	orr r8, r12, r13, lsl #13
 	orr r8, r9, r8, lsr #3
 	str r8, 1f
