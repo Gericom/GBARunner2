@@ -1,6 +1,7 @@
 #include "vram.h"
 #include "consts.s"
 #include "romGpioRtc.h"
+#include "romGpioGyro.h"
 #include "romGpio.h"
 
 struct game_hw_info_t
@@ -58,6 +59,10 @@ static game_hw_info_t sGameHardwareTable[] =
 
 	// Shin Bokura no Taiyou: Gyakushuu no Sabata
 	{ GAMECODE('U33J'), RIO_RTC | RIO_LIGHT },
+
+	{ GAMECODE('RZWJ'), RIO_RUMBLE | RIO_GYRO },
+	{ GAMECODE('RZWE'), RIO_RUMBLE | RIO_GYRO },
+	{ GAMECODE('RZWP'), RIO_RUMBLE | RIO_GYRO },
 };
 
 #define RIO_REG_DATA        0xC4
@@ -87,12 +92,16 @@ void rio_init(RomGpioHwMask forceHwMask)
     gRioGpioControl = 0;
     if(sGpioHwMask & RIO_RTC)
         rio_rtcInit();
+	if(sGpioHwMask & RIO_GYRO)
+		rio_gyroInit();
 }
 
 static void updateHardware()
 {
     if(sGpioHwMask & RIO_RTC)
         rio_rtcUpdate();
+	if(sGpioHwMask & RIO_GYRO)
+		rio_gyroUpdate();
 }
 
 extern "C" void rio_write(u32 addr, u16 val)

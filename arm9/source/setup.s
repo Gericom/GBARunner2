@@ -332,6 +332,14 @@ dtcm_setup_copyloop:
 #endif
 	//str r3, [r0]
 
+#ifdef USE_3DS_32MB
+	ldr r2,= a11ucode_uc11
+	str r2, [r0]
+	ldr r2,= a11ucode_uc11_size
+	ldr r2, [r2]
+	str r2, [r0]
+#endif
+
 	//wait for the arm7 sync command
 	ldr r3,= 0x55AAAA55
 	ldr r2,= 0x06202000

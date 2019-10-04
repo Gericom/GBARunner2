@@ -7,12 +7,90 @@
 #include "dldi_handler.h"
 #include "../../common/fifo.h"
 #include "../../common/common_defs.s"
+#include "rtcom/rtcom.h"
 
-static void vblank_handler()
+#ifdef USE_3DS_32MB
+enum RtcomState
 {
+	RTCOM_STATE_OFF,
+	RTCOM_STATE_EXEC_UCODE3_ACK
+};
+
+static bool sRtcomInitialized = false;
+static RtcomState sRtcomState = RTCOM_STATE_OFF;
+static s16 sRtcomGyroZTmp;
+static bool sGyroEnabled = false;
+//static volatile bool sSampleGyro = false;
+
+
+extern "C" void rtcomIrq()
+{
+	switch(sRtcomState)
+	{
+		case RTCOM_STATE_EXEC_UCODE3_ACK:
+		{
+			//sSampleGyro = true;
+			s16 gyro0 = rtcom_getData();
+			rtcom_requestNext(4);
+			vram_cd->gyroZ = gyro0 | (rtcom_getData() << 8);
+			rtcom_requestKill();
+			if(sGyroEnabled)
+			{
+				sRtcomState = RTCOM_STATE_EXEC_UCODE3_ACK;
+				rtcom_requestAsync(RTCOM_REQ_EXECUTE_UCODE, 3);
+			}
+			else
+			{
+				REG_IE &= ~IRQ_NETWORK;
+				sRtcomState = RTCOM_STATE_OFF;
+				rtcom_endComm();
+			}
+			break;
+		}
+	}
 }
 
+// static void sampleGyro()
+// {
+// 	sSampleGyro = false;
+// 	REG_IE &= ~IRQ_NETWORK;
+// 	s16 gyro0 = rtcom_getData();
+// 	rtcom_requestNext(4);
+// 	vram_cd->gyroZ = gyro0 | (rtcom_getData() << 8);
+// 	rtcom_requestKill();
+// 	if(sGyroEnabled)
+// 	{
+// 		REG_IE |= IRQ_NETWORK;
+// 		sRtcomState = RTCOM_STATE_IDLE;
+// 		rtcom_requestAsync(RTCOM_STAT_DONE);
+// 	}
+// 	else
+// 	{
+// 		sRtcomState = RTCOM_STATE_OFF;
+// 		rtcom_endComm();
+// 	}
+// }
+#endif
+
+// extern "C" void vblankHandler()
+// {
+// #ifdef USE_3DS_32MB
+// 	int savedIrq = enterCriticalSection();
+// 	{
+// 		rtcom_beginComm();
+// 		updateGyro();
+// 		rtcom_requestKill();
+// 		rtcom_requestAsync(RTCOM_STAT_DONE);
+// 		rtcom_endComm();
+// 	}
+// 	leaveCriticalSection(savedIrq);
+// #endif
+// }
+
 extern "C" void my_irq_handler();
+
+#ifdef USE_3DS_32MB
+#endif
 
 int main()
 {
@@ -62,12 +140,35 @@ int main()
 #ifdef ARM7_DLDI
 	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
-	memcpy((void*)0x03806800, dldi_src, 32 * 1024);
+	memcpy((void*)0x0380A800, dldi_src, 16 * 1024);
 	if(!dldi_handler_init())
 	{
 		REG_SEND_FIFO = 0x46494944;
 		while(1);
 	}
+#endif
+#ifdef USE_3DS_32MB
+	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+	void* uc11Addr = (void*)REG_RECV_FIFO;
+	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+	u32 uc11Size = REG_RECV_FIFO;
+	int savedIrq = enterCriticalSection();
+	{
+		rtcom_beginComm();
+		rtcom_requestAsync(1);
+		rtcom_waitStatus(RTCOM_STAT_DONE);
+		rtcom_uploadUCode(uc11Addr, uc11Size);
+		rtcom_requestKill();
+		if(rtcom_executeUCode(0xFF)) //mcu init
+			sRtcomInitialized = true;
+		rtcom_requestKill();
+		rtcom_requestAsync(RTCOM_STAT_DONE);
+		rtcom_endComm();
+	}
+	leaveCriticalSection(savedIrq);
+
+	sGyroEnabled = false;
+	sRtcomState = RTCOM_STATE_OFF;
 #endif
 
 	//int oldirq = enterCriticalSection();
@@ -108,13 +209,24 @@ int main()
 	//fifo loop
 	//vu32 val;
 	//int frameOffset = 0;
+
 	while (1)
 	{
 		while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 		{
 			if (!(*((vu32*)0x04000136) & 1))
 				gba_sound_resync();
+
+// #ifdef USE_3DS_32MB
+// 			if(sSampleGyro)
+// 				sampleGyro();
+// #endif
 		}
+
+// #ifdef USE_3DS_32MB
+// 		if(sSampleGyro)
+// 			sampleGyro();
+// #endif
 
 		u32 cmd = REG_RECV_FIFO;
 		//if((cmd >> 16) != 0xAA55)
@@ -205,6 +317,21 @@ int main()
 					REG_SEND_FIFO = *(u32*)&dateTime[4];
 					break;
 				}
+#ifdef USE_3DS_32MB
+			case 0xAA550101: //enable gyro sampling
+				if(sRtcomState == RTCOM_STATE_OFF)
+				{
+					sGyroEnabled = true;
+					rtcom_beginComm();
+					REG_IE |= IRQ_NETWORK;
+					sRtcomState = RTCOM_STATE_EXEC_UCODE3_ACK;
+					rtcom_requestAsync(RTCOM_REQ_EXECUTE_UCODE, 3);
+				}
+				break;
+			case 0xAA550102: //disable gyro sampling
+				sGyroEnabled = false;
+				break;
+#endif
 			case 0x040000A0:
 				while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 				val = REG_RECV_FIFO;

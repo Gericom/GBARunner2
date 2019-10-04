@@ -5,6 +5,8 @@ typedef u16 RomGpioHwMask;
 #define RIO_NONE    0
 #define RIO_RTC     (1 << 0)
 #define RIO_LIGHT   (1 << 1)
+#define RIO_RUMBLE  (1 << 2)
+#define RIO_GYRO    (1 << 3)
 
 extern u16 gRioGpioData;
 extern u16 gRioGpioDirection;
