@@ -347,6 +347,9 @@ cap_control:
 	mov r2, #0x84
 	strneb r2, [r12, #0x242]
 	streqb r2, [r12, #0x243]
+	movne r2, #0x00
+	moveq r2, #0x81
+	strb r2, [r12, #0x249]
 	orr r1, #0x80000000
 	str r1, [r12, #0x64]
 
@@ -370,6 +373,7 @@ cap_control:
 	mov r3, r1, lsr #3
 	mov r3, r3, lsl #5
 	add r3, r3, r0, lsr #3
+	add r3, #512
 	orr r3, #0xF000 //fully visible
 	strh r3, [r2], #4
 

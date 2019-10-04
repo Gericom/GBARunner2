@@ -102,7 +102,7 @@ itcm_setup_copyloop:
 	strb r1, [r0]
 
 	//setup display capture
-	ldr r0,= 0x320000
+	ldr r0,= (0x320000 | (1 << 19))
 	ldr r1,= 0x4000064
 	str r0, [r1]
 
@@ -397,14 +397,6 @@ dldi_name_copy:
 	ldr r0,= pu_data_permissions
 	mcr p15, 0, r0, c5, c0, 2
 
-	ldr r0,= 0x04001000
-	ldr r1,= 0x10801
-	str r1, [r0]
-
-	ldr r0,= 0x0400100E
-	ldr r1,= 0x4400
-	strh r1, [r0]
-
 	ldr r0,= 0x04001030
 	ldr r1,= 0x100
 	strh r1, [r0]
@@ -418,9 +410,11 @@ dldi_name_copy:
 
 	//more displaycap stuff
 	ldr r0,= 0x04001000
-	ldr r1,= 0x13823
+	ldr r1,= 0x40013923 //0x13923
 	str r1, [r0]
-	ldr r1,= 0x4084
+	ldr r1,= 0x1788
+	strh r1, [r0, #0x8]
+	ldr r1,= (0x4084 | (1 << 10))
 	strh r1, [r0, #0xE]
 
 	ldr r2,= gEmuSettingCenterMask
@@ -440,7 +434,7 @@ dldi_name_copy:
 	strh r1, [r0, #0x44]
 	mov r1, #0x18
 	strh r1, [r0, #0x48]
-	mov r1, #(1 << 5)
+	mov r1, #1 //(1 << 5)
 	strh r1, [r0, #0x4A]
 	mov r1, #0x10
 	strh r1, [r0, #0x54]
@@ -467,6 +461,7 @@ skip_center_mask:
 	mov r3, r1, lsr #3
 	mov r3, r3, lsl #5
 	add r3, r3, r0, lsr #3
+	add r3, #512
 	orr r3, #0xF000 //fully visible
 	strh r3, [r2], #4
 
@@ -481,7 +476,7 @@ skip_center_mask:
 	//disable vram h and i
 	ldr r0,= 0x04000248
 	mov r1, #0x00
-	strb r1, [r0]
+	//strb r1, [r0]
 	strb r1, [r0, #1]
 
 	//disable the 3d geometry and render engine and swap the screens
@@ -508,6 +503,13 @@ skip_center_mask:
 	ldrne r0,= 0x0400106C
 	ldr r1,= 0x801F
 	strh r1, [r0]
+
+	ldr r2,= gEmuSettingGbaColors
+	ldr r2, [r2]
+	cmp r2, #1
+	eoreq r0, #0x1000
+	ldreq r1,= 0x8008
+	streqh r1, [r0]
 
 	//Copy GBA Bios in place
 //	ldr r0,= bios_tmp

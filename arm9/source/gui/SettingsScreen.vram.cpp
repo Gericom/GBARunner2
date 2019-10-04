@@ -24,9 +24,11 @@ static settings_item_t sEmulationItems[] =
 {    
 	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
     //{ SETTINGS_ITEM_MODE_CHECK, "Enable autosaving", "Writes back the save to sd after a game saves", &gEmuSettingAutoSave },
+    { SETTINGS_ITEM_MODE_CHECK, "Enable border frame", "Enables the usage of gba border frames", &gEmuSettingFrame },
     { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", &gEmuSettingCenterMask },
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", &gEmuSettingMainMemICache },    
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", &gEmuSettingWramICache },
+	{ SETTINGS_ITEM_MODE_CHECK, "Simulate GBA colors", "Darkens the colors to simulate a GBA screen", &gEmuSettingGbaColors },
     { SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", &gEmuSettingSkipIntro }
 };
 
