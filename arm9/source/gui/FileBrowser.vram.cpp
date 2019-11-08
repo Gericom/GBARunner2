@@ -43,10 +43,12 @@ void FileBrowser::LoadFolder(const char* path)
 	{
 		if (f_readdir(&vram_cd->dir, &info) != FR_OK)
 			_uiContext->FatalError("Error while reading directory!");
-		if (info.fattrib & (AM_SYS | AM_HID))
-			continue;
+		//First check end of directory, otherwise attributes are not valid!	
 		if (info.fname[0] == 0)
 			break;
+		//Don't show system and hidden files
+		if (info.fattrib & (AM_SYS | AM_HID))
+			continue;
 		uint8_t* point_ptr = (uint8_t*)strrchr(info.fname, '.');
 		if (info.fattrib & AM_DIR || (point_ptr && !strcasecmp((char*)point_ptr, ".gba")))
 		{
