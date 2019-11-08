@@ -60,7 +60,7 @@ void gptc_patchRom()
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2138) = (u32)&gptc_banjoPilotFix + 1;
 		}
 	}
-	/*else if (gameTitle0 == 0x4C415256 && gameTitle1 == 0x3320594C && gameTitle2 == 0x00000000 && gameCode == 0x45525641)
+	else if (gameTitle0 == 0x4C415256 && gameTitle1 == 0x3320594C && gameTitle2 == 0x00000000 && gameCode == 0x45525641)
 	{
 		//V-Rally 3 (USA) (En,Fr,Es)
 		//remove writeback from ldm
@@ -75,7 +75,39 @@ void gptc_patchRom()
 
 		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC71C) == 0xE8B2001C)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC71C) = 0xE892001C;
-	}*/
+	}
+	else if (gameTitle0 == 0x4C415256 && gameTitle1 == 0x3320594C && gameTitle2 == 0x00000000 && gameCode == 0x4A525641)
+	{
+		//V-Rally 3 (Japan)
+		//remove writeback from ldm
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6CEC8) == 0xE8B00001)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6CEC8) = 0xE8900001;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x78E50) == 0xE8B00001)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x78E50) = 0xE8900001;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FD508) == 0xE8B2001C)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FD508) = 0xE892001C;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FD58C) == 0xE8B2001C)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FD58C) = 0xE892001C;
+	}
+	else if (gameTitle0 == 0x41522D56 && gameTitle1 == 0x20594C4C && gameTitle2 == 0x00000033 && gameCode == 0x50525641)
+	{
+		//V-Rally 3 (Europe) (En,Fr,De,Es,It)
+		//remove writeback from ldm
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6BBA0) == 0xE8B00001)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6BBA0) = 0xE8900001;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x77B0C) == 0xE8B00001)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x77B0C) = 0xE8900001;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC1C4) == 0xE8B2001C)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC1C4) = 0xE892001C;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC248) == 0xE8B2001C)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC248) = 0xE892001C;
+	}
 	/*else if(gameTitle0 == 0x4E534944 && gameTitle1 == 0x4F565945 && gameTitle2 == 0x3130304C && gameCode == 0x4543444D)
 	{
 		//Game Boy Advance Video - Disney Channel Collection - Volume 1 (USA)

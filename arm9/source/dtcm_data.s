@@ -17,7 +17,15 @@ cpu_mode_switch_dtcm:
 .global dbgDatarightsTmp
 dbgDatarightsTmp:
 	.word 0
-.rept 11
+ //for arml_instLdrhStrh
+	.word 0x000F000F //0x50
+	.word 0xE0800000 //0x54
+	.word 0xE0400000 //0x58
+	.word 0xE0809000 //0x5C
+	.word 0xE0409000 //0x60
+//for arml_instLdrStr	
+	.word 0x000F0FFF //0x64
+.rept 5
 	.word 0
 .endr
 	.word data_abort_handler_arm_usr_sys //usr

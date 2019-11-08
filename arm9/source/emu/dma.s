@@ -229,8 +229,8 @@ dma_rom_src_\offs:
 	bgt dma_rom_from_sd_\offs
 5:
 	//fix the address and perform the dma normally
-	sub r13, #0x05000000
-	sub r13, #0x00FC0000
+	add r13, #GBA_ADDR_TO_DS_HIGH
+	add r13, #GBA_ADDR_TO_DS_LOW
 	str r13, [r9, #(-8 - \offs)] //store in actual src register
 	b 4b
 

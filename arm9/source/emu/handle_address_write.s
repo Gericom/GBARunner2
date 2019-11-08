@@ -29,9 +29,9 @@ write_address_from_handler_io_32:
 	bic r9, #3 //force align
 	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
-	bxge lr
-	mov r13, r13, lsr #1
+		bxge lr
 	ldr r12,= write_table_32bit_dtcm_new
+	mov r13, r13, lsr #1
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 
@@ -99,7 +99,7 @@ write_address_from_handler_16bit:
 	.word write_address_ignore
 	.word write_address_from_handler_vram_16
 	.word write_address_ignore
-	.word write_address_ignore
+	.word write_address_from_handler_rom_gpio_16
 	.word write_address_ignore
 	.word write_address_ignore
 	.word write_address_ignore
@@ -109,10 +109,10 @@ write_address_from_handler_16bit:
 	.word write_address_from_handler_sram_16
 
 write_address_from_handler_io_16:
+	ldr r12,= write_table_16bit_dtcm_new
 	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
-	bxge lr
-	ldr r12,= write_table_16bit_dtcm_new
+		bxge lr
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 
@@ -142,6 +142,21 @@ write_address_from_handler_vram_16:
 1:
 	add r10, #0x3F0000
 	strh r11, [r10]
+	bx lr
+
+write_address_from_handler_rom_gpio_16:
+	ldr r13,= 0x080000C4
+	subs r13, r9, r13
+		bxlt lr
+	cmp r13, #0x4
+		bxgt lr
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r3,lr}
+	mov r0, r9
+	mov r1, r11
+	ldr r12,= rio_write
+	blx r12
+	pop {r0-r3,lr}
 	bx lr
 
 write_address_from_handler_sram_16:
@@ -185,8 +200,8 @@ write_address_from_handler_io_8:
 	sub r13, r9, #0x04000000
 	cmp r13, #0x20C
 	bxge lr
-	mov r13, r13, lsl #1
 	ldr r12,= write_table_8bit_dtcm_new
+	mov r13, r13, lsl #1
 	ldrh r13, [r12, r13]
 	orr pc, r13, #0x01000000	//itcm
 

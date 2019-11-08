@@ -63,8 +63,8 @@ read_address_from_handler_bios_32:
 read_address_from_handler_io_32:
 	sub r12, r9, #0x04000000
 	cmp r12, #0x20C
-		movlt r12, r12, lsr #1
 		ldrlt r13,= read_table_32bit_dtcm_new
+		movlt r12, r12, lsr #1
 		ldrlth r13, [r13, r12]
 		orrlt pc, r13, #0x01000000	//itcm
 	b read_address_undefined_memory_32
@@ -96,15 +96,14 @@ read_address_from_handler_rom_32:
 	cmp r9, #ROM_ADDRESS_MAX//r12
 		blt read_address_from_handler_rom_in_mem_32
 
-	mov r13, r10, lsr #8
-
 	ldr r12,= sd_is_cluster_cached_table
+	mov r13, r10, lsr #8
 	ldrsh r13, [r12, r13]
+	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	cmp r13, #0
 		blt read_address_from_handler_rom_32_not_cached
 
 #ifdef CACHE_STRATEGY_LRU_LIST
-	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	ldr r11, [r12, r13, lsl #2]
 
 	//cache_linked_list[curBlock->next].prev = curBlock->prev;
@@ -127,19 +126,16 @@ read_address_from_handler_rom_32:
 	str r11, [r12, r13, lsl #2]
 #endif
 
-	mov r10, r9, lsl #23
 	ldr r12,= sd_cluster_cache
+	mov r10, r9, lsl #23
 	add r11, r12, r13, lsl #9
 	ldr r10, [r11, r10, lsr #23]
 
 	bx lr
 
 read_address_from_handler_rom_in_mem_32:
-	//bic r10, r9, #0x06000000
-	//sub r10, r10, #0x05000000
-	//sub r10, r10, #0x00FC0000
-	add r10, r10, #0x02000000
-	add r10, r10, #0x00040000
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0xFF000000)
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0x00FF0000)
 	ldr r10, [r10]
 	bx lr
 
@@ -219,8 +215,8 @@ read_address_from_handler_bios_16:
 
 read_address_from_handler_io_16:
 	sub r12, r9, #0x04000000
+	ldr r13,= read_table_16bit_dtcm_new
 	cmp r12, #0x20C
-		ldrlt r13,= read_table_16bit_dtcm_new
 		ldrlth r13, [r13, r12]
 		orrlt pc, r13, #0x01000000	//itcm
 	b read_address_undefined_memory_16
@@ -252,15 +248,14 @@ read_address_from_handler_rom_16:
 	cmp r9, #ROM_ADDRESS_MAX //r12
 		blt read_address_from_handler_rom_in_mem_16
 
-	mov r13, r10, lsr #8
-
 	ldr r12,= sd_is_cluster_cached_table
+	mov r13, r10, lsr #8
 	ldrsh r13, [r12, r13]
+	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	cmp r13, #0
 		blt read_address_from_handler_rom_16_not_cached
 
 #ifdef CACHE_STRATEGY_LRU_LIST
-	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	ldr r11, [r12, r13, lsl #2]
 
 	//cache_linked_list[curBlock->next].prev = curBlock->prev;
@@ -283,9 +278,9 @@ read_address_from_handler_rom_16:
 	str r11, [r12, r13, lsl #2]
 #endif
 
+	ldr r12,= sd_cluster_cache
 	mov r10, r9, lsl #23
 	mov r10, r10, lsr #23
-	ldr r12,= sd_cluster_cache
 	add r12, r13, lsl #9
 	ldrh r10, [r12, r10]
 	tst r9, #1
@@ -293,11 +288,8 @@ read_address_from_handler_rom_16:
 	bx lr
 
 read_address_from_handler_rom_in_mem_16:
-	//bic r10, r9, #0x06000000
-	//sub r10, r10, #0x05000000
-	//sub r10, r10, #0x00FC0000
-	add r10, r10, #0x02000000
-	add r10, r10, #0x00040000
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0xFF000000)
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0x00FF0000)
 	ldrh r10, [r10]
 	tst r9, #1
 		movne r10, r10, ror #8
@@ -386,8 +378,8 @@ read_address_from_handler_bios_8:
 read_address_from_handler_io_8:
 	sub r12, r9, #0x04000000
 	cmp r12, #0x20C
-		movlt r12, r12, lsl #1
 		ldrlt r13,= read_table_8bit_dtcm_new
+		movlt r12, r12, lsl #1
 		ldrlth r13, [r13, r12]
 		orrlt pc, r13, #0x01000000	//itcm
 	b read_address_undefined_memory_8
@@ -416,15 +408,14 @@ read_address_from_handler_rom_8:
 	cmp r9, #ROM_ADDRESS_MAX//r12
 		blt read_address_from_handler_rom_in_mem_8
 
-	mov r13, r10, lsr #8
-
 	ldr r12,= sd_is_cluster_cached_table
+	mov r13, r10, lsr #8
 	ldrsh r13, [r12, r13]
+	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	cmp r13, #0
-	blt read_address_from_handler_rom_8_not_cached
+		blt read_address_from_handler_rom_8_not_cached
 
 #ifdef CACHE_STRATEGY_LRU_LIST
-	add r12, #(sd_cluster_cache_linked_list - sd_is_cluster_cached_table)
 	ldr r11, [r12, r13, lsl #2]
 
 	//cache_linked_list[curBlock->next].prev = curBlock->prev;
@@ -447,18 +438,15 @@ read_address_from_handler_rom_8:
 	str r11, [r12, r13, lsl #2]
 #endif
 
-	mov r10, r9, lsl #23
 	ldr r12,= sd_cluster_cache
+	mov r10, r9, lsl #23
 	add r12, r13, lsl #9
 	ldrb r10, [r12, r10, lsr #23]
 	bx lr
 
 read_address_from_handler_rom_in_mem_8:
-	//bic r10, r9, #0x06000000
-	//sub r10, r10, #0x05000000
-	//sub r10, r10, #0x00FC0000
-	add r10, r10, #0x02000000
-	add r10, r10, #0x00040000
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0xFF000000)
+	add r10, r10, #(MAIN_MEMORY_ADDRESS_ROM_DATA & 0x00FF0000)
 	ldrb r10, [r10]
 	bx lr
 

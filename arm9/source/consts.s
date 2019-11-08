@@ -4,19 +4,6 @@
 #include "../../common/common_defs.s"
 
 #define address_dtcm 0x07800000 //0x01800000
-//#define reg_table address_dtcm
-
-//#define address_count_bit_table (address_dtcm + 0x40)
-
-//#define address_read_table_32bit_dtcm (address_dtcm + 0x86C) //0x1000086C
-//#define address_read_table_16bit_dtcm (address_dtcm + 0x974) //0x10000974
-//#define address_read_table_8bit_dtcm (address_dtcm + 0xB80) //0x10000B80
-
-//#define address_write_table_32bit_dtcm (address_dtcm + 0x140) //0x10000140
-//#define address_write_table_16bit_dtcm (address_dtcm + 0x248) //0x10000248
-//#define address_write_table_8bit_dtcm (address_dtcm + 0x454) //0x10000454
-
-//#define address_thumb_table_dtcm (address_dtcm + 0xFA0) //(address_dtcm + 0xF98)
 
 #define pu_data_permissions 0x33600003 //0x33600603 //0x33600003 //0x33660003
 
@@ -38,7 +25,7 @@
 //This is not good for games that use a lot of
 //self-modifying code for instance.
 //In general it's better to keep it off
-//#define ENABLE_WRAM_ICACHE
+#define ENABLE_WRAM_ICACHE
 //#define POSTPONED_ICACHE
 
 //for collecting statistics about the instruction being handled

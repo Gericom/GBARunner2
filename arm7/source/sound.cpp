@@ -1,7 +1,7 @@
 #include <nds.h>
 #include <string.h>
 #include "timer.h"
-#include "fifo.h"
+#include "../../common/fifo.h"
 #include "../../common/sd_vram.h"
 #include "lock.h"
 #include "sound.h"

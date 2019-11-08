@@ -5,7 +5,7 @@
 #include "gbsound.h"
 #include "save.h"
 #include "dldi_handler.h"
-#include "fifo.h"
+#include "../../common/fifo.h"
 #include "../../common/common_defs.s"
 
 static void vblank_handler()
@@ -27,6 +27,14 @@ int main()
 	REG_IF = ~0;
 
 	*((vu32*)0x0380FFFC) = (vu32)&my_irq_handler;
+
+#if defined(USE_DSI_16MB)
+	//enable 16 MB mode
+	*((vu32*)0x04004008) = (*((vu32*)0x04004008) & ~(3 << 14)) | (2 << 14); 
+#elif defined(USE_3DS_32MB)
+	//enable 32 MB mode
+	*((vu32*)0x04004008) = (*((vu32*)0x04004008) & ~(3 << 14)) | (3 << 14); 
+#endif
 
 	REG_IME = 1;
 
@@ -184,6 +192,17 @@ int main()
 						reg++;
 						val >>= 8;
 					}
+					break;
+				}
+			case 0xAA550100: //get rtc data
+				{
+					u8 dateTime[8];
+					u8 cmd = READ_TIME_AND_DATE;
+					rtcTransaction(&cmd, 1, dateTime, 7);
+					cmd = READ_STATUS_REG1;
+					rtcTransaction(&cmd, 1, &dateTime[7], 1);
+					REG_SEND_FIFO = *(u32*)&dateTime[0];
+					REG_SEND_FIFO = *(u32*)&dateTime[4];
 					break;
 				}
 			case 0x040000A0:

@@ -91,7 +91,7 @@ static const u8 sVerifyFlashSector512V130Sig[0x10] =
 
 extern "C" u16 eraseFlashChip_impl()
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	u8*        pSave = (u8*)MAIN_MEMORY_ADDRESS_SAVE_DATA;
 	//disable irqs
 	u32 irq = *(vu32*)0x04000208;
@@ -112,7 +112,7 @@ GBA_INTERWORK_BRIDGE(eraseFlashChip)
 
 extern "C" u16 eraseFlashSector_impl(u16 secNo)
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	u8*        pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (secNo << 12));
 	//disable irqs
 	u32 irq = *(vu32*)0x04000208;
@@ -144,7 +144,7 @@ GBA_INTERWORK_BRIDGE(programFlashSector512)
 //todo: account for rom source
 extern "C" u16 programFlashSector1M_impl(u16 secNo, u8* src)
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	u8*        pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (secNo << 12));
 	//disable irqs
 	u32 irq = *(vu32*)0x04000208;
@@ -165,7 +165,7 @@ GBA_INTERWORK_BRIDGE(programFlashSector1M)
 
 extern "C" u16 programFlashByte1M_impl(u16 secNo, u32 offset, u8 data)
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	u8*        pSave = (u8*)(MAIN_MEMORY_ADDRESS_SAVE_DATA + (secNo << 12) + offset);
 	//disable irqs
 	u32 irq = *(vu32*)0x04000208;
