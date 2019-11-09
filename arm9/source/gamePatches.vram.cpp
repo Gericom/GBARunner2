@@ -5,6 +5,14 @@
 static const u8 sSomeBuggedMixer[16] =
 	{0xF0, 0x1F, 0x2D, 0xE9, 0x0F, 0x00, 0xB0, 0xE8, 0x03, 0x32, 0xA0, 0xE1, 0x01, 0x20, 0x82, 0xE0};
 
+// static const u8 sStarWarsNewDroidArmyPatch[40] = {
+// 	0x00, 0x30, 0xA0, 0xE1, 0xFF, 0x7F, 0x83, 0xE8, 0x40, 0x30, 0x80, 0xE2,
+// 	0xFF, 0x7F, 0x93, 0xE8, 0x1E, 0xFF, 0x2F, 0xE1, 0x40, 0x30, 0x80, 0xE2,
+// 	0xFF, 0x7F, 0x83, 0xE8, 0x00, 0x30, 0xA0, 0xE1, 0xFF, 0x7F, 0x93, 0xE8,
+// 	0x1E, 0xFF, 0x2F, 0xE1
+// };
+
+
 extern "C" void gptc_banjoPilotFix();
 
 void gptc_patchRom()
@@ -14,11 +22,8 @@ void gptc_patchRom()
 	if (buggedMixer)
 		buggedMixer[1] = 0xE890000F;
 
-	u32 gameTitle0 = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xA0);
-	u32 gameTitle1 = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xA4);
-	u32 gameTitle2 = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xA8);
 	u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);
-	if(gameTitle0 == 0x4A4E4142 && gameTitle1 == 0x4950204F && gameTitle2 == 0x544F4C && (gameCode == 0x504A4142 || gameCode == 0x454A4142))
+	if(gameCode == 0x504A4142 || gameCode == 0x454A4142)
 	{
 		//Banjo-Pilot (Europe) (En,Fr,De,Es,It) and Banjo-Pilot (USA)
 		//Prevent race condition from happening
@@ -29,7 +34,7 @@ void gptc_patchRom()
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2138) = (u32)&gptc_banjoPilotFix + 1;
 		}
 	}
-	else if (gameTitle0 == 0x4C415256 && gameTitle1 == 0x3320594C && gameTitle2 == 0x00000000 && gameCode == 0x45525641)
+	else if (gameCode == 0x45525641)
 	{
 		//V-Rally 3 (USA) (En,Fr,Es)
 		//remove writeback from ldm
@@ -45,7 +50,7 @@ void gptc_patchRom()
 		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC71C) == 0xE8B2001C)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC71C) = 0xE892001C;
 	}
-	else if (gameTitle0 == 0x4C415256 && gameTitle1 == 0x3320594C && gameTitle2 == 0x00000000 && gameCode == 0x4A525641)
+	else if (gameCode == 0x4A525641)
 	{
 		//V-Rally 3 (Japan)
 		//remove writeback from ldm
@@ -61,7 +66,7 @@ void gptc_patchRom()
 		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FD58C) == 0xE8B2001C)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FD58C) = 0xE892001C;
 	}
-	else if (gameTitle0 == 0x41522D56 && gameTitle1 == 0x20594C4C && gameTitle2 == 0x00000033 && gameCode == 0x50525641)
+	else if (gameCode == 0x50525641)
 	{
 		//V-Rally 3 (Europe) (En,Fr,De,Es,It)
 		//remove writeback from ldm
@@ -77,6 +82,22 @@ void gptc_patchRom()
 		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC248) == 0xE8B2001C)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x1FC248) = 0xE892001C;
 	}
+	else if(gameCode == 0x45455241 || gameCode == 0x50455241 || gameCode == 0x4A455241 ||
+			gameCode == 0x50324D41 || gameCode == 0x45324541 || gameCode == 0x4A324541 ||
+			gameCode == 0x50583341 || gameCode == 0x45583341 || gameCode == 0x4A583341 || gameCode == 0x50423641 || gameCode == 0x45423641 || gameCode == 0x4A423641 ||
+			gameCode == 0x50423442 || gameCode == 0x45423442 || gameCode == 0x4A423442 || gameCode == 0x50573442 || gameCode == 0x45573442 || gameCode == 0x4A573442)
+	{
+		//Mega Man Battle Network 1, 2, 3 and 4
+		//Don't change sp of fiq, abt and und mode
+		for(int i = 0; i < 0x24; i+=4)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xCC + i) = 0;
+	}
+	/*else if(gameCode == 0x45573241 || gameCode == 0x50573241)
+	{
+		//Star Wars - The New Droid Army
+		for(int i = 0; i < sizeof(sStarWarsNewDroidArmyPatch); i += 4)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x53D0 + i) = *(u32*)&sStarWarsNewDroidArmyPatch[i];
+	}*/
 	/*else if(gameTitle0 == 0x4E534944 && gameTitle1 == 0x4F565945 && gameTitle2 == 0x3130304C && gameCode == 0x4543444D)
 	{
 		//Game Boy Advance Video - Disney Channel Collection - Volume 1 (USA)
