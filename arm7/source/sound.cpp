@@ -169,7 +169,7 @@ void gbas_updateChannelATimer()
 	{
 		sampleFreq = freq;
 		REG_TM[3].CNT_H = 0;
-		if (sampleFreq != 0)
+		if (sampleFreq > 0 && sampleFreq < 1000000)
 		{
 			REG_TM[3].CNT_L = ((s16)sTimerReloadVals[sChannelATimer]) << 1;
 			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
