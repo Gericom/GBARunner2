@@ -86,6 +86,7 @@ thumb_table:
 	.word thumb10_address_calc_1
 	.word thumb10_address_calc_1
 	.word thumb10_address_calc_1
+	//this may not be right, isn't this thumb11?
 	.word thumb10_address_calc_0
 	.word thumb10_address_calc_0
 	.word thumb10_address_calc_0

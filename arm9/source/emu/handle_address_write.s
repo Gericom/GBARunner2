@@ -257,6 +257,7 @@ write_address_ignore:
 .global write_address_wait_control
 write_address_wait_control:
 	ldr r13,= WAITCNT_copy
+	bic r11, #0x8000
 	str r11, [r13]
 	bx lr
 
@@ -269,5 +270,6 @@ write_address_wait_control_bottom8:
 .global write_address_wait_control_top8
 write_address_wait_control_top8:
 	ldr r13,= (WAITCNT_copy + 1)
+	bic r11, #0x80
 	strb r11, [r13]
 	bx lr
