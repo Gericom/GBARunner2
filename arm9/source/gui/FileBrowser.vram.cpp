@@ -21,6 +21,7 @@
 #include "save/Save.h"
 #include "bios.h"
 #include "gamePatches.h"
+#include "settings.h"
 #include "FileBrowser.h"
 
 static int compDirEntries(const FILINFO*& dir1, const FILINFO*& dir2)
@@ -42,10 +43,12 @@ void FileBrowser::LoadFolder(const char* path)
 	{
 		if (f_readdir(&vram_cd->dir, &info) != FR_OK)
 			_uiContext->FatalError("Error while reading directory!");
-		if (info.fattrib & (AM_SYS | AM_HID))
-			continue;
+		//First check end of directory, otherwise attributes are not valid!	
 		if (info.fname[0] == 0)
 			break;
+		//Don't show system and hidden files
+		if (info.fattrib & (AM_SYS | AM_HID))
+			continue;
 		uint8_t* point_ptr = (uint8_t*)strrchr(info.fname, '.');
 		if (info.fattrib & AM_DIR || (point_ptr && !strcasecmp((char*)point_ptr, ".gba")))
 		{
@@ -58,6 +61,23 @@ void FileBrowser::LoadFolder(const char* path)
 	f_closedir(&vram_cd->dir);
 	qsort(_sortedEntries, entryCount, sizeof(FILINFO*), (int(*)(const void*, const void*))compDirEntries);
 	_entryCount = entryCount;
+	//now find the id for each entry
+	for(int i = 0; i < _entryCount; i++)
+	{
+		if(_sortedEntries[i]->fattrib & AM_DIR)
+			continue;
+		if (f_open(&vram_cd->fil, _sortedEntries[i]->fname, FA_OPEN_EXISTING | FA_READ) != FR_OK)
+			_ids[i] = 0xFFFFFFFF;
+		else
+		{
+			f_lseek(&vram_cd->fil, 0xAC);
+			u32 id = 0;
+			UINT br;
+			f_read(&vram_cd->fil, (void*)&id, 4, &br);
+			f_close(&vram_cd->fil);
+			_ids[i] = id;
+		}
+	}
 	if (_listRecycler)
 	{
 		_uiContext->GetUIManager().RemoveElement(_listRecycler);
@@ -79,6 +99,7 @@ void FileBrowser::LoadFolder(const char* path)
 
 	//load the text graphics for next menu
 	_uiContext->GetUIManager().VBlank();
+	InvalidateCover();
 }
 
 void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
@@ -149,8 +170,51 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 #endif
 }
 
-void FileBrowser::LoadGame(const char* path)
+void FileBrowser::LoadFrame(u32 id)
 {
+	char framePath[] = "/_gba/frames/ABCD.bin";
+	*(vu8*)0x04000242 = 0x84;
+	*(vu8*)0x04000248 = 0x80; //H to lcdc
+	*(vu8*)0x04000249 = 0x81; //I to bg
+	if(!gEmuSettingFrame)
+		goto noframe;
+	
+	framePath[13] = id & 0xFF;
+	framePath[14] = (id >> 8) & 0xFF;
+	framePath[15] = (id >> 16) & 0xFF;
+	framePath[16] = (id >> 24) & 0xFF;
+
+	if (f_stat(framePath, NULL) == FR_OK)
+		f_open(&vram_cd->fil, framePath, FA_OPEN_EXISTING | FA_READ);
+	else if (f_stat("/_gba/frames/default.bin", NULL) == FR_OK)
+		f_open(&vram_cd->fil, "/_gba/frames/default.bin", FA_OPEN_EXISTING | FA_READ);
+	else
+		goto noframe;
+
+	UINT br;
+	f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 512, &br);
+	arm9_memcpy16((u16*)0x06898000, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 256);
+	f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 2048, &br);
+	arm9_memcpy16((u16*)0x0620B800, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 1024);
+	f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 0x2A00, &br);
+	arm9_memcpy16((u16*)0x06208000, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 0x2A00 >> 1);
+
+	*(vu8*)0x04000248 = 0x82;; //H to extpltt
+	return;
+
+noframe:
+	for(int i = 0; i < 128; i++)
+		((u32*)0x06898000)[i] = 0;
+	*(vu8*)0x04000248 = 0x82;; //H to extpltt
+}
+
+void FileBrowser::LoadGame(const char* path, u32 id)
+{
+	if(_coverLoadState == COVER_LOAD_STATE_LOAD)
+		f_close(&vram_cd->fil);
+
+	LoadFrame(id);
+
 	if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
 		_uiContext->FatalError("Error while opening rom!");
 	vram_cd->sd_info.gba_rom_size = vram_cd->fil.obj.objsize;
@@ -195,6 +259,80 @@ void FileBrowser::LoadGame(const char* path)
 	CreateLoadSave(nameBuf, saveType);
 }
 
+static bool loadCover(const char* path)
+{
+	if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
+		return false;
+	UINT br;
+	f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 256 * 192 * 2, &br);
+	f_close(&vram_cd->fil);
+	return true;
+}
+
+void FileBrowser::UpdateCover()
+{
+	switch(_coverLoadState)
+	{
+		case COVER_LOAD_STATE_IDLE:
+			break;
+
+		case COVER_LOAD_STATE_OPEN:
+		{
+			if(!(_sortedEntries[_selectedEntry]->fattrib & AM_DIR))
+				_gameId = _ids[_selectedEntry];
+			char coverPath[] = "/_gba/covers/A/B/ABCD.bin";
+			const char* path;
+			if (_sortedEntries[_selectedEntry]->fattrib & AM_DIR)
+				path = "/_gba/covers/folder.bin";
+			else if (_gameId == 0xFFFFFFFF)
+				path = "/_gba/covers/unknown.bin";
+			else
+			{				
+				coverPath[13] = _gameId & 0xFF;
+				coverPath[15] = (_gameId >> 8) & 0xFF;
+				coverPath[17] = _gameId & 0xFF;
+				coverPath[18] = (_gameId >> 8) & 0xFF;
+				coverPath[19] = (_gameId >> 16) & 0xFF;
+				coverPath[20] = (_gameId >> 24) & 0xFF;
+				path = coverPath;
+			}
+			
+			if (f_open(&vram_cd->fil, path, FA_OPEN_EXISTING | FA_READ) != FR_OK)
+			{
+				if(_sortedEntries[_selectedEntry]->fattrib & AM_DIR)
+				{
+					_coverLoadState = COVER_LOAD_STATE_IDLE;
+					break;
+				}
+				if (_gameId == 0xFFFFFFFF || f_open(&vram_cd->fil, "/_gba/covers/unknown.bin", FA_OPEN_EXISTING | FA_READ) != FR_OK)
+				{
+					_coverLoadState = COVER_LOAD_STATE_IDLE;
+					break;
+				}
+			}
+			_coverLoadState = COVER_LOAD_STATE_LOAD;
+			break;
+		}
+		case COVER_LOAD_STATE_LOAD:
+		{
+			UINT br;
+			f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 256 * 192 * 2, &br);
+			f_close(&vram_cd->fil);
+			_coverLoadState = COVER_LOAD_STATE_COPY;
+			break;
+		}
+		case COVER_LOAD_STATE_COPY:
+			break;
+	}
+}
+
+void FileBrowser::InvalidateCover()
+{
+	if(_coverLoadState == COVER_LOAD_STATE_LOAD)
+		f_close(&vram_cd->fil);
+	_coverLoadState = COVER_LOAD_STATE_OPEN;
+}
+
 int FileBrowser::Run()
 {
 	int next = 2;
@@ -213,17 +351,23 @@ int FileBrowser::Run()
 		f_chdir("gba");
 	LoadFolder(".");
 	while (1)
-	{
+	{		
 		_inputRepeater.Update(~*((vu16*)0x04000130));
 		if (_inputRepeater.GetTriggeredKeys() & (1 << 6))
 		{
 			if (_selectedEntry > 0)
+			{
 				_selectedEntry--;
+				InvalidateCover();
+			}
 		}
 		else if (_inputRepeater.GetTriggeredKeys() & (1 << 7))
 		{
 			if (_selectedEntry < _entryCount - 1)
+			{
 				_selectedEntry++;
+				InvalidateCover();
+			}
 		}
 		else if (_inputRepeater.GetTriggeredKeys() & 1)
 		{
@@ -234,7 +378,7 @@ int FileBrowser::Run()
 			}
 			else
 			{
-				LoadGame(_sortedEntries[_selectedEntry]->fname);
+				LoadGame(_sortedEntries[_selectedEntry]->fname, _ids[_selectedEntry]);
 				break;
 			}
 		}
@@ -250,10 +394,16 @@ int FileBrowser::Run()
 		}
 		_listRecycler->SetSelectedIdx(_selectedEntry);
 		_uiContext->GetUIManager().Update();
+		UpdateCover();
 		while (*((vu16*)0x04000004) & 1);
 		while (!(*((vu16*)0x04000004) & 1));
 		_uiContext->GetBGPalManager().Apply(BG_PALETTE_SUB);
 		_uiContext->GetUIManager().VBlank();
+		if(_coverLoadState == COVER_LOAD_STATE_COPY)
+		{
+			arm9_memcpy16((u16*)0x06940000, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 256 * 192);
+			_coverLoadState = COVER_LOAD_STATE_IDLE;
+		}
 	}
 	if (_listRecycler)
 		_uiContext->GetUIManager().RemoveElement(_listRecycler);

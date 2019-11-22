@@ -61,15 +61,29 @@ itcm_setup_copyloop:
 	//map the gba cartridge to the arm7 and nds card too
 	ldr r0,= 0x4000204
 	ldrh r1, [r0]
+	orr r1, #0x80 //gba slot to arm7 (for is-nitro-emulator)
 #ifdef ARM7_DLDI
-	orr r1, #0x80
 	orr r1, #0x800 //card to arm7
 #else
-	bic r1, #0x80
 	bic r1, #0x800 //card to arm9
 #endif
 	bic r1, #0x8000	//set memory priority to arm9
 	strh r1, [r0]
+
+#if defined(USE_DSI_16MB)
+	//enable 16 MB mode
+	ldr r0,= 0x04004008
+	ldr r1, [r0]
+	bic r1, #(3 << 14)
+	orr r1, #(2 << 14)
+	str r1, [r0]
+#elif defined(USE_3DS_32MB)
+	//enable 32 MB mode
+	ldr r0,= 0x04004008
+	ldr r1, [r0]
+	orr r1, #(3 << 14)
+	str r1, [r0]
+#endif
 
 	//abcd to arm9
 	ldr r0,= 0x4000240
@@ -88,7 +102,7 @@ itcm_setup_copyloop:
 	strb r1, [r0]
 
 	//setup display capture
-	ldr r0,= 0x320000
+	ldr r0,= (0x320000 | (1 << 19))
 	ldr r1,= 0x4000064
 	str r0, [r1]
 
@@ -173,7 +187,13 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c6, c4, 0
 
 	//main memory
+#if defined(USE_DSI_16MB)
+	ldr r0,= (1 | (23 << 1) | 0x0C000000)
+#elif defined(USE_3DS_32MB)
+	ldr r0,= (1 | (24 << 1) | 0x0C000000)
+#else
 	ldr r0,= (1 | (21 << 1) | 0x02000000)
+#endif
 	mcr p15, 0, r0, c6, c5, 0
 
 	//ldr r0,= (1 | (14 << 1) | 0x03000000)
@@ -377,14 +397,6 @@ dldi_name_copy:
 	ldr r0,= pu_data_permissions
 	mcr p15, 0, r0, c5, c0, 2
 
-	ldr r0,= 0x04001000
-	ldr r1,= 0x10801
-	str r1, [r0]
-
-	ldr r0,= 0x0400100E
-	ldr r1,= 0x4400
-	strh r1, [r0]
-
 	ldr r0,= 0x04001030
 	ldr r1,= 0x100
 	strh r1, [r0]
@@ -398,9 +410,11 @@ dldi_name_copy:
 
 	//more displaycap stuff
 	ldr r0,= 0x04001000
-	ldr r1,= 0x13823
+	ldr r1,= 0x40013923 //0x13923
 	str r1, [r0]
-	ldr r1,= 0x4084
+	ldr r1,= 0x1788
+	strh r1, [r0, #0x8]
+	ldr r1,= (0x4084 | (1 << 10))
 	strh r1, [r0, #0xE]
 
 	ldr r2,= gEmuSettingCenterMask
@@ -420,7 +434,7 @@ dldi_name_copy:
 	strh r1, [r0, #0x44]
 	mov r1, #0x18
 	strh r1, [r0, #0x48]
-	mov r1, #(1 << 5)
+	mov r1, #1 //(1 << 5)
 	strh r1, [r0, #0x4A]
 	mov r1, #0x10
 	strh r1, [r0, #0x54]
@@ -447,6 +461,7 @@ skip_center_mask:
 	mov r3, r1, lsr #3
 	mov r3, r3, lsl #5
 	add r3, r3, r0, lsr #3
+	add r3, #512
 	orr r3, #0xF000 //fully visible
 	strh r3, [r2], #4
 
@@ -461,7 +476,7 @@ skip_center_mask:
 	//disable vram h and i
 	ldr r0,= 0x04000248
 	mov r1, #0x00
-	strb r1, [r0]
+	//strb r1, [r0]
 	strb r1, [r0, #1]
 
 	//disable the 3d geometry and render engine and swap the screens
@@ -488,6 +503,13 @@ skip_center_mask:
 	ldrne r0,= 0x0400106C
 	ldr r1,= 0x801F
 	strh r1, [r0]
+
+	ldr r2,= gEmuSettingGbaColors
+	ldr r2, [r2]
+	cmp r2, #1
+	eoreq r0, #0x1000
+	ldreq r1,= 0x8008
+	streqh r1, [r0]
 
 	//Copy GBA Bios in place
 //	ldr r0,= bios_tmp
@@ -696,8 +718,8 @@ instruction_abort_handler:
 	bge instruction_abort_handler_error
 instruction_abort_handler_cont:
 	bic lr, #0x06000000
-	sub lr, #0x05000000
-	sub lr, #0x00FC0000
+	add lr, #GBA_ADDR_TO_DS_HIGH
+	add lr, #GBA_ADDR_TO_DS_LOW
 	subs pc, lr, #4
 
 instruction_abort_handler_error:
@@ -713,8 +735,8 @@ instruction_abort_handler_error:
 	ldr r12, [r13, #1]
 	subs pc, lr, #4
 instruction_abort_handler_error_cont:
-	add r12, lr, #0x5000000
-	add r12, #0x0FC0000
+	sub r12, lr, #GBA_ADDR_TO_DS_HIGH
+	sub r12, #GBA_ADDR_TO_DS_LOW
 	cmp r12, #0x08000000
 	blt instruction_abort_handler_error_2
 	cmp r12, #0x0E000000
@@ -777,8 +799,16 @@ instruction_abort_handler_error_2:
 
 .global undef_inst_handler
 undef_inst_handler:
-	//TODO: if this is an is-nitro breakpoint (arm 0xE7FFFFFF; thumb 0xEFFF), pass control to the debugger
-
+	mrc p15, 0, sp, c5, c0, 2
+	eor sp, #0x33
+	eor sp, #0x3300
+	eor sp, #0x330000
+	eor sp, #0x33000000
+	cmp sp, #0
+	movne sp, #1 //0 = unlocked, 1 = locked
+	add sp, #address_dtcm
+	strb sp, [sp, #0x4C]
+	
 	//make use of the backwards compatible version
 	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
 	mov sp, #0xFFFFFFFF
@@ -819,8 +849,8 @@ no_bkpt:
 	//ldr r1,= 0x46444E55
 	//str r1, [r0]
 
-/*	mov r0, lr
-	ldr r1,= nibble_to_char
+	mov r0, lr
+/*	ldr r1,= nibble_to_char
 	ldr r4,= (0x06202000 + 32 * 8)
 	//print address to bottom screen
 	ldrb r2, [r1, r0, lsr #28]
@@ -959,6 +989,16 @@ fiq_hook:
 	MRS     SP, CPSR
 	ORR     SP, SP, #0xC0
 	MSR     CPSR_cxsf, SP
+	
+	mrc p15, 0, sp, c5, c0, 2
+	eor sp, #0x33
+	eor sp, #0x3300
+	eor sp, #0x330000
+	eor sp, #0x33000000
+	cmp sp, #0
+	movne sp, #1 //0 = unlocked, 1 = locked
+	add sp, #address_dtcm
+	strb sp, [sp, #0x4C]
 
 	//make use of the backwards compatible version
 	//of the data rights register, so we can use 0xFFFFFFFF instead of 0x33333333
@@ -984,8 +1024,12 @@ fiq_hook_cp15_done:
 	MSR     SPSR_cxsf, LR
 	LDMFD   SP!, {R12,LR}
 
-	ldr sp,= pu_data_permissions
-	mcr p15, 0, sp, c5, c0, 2
+	mov sp, #address_dtcm
+	ldrb sp, [sp, #0x4C]
+	cmp sp, #1
+
+	ldreq sp,= pu_data_permissions
+	mcreq p15, 0, sp, c5, c0, 2
 
 	SUBS    PC, LR, #4
 

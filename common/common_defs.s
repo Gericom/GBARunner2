@@ -3,14 +3,54 @@
 
 //#define ARM7_DLDI
 
-#define SD_CACHE_SIZE	(1424 * 1024)
+//#define USE_DSI_16MB
+//#define USE_3DS_32MB
 
-#define MAIN_MEMORY_ADDRESS_ROM_DATA		0x02040000
-#define MAIN_MEMORY_ADDRESS_GBARUNNER_DATA	0x02240000
+#if defined(USE_DSI_16MB)
+#define UNCACHED_OFFSET     (-0x0A000000)
+#define MAIN_MEMORY_BASE    0x0C000000
+#define MAIN_MEMORY_END     0x0D000000
+#elif defined(USE_3DS_32MB)
+#define UNCACHED_OFFSET     (-0x0A000000)
+#define MAIN_MEMORY_BASE    0x0C000000
+#define MAIN_MEMORY_END     0x0E000000
+#else
+#define UNCACHED_OFFSET	    0x00800000
+#define MAIN_MEMORY_BASE    0x02000000
+#define MAIN_MEMORY_END     0x02400000
+#endif
+
+#define SD_CACHE_SIZE	                    (1424 * 1024)
+#define GBARUNNER_DATA_SIZE                 0x1C0000
+
+#ifdef USE_3DS_32MB
+#define MAIN_MEMORY_ADDRESS_ROM_DATA		(MAIN_MEMORY_BASE + 0x00040000 + GBARUNNER_DATA_SIZE)
+#else
+#define MAIN_MEMORY_ADDRESS_ROM_DATA		(MAIN_MEMORY_BASE + 0x00040000)
+#endif
+
+#if defined(USE_DSI_16MB)
+#define MAIN_MEMORY_ADDRESS_GBARUNNER_DATA	(MAIN_MEMORY_BASE + 0x00E40000)
+#elif defined(USE_3DS_32MB)
+#define MAIN_MEMORY_ADDRESS_GBARUNNER_DATA	(MAIN_MEMORY_BASE + 0x00040000)
+#else
+#define MAIN_MEMORY_ADDRESS_GBARUNNER_DATA	(MAIN_MEMORY_BASE + 0x00240000)
+#endif
 #define SAVE_DATA_SIZE						0x20000
-#define MAIN_MEMORY_ADDRESS_SAVE_DATA		(0x02400000 - SAVE_DATA_SIZE)
+#ifdef USE_3DS_32MB
+#define MAIN_MEMORY_ADDRESS_SAVE_DATA		(MAIN_MEMORY_ADDRESS_GBARUNNER_DATA + GBARUNNER_DATA_SIZE - SAVE_DATA_SIZE)
+#else
+#define MAIN_MEMORY_ADDRESS_SAVE_DATA		(MAIN_MEMORY_END - SAVE_DATA_SIZE)
+#endif
+#ifdef USE_3DS_32MB
+#define ROM_DATA_LENGTH						(MAIN_MEMORY_END - MAIN_MEMORY_ADDRESS_ROM_DATA)
+#else
 #define ROM_DATA_LENGTH						(MAIN_MEMORY_ADDRESS_GBARUNNER_DATA - MAIN_MEMORY_ADDRESS_ROM_DATA)
+#endif
 #define ROM_ADDRESS_MAX						(0x08000000 + ROM_DATA_LENGTH)
+
+#define GBA_ADDR_TO_DS_HIGH                 ((MAIN_MEMORY_ADDRESS_ROM_DATA - 0x08000000) & 0xFF000000)
+#define GBA_ADDR_TO_DS_LOW                  ((MAIN_MEMORY_ADDRESS_ROM_DATA - 0x08000000 - GBA_ADDR_TO_DS_HIGH) & 0xFFFF0000)
 
 #define sd_cluster_cache  (MAIN_MEMORY_ADDRESS_GBARUNNER_DATA) //0x06820000
 
@@ -23,9 +63,9 @@
 #define SOUND_EMU_QUEUE_LEN		64
 
 #define sound_sound_emu_work (sd_sd_info + 36)
-#define sound_sound_emu_work_uncached (sound_sound_emu_work | 0x00800000)
+#define sound_sound_emu_work_uncached (sound_sound_emu_work + UNCACHED_OFFSET)
 #define save_save_work (sound_sound_emu_work + 0x530)
-#define save_save_work_uncached (save_save_work | 0x00800000)
+#define save_save_work_uncached (save_save_work + UNCACHED_OFFSET)
 #define save_save_work_state_uncached (save_save_work_uncached + ((128 * 1024 / 512) * 4) + 1)
 
 #define sio_work (save_save_work + ((128 * 1024 / 512) * 4) + 8)

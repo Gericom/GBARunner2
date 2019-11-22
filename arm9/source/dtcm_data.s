@@ -14,7 +14,18 @@ cpu_mode_switch_dtcm:
 	.word pu_data_permissions
 	.word data_abort_handler_cont_finish
 	.word 0x08088008 //arm low instruction mask
-.rept 12
+.global dbgDatarightsTmp
+dbgDatarightsTmp:
+	.word 0
+ //for arml_instLdrhStrh
+	.word 0x000F000F //0x50
+	.word 0xE0800000 //0x54
+	.word 0xE0400000 //0x58
+	.word 0xE0809000 //0x5C
+	.word 0xE0409000 //0x60
+//for arml_instLdrStr	
+	.word 0x000F0FFF //0x64
+.rept 5
 	.word 0
 .endr
 	.word data_abort_handler_arm_usr_sys //usr
@@ -75,6 +86,7 @@ thumb_table:
 	.word thumb10_address_calc_1
 	.word thumb10_address_calc_1
 	.word thumb10_address_calc_1
+	//this may not be right, isn't this thumb11?
 	.word thumb10_address_calc_0
 	.word thumb10_address_calc_0
 	.word thumb10_address_calc_0

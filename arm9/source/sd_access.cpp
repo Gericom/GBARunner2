@@ -1,6 +1,7 @@
 #include <nds/arm9/sprite.h>
 #include <nds/arm9/background.h>
 #include "vram.h"
+#include "../../common/fifo.h"
 #include "vector.h"
 #include "string.h"
 #include "vramheap.h"
@@ -14,9 +15,7 @@
 #include "settings.h"
 #include "bios.h"
 #include "crc16.h"
-
-#define REG_SEND_FIFO	(*((vu32*)0x04000188))
-#define REG_RECV_FIFO	(*((vu32*)0x04100000))
+#include "emu/romGpio.h"
 
 typedef enum KEYPAD_BITS
 {
@@ -71,11 +70,11 @@ extern "C" ITCM_CODE __attribute__ ((noinline)) void read_sd_sectors_safe(sec_t 
 //map cd to arm7
 //REG_VRAMCNT_CD = VRAM_CD_ARM7;
 	//REG_VRAMCNT_C = VRAM_C_ARM7;
-	dc_invalidate_range(buffer, numSectors * 512);
 	REG_SEND_FIFO = 0xAA5500DF;
 	REG_SEND_FIFO = sector;
 	REG_SEND_FIFO = numSectors;
 	REG_SEND_FIFO = (uint32_t)buffer;//arm7_address;
+	dc_invalidate_range(buffer, numSectors * 512);
 	//wait for response
 	do
 	{
@@ -178,7 +177,7 @@ PUT_IN_VRAM void initialize_cache()
 
 extern "C" PUT_IN_VRAM void sd_write_save()
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	if (!vramcd_uncached->save_work.save_enabled || vramcd_uncached->save_work.save_state != SAVE_WORK_STATE_SDSAVE)
 		return;
 	uint16_t crc = crc16(0xFFFF, vram_cd->save_work.save_fat_table, sizeof(vram_cd->save_work.save_fat_table));
@@ -205,6 +204,7 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 {
 	vramheap_init();
+	*(vu32*)0x04000000 = 0xA0000;
     *(vu8*)0x04000243 = 0x84;
 	*(vu8*)0x04000249 = 0x00;
 	UIContext* uiContext = new UIContext();
@@ -212,6 +212,10 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	while (*((vu16*)0x04000004) & 1);
 	while (!(*((vu16*)0x04000004) & 1));
 	uiContext->GetUIManager().VBlank();
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+	if(!*((vu32*)0x04004008))
+		uiContext->FatalError("SCFG Locked!");
+#endif
 	if (f_mount(&vram_cd->fatFs, "", 1) != FR_OK)
 		uiContext->FatalError("Couldn't mount sd card!");
 #ifndef ISNITRODEBUG
@@ -264,6 +268,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	vram_cd->sd_info.cluster_shift = 31 - __builtin_clz(vram_cd->sd_info.nr_sectors_per_cluster * 512);
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 	initialize_cache();
+	rio_init(RIO_NONE);
 	REG_SEND_FIFO = 0xAA560000;
 	*(vu8*)0x04000243 = 0x80;
 }

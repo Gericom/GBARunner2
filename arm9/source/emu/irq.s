@@ -329,10 +329,18 @@ irq_handler_arm7_irq_snd:
 	ldrh lr, [r0, #0x16]
 	tst lr, #(1 << 14)
 	orrne r1, #(1 << 9) //dma 1
+	//if no repeat, stop dma
+	tst lr, #(1 << 9)
+	biceq lr, #0x8000
+	streqh lr, [r0, #0x16]
 
 	ldrh lr, [r0, #0x22]
 	tst lr, #(1 << 14)
 	orrne r1, #(1 << 10) //dma 2
+	//if no repeat, stop dma
+	tst lr, #(1 << 9)
+	biceq lr, #0x8000
+	streqh lr, [r0, #0x22]
 
 	str r1, [r2]
 	
@@ -378,6 +386,9 @@ cap_control:
 	mov r2, #0x84
 	strneb r2, [r12, #0x242]
 	streqb r2, [r12, #0x243]
+	movne r2, #0x00
+	moveq r2, #0x81
+	strb r2, [r12, #0x249]
 	orr r1, #0x80000000
 	str r1, [r12, #0x64]
 
@@ -401,6 +412,7 @@ cap_control:
 	mov r3, r1, lsr #3
 	mov r3, r3, lsl #5
 	add r3, r3, r0, lsr #3
+	add r3, #512
 	orr r3, #0xF000 //fully visible
 	strh r3, [r2], #4
 

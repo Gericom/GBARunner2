@@ -36,8 +36,8 @@ data_abort_handler:
 data_abort_handler_thumb:
 	ldrh r10, [r11, #-8]
 	//todo: fill up this interlock
-	add r12, r12, #(address_thumb_table_dtcm - reg_table)
-	ldr pc, [r12, r10, lsr #7] //todo: this construct actually involves an interlock!
+	add r13, r12, #(address_thumb_table_dtcm - reg_table)
+	ldr pc, [r13, r10, lsr #7] //todo: this construct actually involves an interlock!
 
 .global data_abort_handler_arm_irq
 data_abort_handler_arm_irq:

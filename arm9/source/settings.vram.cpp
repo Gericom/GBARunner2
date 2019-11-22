@@ -14,12 +14,25 @@ static const char* sEmulationSectionName = "emulation";
 //settings are globals such that they can be easily accessed from assembly
 static const char* sEmuSettingUseBottomScreenName = "useBottomScreen";
 u32 gEmuSettingUseBottomScreen;
+
 static const char* sEmuSettingAutoSaveName = "autoSave";
 u32 gEmuSettingAutoSave;
+
+static const char* sEmuSettingFrameName = "frame";
+u32 gEmuSettingFrame;
+
 static const char* sEmuSettingCenterMaskName = "centerMask";
 u32 gEmuSettingCenterMask;
+
+static const char* sEmuSettingGbaColorsName = "gbaColors";
+u32 gEmuSettingGbaColors;
+
+static const char* sEmuSettingMainMemICacheName = "mainMemICache";
+u32 gEmuSettingMainMemICache;
+
 static const char* sEmuSettingWramICacheName = "wramICache";
 u32 gEmuSettingWramICache;
+
 static const char* sEmuSettingSkipIntroName = "skipIntro";
 u32 gEmuSettingSkipIntro;
 
@@ -31,8 +44,11 @@ static void loadDefaultSettings()
 {
     gEmuSettingUseBottomScreen = false;
     gEmuSettingAutoSave = true;
+    gEmuSettingFrame = true;
     gEmuSettingCenterMask = true;
+    gEmuSettingMainMemICache = true;
     gEmuSettingWramICache = true;
+    gEmuSettingGbaColors = false;
     gEmuSettingSkipIntro = false;
 }
 
@@ -76,10 +92,16 @@ static void iniPropertyCallback(void* arg, const char* section, const char* key,
             gEmuSettingUseBottomScreen = parseBoolean(value, false);
         else if(!strcmp(key, sEmuSettingAutoSaveName))
             gEmuSettingAutoSave = parseBoolean(value, true);
+        else if(!strcmp(key, sEmuSettingFrameName))
+            gEmuSettingFrame = parseBoolean(value, true);
         else if(!strcmp(key, sEmuSettingCenterMaskName))
             gEmuSettingCenterMask = parseBoolean(value, true);
+        else if(!strcmp(key, sEmuSettingMainMemICacheName))
+            gEmuSettingMainMemICache = parseBoolean(value, true);
         else if(!strcmp(key, sEmuSettingWramICacheName))
             gEmuSettingWramICache = parseBoolean(value, true);
+        else if(!strcmp(key, sEmuSettingGbaColorsName))
+            gEmuSettingGbaColors = parseBoolean(value, false);
         else if(!strcmp(key, sEmuSettingSkipIntroName))
             gEmuSettingSkipIntro = parseBoolean(value, false);
     }
@@ -109,8 +131,11 @@ bool settings_save()
     writer.WriteSection(sEmulationSectionName);
     writer.WriteBooleanProperty(sEmuSettingUseBottomScreenName, gEmuSettingUseBottomScreen);
     //writer.WriteBooleanProperty(sEmuSettingAutoSaveName, gEmuSettingAutoSave);
+    writer.WriteBooleanProperty(sEmuSettingFrameName, gEmuSettingFrame);
     writer.WriteBooleanProperty(sEmuSettingCenterMaskName, gEmuSettingCenterMask);
-    //writer.WriteBooleanProperty(sEmuSettingWramICacheName, gEmuSettingWramICache);
+    writer.WriteBooleanProperty(sEmuSettingMainMemICacheName, gEmuSettingMainMemICache);
+    writer.WriteBooleanProperty(sEmuSettingWramICacheName, gEmuSettingWramICache);
+    writer.WriteBooleanProperty(sEmuSettingGbaColorsName, gEmuSettingGbaColors);
     writer.WriteBooleanProperty(sEmuSettingSkipIntroName, gEmuSettingSkipIntro);
     f_close(&vram_cd->fil);
     return true;

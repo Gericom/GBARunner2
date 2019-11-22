@@ -64,12 +64,12 @@ arml_instLdrhStrh_\pre\up\imm\wrback\load\sign\half:
 		.endif
 	.else
 		//shifted register, convert opcode to add r9, rn, rm or sub r9, rn, rm
-		ldr r8,= 0x000F000F
+		ldr r8, [r12, #0x50] //0x000F000F
 		.if !\pre || (\pre && \wrback)
 			.if \up
-				ldr r11,= 0xE0800000 //add
+				ldr r11, [r12, #0x54] //0xE0800000 add
 			.else
-				ldr r11,= 0xE0400000 //sub
+				ldr r11, [r12, #0x58] //0xE0400000 sub
 			.endif
 			and r8, r10, r8
 			mov r9, r8, lsr #16
@@ -81,9 +81,9 @@ arml_instLdrhStrh_\pre\up\imm\wrback\load\sign\half:
 			.endif
 		.else
 			.if \up
-				ldr r11,= 0xE0809000 //add
+				ldr r11, [r12, #0x5C] //0xE0809000 add
 			.else
-				ldr r11,= 0xE0409000 //sub
+				ldr r11, [r12, #0x60] //0xE0409000 sub
 			.endif
 			and r8, r10, r8
 		.endif		
@@ -206,12 +206,12 @@ arml_instLdrStr_\reg\pre\up\byte\wrback\load:
 		.endif
 	.else
 		//shifted register, convert opcode to add r9, rn, rm, xxx, #xx or sub r9, rn, rm, xxx, #xx
-		ldr r8,= 0x000F0FFF
+		ldr r8, [r12, #0x64] //0x000F0FFF
 		.if !\pre || (\pre && \wrback)
 			.if \up
-				ldr r11,= 0xE0800000 //add
+				ldr r11, [r12, #0x54] //0xE0800000 add
 			.else
-				ldr r11,= 0xE0400000 //sub
+				ldr r11, [r12, #0x58] //0xE0400000 sub
 			.endif			
 			and r8, r10, r8
 			mov r9, r8, lsr #16
@@ -223,9 +223,9 @@ arml_instLdrStr_\reg\pre\up\byte\wrback\load:
 			.endif
 		.else
 			.if \up
-				ldr r11,= 0xE0809000 //add
+				ldr r11, [r12, #0x5C] //0xE0809000 add
 			.else
-				ldr r11,= 0xE0409000 //sub
+				ldr r11, [r12, #0x60] //0xE0409000 sub
 			.endif
 			and r8, r10, r8
 		.endif		

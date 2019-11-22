@@ -345,6 +345,26 @@ gba_start_bkpt_vram:
 	ldr r0,= 0x05000000
 	ldr r1,= 0x7FFF
 	strh r1, [r0]
+
+	ldr r2,= gEmuSettingWramICache
+	ldr r2, [r2]
+	cmp r2, #1
+	beq 1f
+	//disable wram i-cache
+	mrc p15, 0, r0, c2, c0, 1
+	bic r0, #((1 << 0) | (1 << 7))
+	mcr p15, 0, r0, c2, c0, 1
+1:
+
+	ldr r2,= gEmuSettingMainMemICache
+	ldr r2, [r2]
+	cmp r2, #1
+	beq 2f
+	//disable main memory i-cache
+	mrc p15, 0, r0, c2, c0, 1
+	bic r0, #(1 << 5)
+	mcr p15, 0, r0, c2, c0, 1
+2:
 	mrc p15, 0, r0, c1, c0, 0
 	//orr r0, #(1<<15)
 	orr r0, #(1 | (1 << 2))	//enable pu and data cache
