@@ -153,6 +153,7 @@ bool wifi_setDtimInterval(u8 interval)
 		return false;
 	REG_WIFI_TIM_COUNT = interval;
 	REG_WIFI_BCN_PARAM = 0;
+	return true;
 }
 
 void wifi_updateTxTimeStampOffset()
@@ -236,6 +237,7 @@ bool wifi_setChannel(int channel)
 	}
 	REG_WIFI_SET_POWER_FORCE = oldPower;
 	REG_WIFI_MP_POWER_SEQ = 3;
+	return true;
 }
 
 bool wifi_setActiveZoneTime(u16 time)
@@ -243,6 +245,7 @@ bool wifi_setActiveZoneTime(u16 time)
 	if (time < 10)
 		return false;
 	REG_WIFI_ACTIVE_ZONE_TIMER = time;
+	return true;
 }
 
 void wifi_initRF()
