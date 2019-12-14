@@ -11,11 +11,12 @@
 #include "gui/UIContext.h"
 #include "gui/FileBrowser.h"
 #include "gui/SettingsScreen.h"
-#include "sd_access.h"
 #include "settings.h"
 #include "bios.h"
 #include "crc16.h"
 #include "emu/romGpio.h"
+#include "gbaBoot.h"
+#include "sd_access.h"
 
 typedef enum KEYPAD_BITS
 {
@@ -119,7 +120,7 @@ extern "C" ITCM_CODE __attribute__((noinline)) void write_sd_sectors_safe(sec_t 
 }
 #endif
 
-PUT_IN_VRAM void initialize_cache()
+extern "C" PUT_IN_VRAM void initialize_cache()
 {
 	vram_cd->sd_info.access_counter = 0;
 	//--Issue #2--
@@ -190,12 +191,12 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 }
 
 //to be called after dldi has been initialized (with the appropriate init function)
-extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
+extern "C" PUT_IN_VRAM void sd_init()
 {
 	vramheap_init();
-	*(vu32*)0x04000000 = 0xA0000;
-    *(vu8*)0x04000243 = 0x84;
-	*(vu8*)0x04000249 = 0x00;
+	REG_DISPCNT = 0xA0000;
+    VRAM_D_CR = 0x84;
+	VRAM_I_CR = 0x00;
 	UIContext* uiContext = new UIContext();
 	uiContext->GetUIManager().Update();
 	while (*((vu16*)0x04000004) & 1);
@@ -258,7 +259,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 	initialize_cache();
 	rio_init(RIO_NONE);
-	*(vu8*)0x04000243 = 0x80;
+	gbab_setupGfx();
 }
 
 //gets an empty one or wipes the oldest

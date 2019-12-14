@@ -384,3 +384,12 @@ gba_start_bkpt_vram:
 	ldrne r0,= (gGbaBios + 0x68) //with intro
 	ldreq r0,= (gGbaBios + 0xB4) //without intro
 	bx r0
+
+
+.global swi_softReset
+swi_softReset:
+	swi 0x000000
+
+.global swi_hardReset
+swi_hardReset:
+	swi 0x260000

@@ -233,6 +233,11 @@ loc_138:
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
+	ldr r12,= open_menu_irq_flag_uncached
+	ldr r12, [r12]
+	cmp r12, #1
+	beq openMenuIrq
+
 	ldr r12,= save_save_work_state_uncached
 	ldrb r12, [r12]
 	cmp r12, #3 //sdsave request
@@ -337,6 +342,41 @@ sdsave_request:
 	ldr r12,= sd_write_save
 	blx r12
 	b finish_nohandle
+
+oldStack:
+	.word 0
+
+openMenuIrq:
+	mov r12, #0x04000000
+	mov r1, #(1 << 16)
+	str r1, [r12, #0x214]
+
+	str sp, oldStack
+	ldr sp,= address_dtcm + (16 * 1024)
+	ldr r12,= igm_execute
+	blx r12
+	ldr sp, oldStack
+	
+	cmp r0, #1
+	bne finish_nohandle
+
+	bl dc_wait_write_buffer_empty
+	bl dc_flush_all
+
+	mov r12, #0x04000000
+	str r12, [r12, #0x208]
+	msr cpsr_fc, #0xdf
+
+	ldr r2,= gEmuSettingSkipIntro
+	ldr r2, [r2]
+	cmp r2, #1
+	ldrne r12,= swi_hardReset //with intro
+	ldreq r12,= swi_softReset //without intro
+
+	ldr r2,= pu_data_permissions
+	mcr p15, 0, r2, c5, c0, 2
+
+	bx r12
 
 cap_control:
 	eor r1, #0x00010000
