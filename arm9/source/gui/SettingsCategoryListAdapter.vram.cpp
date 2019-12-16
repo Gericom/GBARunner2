@@ -4,12 +4,14 @@
 #include "IconPlayCircle_nbfc.h"
 #include "IconGamepad_nbfc.h"
 #include "IconInformation_nbfc.h"
+#include "IconEye_nbfc.h"
 #include "SingleLineIconListEntry.h"
 #include "SettingsCategoryListAdapter.h"
 
 u16 SettingsCategoryListAdapter::sPlayCircleObjAddr;
 u16 SettingsCategoryListAdapter::sGamepadObjAddr;
 u16 SettingsCategoryListAdapter::sInfoObjAddr;
+u16 SettingsCategoryListAdapter::sEyeObjAddr;
 
 void SettingsCategoryListAdapter::LoadCommonData(UIManager& uiManager)
 {
@@ -22,6 +24,9 @@ void SettingsCategoryListAdapter::LoadCommonData(UIManager& uiManager)
 	sInfoObjAddr = uiManager.GetSubObjManager().Alloc(IconInformation_nbfc_size);
 	for (int i = 0; i < IconInformation_nbfc_size / 2; i++)
 	 	SPRITE_GFX_SUB[(sInfoObjAddr >> 1) + i] = ((u16*)IconInformation_nbfc)[i];
+	sEyeObjAddr = uiManager.GetSubObjManager().Alloc(IconEye_nbfc_size);
+	for (int i = 0; i < IconEye_nbfc_size / 2; i++)
+	 	SPRITE_GFX_SUB[(sEyeObjAddr >> 1) + i] = ((u16*)IconEye_nbfc)[i];
 }
 
 void SettingsCategoryListAdapter::OnBindElementHolder(ElementHolder* elementHolder, int position)
@@ -38,6 +43,9 @@ void SettingsCategoryListAdapter::OnBindElementHolder(ElementHolder* elementHold
 			break;
 		case SETTINGS_CATEGORY_ICON_INFO:
 			element->SetIcon(sInfoObjAddr);
+			break;
+		case SETTINGS_CATEGORY_ICON_EYE:
+			element->SetIcon(sEyeObjAddr);
 			break;
 	}
 }

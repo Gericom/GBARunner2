@@ -13,6 +13,7 @@
 #include "IconPlay_nbfc.h"
 #include "IconRestart_nbfc.h"
 #include "IconPower_nbfc.h"
+#include "../cp15.h"
 #include "InGameMenu.h"
 
 struct igm_action_t
@@ -111,10 +112,7 @@ static void prepare()
                 *pDst++ = 0;
     }
     else
-    {
-        for(int i = 0; i < 256 * 192; i++)
-            *pDst++ = SPRITE_GFX_SUB[128 * 256 + i];
-    }
+        arm9_memcpy16(VRAM_C, &SPRITE_GFX_SUB[128 * 256], 256 * 192);
 
     while (*((vu16*)0x04000004) & 1);
 	while (!(*((vu16*)0x04000004) & 1));
@@ -127,6 +125,26 @@ static void prepare()
 
 static void finalize()
 {
+    REG_MASTER_BRIGHT_SUB = 0x801F;
+    while (*((vu16*)0x04000004) & 1);
+	while (!(*((vu16*)0x04000004) & 1));
+
+    u16* pDst = VRAM_C;
+    if(gEmuSettingCenterMask)
+    {
+        pDst += 16 * 256;
+        for(int y = 0; y < 160; y++)
+        {
+            pDst += 8;
+            for(int x = 0; x < 240; x++)
+                SPRITE_GFX_SUB[128 * 256 + y * 256 + x] = *pDst++;
+            pDst += 8;
+        }
+        pDst += 16 * 256;
+    }
+    else
+        arm9_memcpy16(&SPRITE_GFX_SUB[128 * 256], VRAM_C, 256 * 192);
+
     while (*((vu16*)0x04000004) & 1);
 	while (!(*((vu16*)0x04000004) & 1));
 
@@ -140,6 +158,8 @@ static void finalize()
 
     vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
     vramcd_uncached->openMenuIrqFlag = 0;
+
+    gbab_setupCache();
 }
 
 extern "C" bool igm_execute()
@@ -170,6 +190,8 @@ extern "C" bool igm_execute()
                 {
                     wasQuit = true;
                     reboot = true;
+                    for(int i = 0; i < 256 * 192; i++)
+                        VRAM_C[i] = 0;
                 }
             }
             else

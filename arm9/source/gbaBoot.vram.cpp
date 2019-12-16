@@ -4,6 +4,7 @@
 #include "vramheap.h"
 #include "sd_access.h"
 #include "settings.h"
+#include "cp15.h"
 #include "gbaBoot.h"
 
 extern u32 DISPCNT_copy;
@@ -38,8 +39,7 @@ void gbab_setupGfx()
 	VRAM_H_CR = 0x80; //H to lcdc
 	VRAM_I_CR = 0x80; //I to lcdc
 
-    for(int i = 0; i < 32 * 1024; i+=2)
-        BG_GFX_SUB[(32 * 1024 + i) >> 1] = VRAM_I[i >> 1];
+    arm9_memcpy16(&BG_GFX_SUB[(32 * 1024) >> 1], VRAM_I, (32 * 1024) >> 1);
 
     VRAM_H_CR = gEmuSettingFrame ? 0x82 : 0x00;
     VRAM_I_CR = 0;
@@ -58,4 +58,19 @@ void gbab_setupGfx()
         REG_MASTER_BRIGHT = gEmuSettingGbaColors ? 0x8008 : 0;
 
     BG_PALETTE_SUB[0] = 0;
+}
+
+void gbab_setupCache()
+{
+    u32 regions = mpu_getICacheRegions();
+    if(gEmuSettingWramICache)
+        regions |= (1 << 0) | (1 << 7);
+    else
+        regions &= ~((1 << 0) | (1 << 7));
+
+    if(gEmuSettingMainMemICache)
+        regions |= 1 << 5;
+    else
+        regions &= ~(1 << 5);
+    mpu_setICacheRegions(regions);
 }

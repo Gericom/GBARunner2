@@ -10,12 +10,14 @@ public:
 	{
 		SETTINGS_CATEGORY_ICON_PLAYCIRCLE,
 		SETTINGS_CATEGORY_ICON_GAMEPAD,
-		SETTINGS_CATEGORY_ICON_INFO
+		SETTINGS_CATEGORY_ICON_INFO,
+		SETTINGS_CATEGORY_ICON_EYE
 	};
 private:
 	static u16 sPlayCircleObjAddr;
 	static u16 sGamepadObjAddr;
 	static u16 sInfoObjAddr;
+	static u16 sEyeObjAddr;
 
 	const NtftFont* _font;
 	const settings_category_t* _items;

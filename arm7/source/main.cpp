@@ -210,11 +210,11 @@ int main()
 			case 0xAA5500FF://set master volume
 				{
 					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-					val = REG_RECV_FIFO;
-					int volume = val & 0x7F;
-					REG_SOUNDCNT = (REG_SOUNDCNT & ~0x7F) | volume;
+					val = REG_RECV_FIFO;					
 					if(val & 0x80000000)
 						gba_sound_resync();
+					int volume = val & 0x7F;
+					REG_SOUNDCNT = (REG_SOUNDCNT & ~0x7F) | volume;
 					break;
 				}
 			case 0xAA550100: //get rtc data

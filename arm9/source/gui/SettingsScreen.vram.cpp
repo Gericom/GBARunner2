@@ -22,25 +22,29 @@
 
 static PUT_IN_VRAM settings_item_t sEmulationItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
     //{ SETTINGS_ITEM_MODE_CHECK, "Enable autosaving", "Writes back the save to sd after a game saves", &gEmuSettingAutoSave },
-    { SETTINGS_ITEM_MODE_CHECK, "Enable border frame", "Enables the usage of gba border frames", &gEmuSettingFrame },
-    { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", &gEmuSettingCenterMask },
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", &gEmuSettingMainMemICache },    
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", &gEmuSettingWramICache },
-	{ SETTINGS_ITEM_MODE_CHECK, "Simulate GBA colors", "Darkens the colors to simulate a GBA screen", &gEmuSettingGbaColors },
     { SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", &gEmuSettingSkipIntro }
 };
 
-static PUT_IN_VRAM settings_item_t sInputItems[] =
+static PUT_IN_VRAM settings_item_t sDisplayItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_SIMPLE, "GBA A button", "DS A button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA B button", "DS B button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA L button", "DS L button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA R button", "DS R button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA START button", "DS START button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA SELECT button", "DS SELECT button", NULL }
+	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
+    { SETTINGS_ITEM_MODE_CHECK, "Enable border frame", "Enables the usage of gba border frames", &gEmuSettingFrame },
+    { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", &gEmuSettingCenterMask },
+	{ SETTINGS_ITEM_MODE_CHECK, "Simulate GBA colors", "Darkens the colors to simulate a GBA screen", &gEmuSettingGbaColors }
 };
+
+// static PUT_IN_VRAM settings_item_t sInputItems[] =
+// {    
+// 	{ SETTINGS_ITEM_MODE_SIMPLE, "GBA A button", "DS A button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA B button", "DS B button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA L button", "DS L button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA R button", "DS R button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA START button", "DS START button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA SELECT button", "DS SELECT button", NULL }
+// };
 
 #ifndef GIT_COMMIT_DATE
 #define GIT_COMMIT_DATE unavailable
@@ -77,7 +81,8 @@ static PUT_IN_VRAM settings_item_t sInfoItems[] =
 
 static const settings_category_t sCategories[] =
 {
-    { "Emulation Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_PLAYCIRCLE, sizeof(sEmulationItems) / sizeof(settings_item_t), sEmulationItems },
+    { "\"Emulation\" Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_PLAYCIRCLE, sizeof(sEmulationItems) / sizeof(settings_item_t), sEmulationItems },
+	{ "Display Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_EYE, sizeof(sDisplayItems) / sizeof(settings_item_t), sDisplayItems },
     //{ "Input Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_GAMEPAD, sizeof(sInputItems) / sizeof(settings_item_t), sInputItems },
     { "About GBARunner2", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_INFO, sizeof(sInfoItems) / sizeof(settings_item_t), sInfoItems }
 };

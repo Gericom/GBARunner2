@@ -277,15 +277,16 @@ irq_handler_arm7_irq:
 
 	ldrb r2, [r12, #2] //req_write_ptr
 	ldrb r3, [r12, #3] //req_read_ptr
-	mov r12, #0x04000000
 	cmp r2, r3
 		bne 5f //request queue not empty, don't clear irq
 
 4:
+	mov r12, #0x04000000
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]
 
 5:
+	mov r12, #0x04000000
 	ldr r3, [r12, #0x210]
 
 	ldr r2,= fake_irq_flags
@@ -347,15 +348,15 @@ oldStack:
 	.word 0
 
 openMenuIrq:
-	mov r12, #0x04000000
-	mov r1, #(1 << 16)
-	str r1, [r12, #0x214]
-
 	str sp, oldStack
 	ldr sp,= address_dtcm + (16 * 1024)
 	ldr r12,= igm_execute
 	blx r12
 	ldr sp, oldStack
+
+	mov r12, #0x04000000
+	mov r1, #(1 << 16)
+	str r1, [r12, #0x214]
 	
 	cmp r0, #1
 	bne finish_nohandle
