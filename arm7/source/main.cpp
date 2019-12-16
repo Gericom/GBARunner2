@@ -7,8 +7,14 @@
 #include "dldi_handler.h"
 #include "../../common/fifo.h"
 #include "../../common/common_defs.s"
+#include "rtc.h"
 
 static bool sPrevTouchDown = false;
+
+extern "C" void __libnds_exit()
+{
+
+}
 
 extern "C" void irq_vblank()
 {
@@ -72,7 +78,7 @@ int main()
 #ifdef ARM7_DLDI
 	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
-	memcpy((void*)0x03806800, dldi_src, 32 * 1024);
+	memcpy((void*)0x0380A800, dldi_src, 16 * 1024);
 	if(!dldi_handler_init())
 	{
 		REG_SEND_FIFO = 0x46494944;
@@ -221,9 +227,9 @@ int main()
 				{
 					u8 dateTime[8];
 					u8 cmd = READ_TIME_AND_DATE;
-					rtcTransaction(&cmd, 1, dateTime, 7);
+					rtc_doTransfer(&cmd, 1, dateTime, 7);
 					cmd = READ_STATUS_REG1;
-					rtcTransaction(&cmd, 1, &dateTime[7], 1);
+					rtc_doTransfer(&cmd, 1, &dateTime[7], 1);
 					REG_SEND_FIFO = *(u32*)&dateTime[0];
 					REG_SEND_FIFO = *(u32*)&dateTime[4];
 					break;

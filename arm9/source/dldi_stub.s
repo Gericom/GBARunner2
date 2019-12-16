@@ -32,9 +32,9 @@ _dldi_start:
 	.word	0xBF8DA5ED		@ Magic number to identify this region
 	.asciz	" Chishm"		@ Identifying Magic string (8 bytes with null terminator)
 	.byte	0x01			@ Version number
-	.byte	0x0F	@32KiB	@ Log [base-2] of the size of this driver in bytes.
+	.byte	0x0E	@16KiB	@ Log [base-2] of the size of this driver in bytes.
 	.byte	0x00			@ Sections to fix
-	.byte 	0x0F	@32KiB	@ Log [base-2] of the allocated space in bytes.
+	.byte 	0x0E	@16KiB	@ Log [base-2] of the allocated space in bytes.
 	
 @---------------------------------------------------------------------------------
 @ Text identifier - can be anything up to 47 chars + terminating null -- 16 bytes
@@ -45,7 +45,7 @@ _dldi_start:
 @ Offsets to important sections within the data	-- 32 bytes
 	.align	6
 #ifdef ARM7_DLDI
-	.word   0x03806800 //_dldi_start		@ data start
+	.word   0x0380A800 //_dldi_start		@ data start
 	.word   0x0380E800 //_dldi_end		@ data end
 #else
 	.word   _dldi_start		@ data start
@@ -87,7 +87,7 @@ _DLDI_shutdown:
 	.align
 	.pool
 dldi_data_end:
-.space 32768 - (dldi_data_end - _dldi_start)		@ Fill to 32KiB
+.space 16384 - (dldi_data_end - _dldi_start)		@ Fill to 16KiB
 
 _dldi_end:
 	.end
