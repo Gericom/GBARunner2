@@ -14,6 +14,7 @@ static const u8 sSomeBuggedMixer[16] =
 
 
 extern "C" void gptc_banjoPilotFix();
+extern "C" void gptc_americanBassFix();
 
 void gptc_patchRom()
 {
@@ -91,6 +92,17 @@ void gptc_patchRom()
 		//Don't change sp of fiq, abt and und mode
 		for(int i = 0; i < 0x24; i+=4)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xCC + i) = 0;
+	}
+	else if(gameCode == 0x45424141)
+	{
+		//Game crashes because of a race condition (caused by timing differences) related to a buffer
+		//that contains some values for display related io registers. It it initialized by zeros,
+		//and later the actual values are written, but before that it already makes a copy to io,
+		//which disables vblank irqs and makes the game crash. This code ensures the irq is not
+		//disabled, which fixes the entire game.
+		*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x13C) = 0x4800; //ldr r0,= gptc_americanBassFix+1
+		*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x13E) = 0x4700; //bx r0
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x140) = (u32)&gptc_americanBassFix + 1;
 	}
 	/*else if(gameCode == 0x45573241 || gameCode == 0x50573241)
 	{
