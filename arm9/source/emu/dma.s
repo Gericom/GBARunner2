@@ -97,11 +97,6 @@ write_dma_control_\offs:
 	andeq r12, r11, #0x8000
 	cmpeq r12, #0x8000
 	bxeq lr
-#ifdef ENABLE_WRAM_ICACHE
-	//invalidate icache
-	mov r12, #0
-	mcr p15, 0, r12, c7, c5, 0
-#endif
 	//fix mode
 	mov r12, r11, lsr #12
 	and r12, #3
@@ -116,6 +111,19 @@ write_dma_control_\offs:
 	cmp r12, #0x02000000
 		biclt r11, r11, #0x8000
 		blt 6f
+
+#ifdef ENABLE_WRAM_ICACHE
+	ldr r13,= gEmuSettingWramICache
+	ldr r13, [r13]
+	cmp r13, #0
+
+	andne r13, r12, #0xFF000000
+	cmpne r13, #0x04000000
+		//invalidate icache
+		movne r13, #0
+		mcrne p15, 0, r13, c7, c5, 0
+#endif
+
 	//dst vram
 	and r13, r12, #0xFF000000
 	cmp r13, #0x06000000
