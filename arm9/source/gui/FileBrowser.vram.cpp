@@ -173,9 +173,7 @@ void FileBrowser::CreateLoadSave(const char* path, const save_type_t* saveType)
 void FileBrowser::LoadFrame(u32 id)
 {
 	char framePath[] = "/_gba/frames/ABCD.bin";
-	*(vu8*)0x04000242 = 0x84;
-	*(vu8*)0x04000248 = 0x80; //H to lcdc
-	*(vu8*)0x04000249 = 0x81; //I to bg
+	VRAM_I_CR = 0x80; //I to lcdc
 	if(!gEmuSettingFrame)
 		goto noframe;
 	
@@ -193,19 +191,16 @@ void FileBrowser::LoadFrame(u32 id)
 
 	UINT br;
 	f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 512, &br);
-	arm9_memcpy16((u16*)0x06898000, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 256);
+	arm9_memcpy16((u16*)0x06200000, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 256);
 	f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 2048, &br);
-	arm9_memcpy16((u16*)0x0620B800, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 1024);
+	arm9_memcpy16((u16*)0x068A3800, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 1024);
 	f_read(&vram_cd->fil, (void*)MAIN_MEMORY_ADDRESS_ROM_DATA, 0x2A00, &br);
-	arm9_memcpy16((u16*)0x06208000, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 0x2A00 >> 1);
-
-	*(vu8*)0x04000248 = 0x82;; //H to extpltt
+	arm9_memcpy16((u16*)0x068A0000, (u16*)MAIN_MEMORY_ADDRESS_ROM_DATA, 0x2A00 >> 1);
 	return;
 
 noframe:
 	for(int i = 0; i < 128; i++)
-		((u32*)0x06898000)[i] = 0;
-	*(vu8*)0x04000248 = 0x82;; //H to extpltt
+		((u32*)0x06200000)[i] = 0;
 }
 
 void FileBrowser::LoadGame(const char* path, u32 id)

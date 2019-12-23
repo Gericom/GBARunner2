@@ -27,6 +27,7 @@ uint32_t srcAddress = 0;
 
 u8 sChannelATimer = 0;
 u8 sChannelAVolume = 1;
+u8 sChannelAEnables = 0;
 
 u16 sTimerReloadVals[4];
 u16 sTimerControlVals[4];
@@ -44,6 +45,35 @@ static int sampcnter = 0;
 	}
 }*/
 
+static void calcChannelVolume(int channel, int& volumeL, int& volumeR)
+{
+	if(channel == 1)
+	{
+		volumeL = 0;
+		volumeR = 0;
+		return;
+	}
+	if(sampleFreq <= 0 || sampleFreq >= 1000000)
+	{
+		volumeL = 0;
+		volumeR = 0;	
+	}
+	int vol = sChannelAVolume == 1 ? 0x7F : 0x40;
+	if((sChannelAEnables & 1) || (sChannelAEnables & 2))
+	{
+		volumeL = vol;
+		volumeR = vol;
+	}
+	else
+	{
+		volumeL = 0;
+		volumeR = 0;
+	}
+	//todo: enable this when both channels are implemented
+	//volumeL = (sChannelAEnables & 1) ? vol : 0;
+	//volumeR = (sChannelAEnables & 2) ? vol : 0;
+}
+
 void gba_sound_init()
 {
 	REG_SOUNDCNT = REG_SOUNDCNT_E | 0x7F;
@@ -51,6 +81,10 @@ void gba_sound_init()
 	soundStarted = 0;
 	soundBufferWriteOffset = 0;
 	sampleFreq = 0;
+	vram_cd->sound_emu_work.req_read_ptr = 0;
+	vram_cd->sound_emu_work.req_write_ptr = 0;
+	vram_cd->sound_emu_work.resp_read_ptr = 0;
+	vram_cd->sound_emu_work.resp_write_ptr = 0;
 	//soundBufferVirtualWriteOffset = 0;
 	//soundBufferVirtualReadOffset = 0;
 	//REG_TM[2].CNT_H = 0;
@@ -60,9 +94,17 @@ void gba_sound_init()
 
 void gba_sound_resync()
 {
-	soundStarted = 0;
-	soundBufferWriteOffset = 0;
-	//REG_SOUND[0].CNT = 0;
+	int oldIrq = enterCriticalSection();
+	{
+		soundStarted = 0;
+		soundBufferWriteOffset = 0;
+		srcAddress = 0;
+		vram_cd->sound_emu_work.req_write_ptr = vram_cd->sound_emu_work.req_read_ptr;
+		vram_cd->sound_emu_work.resp_read_ptr = vram_cd->sound_emu_work.resp_write_ptr;
+		REG_SOUND[0].CNT = 0;
+		REG_SOUND[1].CNT = 0;
+	}
+	leaveCriticalSection(oldIrq);
 }
 
 static void gba_sound_update_ds_channels()
@@ -86,12 +128,13 @@ static void gba_sound_update_ds_channels()
 		REG_SOUND[1].LEN = SOUND_BUFFER_SIZE >> 2; //396 * 10;
 
 		//REG_TM[2].CNT_L = TIMER_FREQ(13378);
-
+		int volumeL, volumeR;
+		calcChannelVolume(0, volumeL, volumeR);
 		REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
-			REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(0x7F);
+			REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(volumeL);
 		//SOUND_CHANNEL_0_SETTINGS;
 		REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
-			REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(0x7F);
+			REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(volumeR);
 		//SOUND_CHANNEL_0_SETTINGS;
 		soundStarted = 1;
 		//REG_TM[2].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_256;
@@ -135,6 +178,10 @@ extern "C" void timer3_overflow_irq()
 		}
 		else
 		{
+			for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
+				soundBuffer[(soundBufferWriteOffset + i) & (SOUND_BUFFER_SIZE - 1)] = soundBuffer[(soundBufferWriteOffset - FIFO_BLOCK_SIZE + i) & (SOUND_BUFFER_SIZE - 1)];
+			soundBufferWriteOffset = (soundBufferWriteOffset + FIFO_BLOCK_SIZE) & (SOUND_BUFFER_SIZE - 1);
+			gba_sound_update_ds_channels();
 			/*vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
 			vram_cd->sound_emu_work.req_read_ptr++;
 			if (vram_cd->sound_emu_work.req_read_ptr >= SOUND_EMU_QUEUE_LEN)
@@ -160,6 +207,17 @@ extern "C" void timer3_overflow_irq()
 		sampcnter = 0;
 }
 
+static void updateChannelVolume(int channel)
+{
+	if(channel == 0)
+	{
+		int volumeL, volumeR;
+		calcChannelVolume(0, volumeL, volumeR);
+		REG_SOUND[0].CNT = (REG_SOUND[0].CNT & ~REG_SOUNDXCNT_VOLUME(0x7F)) | REG_SOUNDXCNT_VOLUME(volumeL);
+		REG_SOUND[1].CNT = (REG_SOUND[1].CNT & ~REG_SOUNDXCNT_VOLUME(0x7F)) | REG_SOUNDXCNT_VOLUME(volumeR);
+	}
+}
+
 void gbas_updateChannelATimer()
 {
 	int freq = 0;
@@ -176,10 +234,12 @@ void gbas_updateChannelATimer()
 			REG_IE |= (1 << 6);
 			REG_SOUND[0].TMR = sTimerReloadVals[sChannelATimer];
 			REG_SOUND[1].TMR = sTimerReloadVals[sChannelATimer];
+			int volumeL, volumeR;
+			calcChannelVolume(0, volumeL, volumeR);
 			REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
-				REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(0x7F);
+				REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(volumeL);
 			REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
-				REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(0x7F);
+				REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(volumeR);
 		}
 		else
 		{
@@ -249,6 +309,11 @@ void gba_sound_fifo_write16(uint8_t* samps)
 void gbas_updateVolume(u8 vol)
 {
 	sChannelAVolume = (vol >> 2) & 1;
+	if(soundStarted)
+	{
+		updateChannelVolume(0);
+		updateChannelVolume(1);
+	}
 }
 
 void gbas_updateMixConfig(u8 mixConfig)
@@ -259,4 +324,7 @@ void gbas_updateMixConfig(u8 mixConfig)
 		sChannelATimer = newATimer;
 		gbas_updateChannelATimer();
 	}
+	sChannelAEnables = mixConfig & 3;
+	updateChannelVolume(0);
+	updateChannelVolume(1);
 }

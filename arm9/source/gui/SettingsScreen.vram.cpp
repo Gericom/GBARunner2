@@ -12,7 +12,7 @@
 #include "SettingsCategoryListAdapter.h"
 #include "SettingsItemListAdapter.h"
 #include "SettingsItemListEntry.h"
-#include "SettingsCategoryListEntry.h"
+#include "SingleLineIconListEntry.h"
 #include "UIContext.h"
 #include "settings.h"
 #include "SettingsScreen.h"
@@ -20,27 +20,31 @@
 #define STRINGIFY2(x)	#x
 #define STRINGIFY(x)	STRINGIFY2(x)
 
-static settings_item_t sEmulationItems[] =
+static PUT_IN_VRAM settings_item_t sEmulationItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
     //{ SETTINGS_ITEM_MODE_CHECK, "Enable autosaving", "Writes back the save to sd after a game saves", &gEmuSettingAutoSave },
-    { SETTINGS_ITEM_MODE_CHECK, "Enable border frame", "Enables the usage of gba border frames", &gEmuSettingFrame },
-    { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", &gEmuSettingCenterMask },
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", &gEmuSettingMainMemICache },    
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", &gEmuSettingWramICache },
-	{ SETTINGS_ITEM_MODE_CHECK, "Simulate GBA colors", "Darkens the colors to simulate a GBA screen", &gEmuSettingGbaColors },
     { SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", &gEmuSettingSkipIntro }
 };
 
-static settings_item_t sInputItems[] =
+static PUT_IN_VRAM settings_item_t sDisplayItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_SIMPLE, "GBA A button", "DS A button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA B button", "DS B button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA L button", "DS L button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA R button", "DS R button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA START button", "DS START button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA SELECT button", "DS SELECT button", NULL }
+	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
+    { SETTINGS_ITEM_MODE_CHECK, "Enable border frame", "Enables the usage of gba border frames", &gEmuSettingFrame },
+    { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", &gEmuSettingCenterMask },
+	{ SETTINGS_ITEM_MODE_CHECK, "Simulate GBA colors", "Darkens the colors to simulate a GBA screen", &gEmuSettingGbaColors }
 };
+
+// static PUT_IN_VRAM settings_item_t sInputItems[] =
+// {    
+// 	{ SETTINGS_ITEM_MODE_SIMPLE, "GBA A button", "DS A button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA B button", "DS B button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA L button", "DS L button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA R button", "DS R button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA START button", "DS START button", NULL },
+//     { SETTINGS_ITEM_MODE_SIMPLE, "GBA SELECT button", "DS SELECT button", NULL }
+// };
 
 #ifndef GIT_COMMIT_DATE
 #define GIT_COMMIT_DATE unavailable
@@ -52,7 +56,7 @@ static settings_item_t sInputItems[] =
 #define GIT_BRANCH unavailable
 #endif
 
-static settings_item_t sInfoItems[] =
+static PUT_IN_VRAM settings_item_t sInfoItems[] =
 {    
 	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", STRINGIFY(GIT_COMMIT_DATE), NULL },
 	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit hash", STRINGIFY(GIT_COMMIT_HASH), NULL },
@@ -77,9 +81,10 @@ static settings_item_t sInfoItems[] =
 
 static const settings_category_t sCategories[] =
 {
-    { "Emulation Settings", SettingsCategoryListEntry::SETTINGS_CATEGORY_ICON_PLAYCIRCLE, sizeof(sEmulationItems) / sizeof(settings_item_t), sEmulationItems },
-    //{ "Input Settings", SettingsCategoryListEntry::SETTINGS_CATEGORY_ICON_GAMEPAD, sizeof(sInputItems) / sizeof(settings_item_t), sInputItems },
-    { "About GBARunner2", SettingsCategoryListEntry::SETTINGS_CATEGORY_ICON_INFO, sizeof(sInfoItems) / sizeof(settings_item_t), sInfoItems }
+    { "\"Emulation\" Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_PLAYCIRCLE, sizeof(sEmulationItems) / sizeof(settings_item_t), sEmulationItems },
+	{ "Display Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_EYE, sizeof(sDisplayItems) / sizeof(settings_item_t), sDisplayItems },
+    //{ "Input Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_GAMEPAD, sizeof(sInputItems) / sizeof(settings_item_t), sInputItems },
+    { "About GBARunner2", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_INFO, sizeof(sInfoItems) / sizeof(settings_item_t), sInfoItems }
 };
 
 void SettingsScreen::GotoCategory(const settings_category_t* category)
@@ -129,8 +134,9 @@ void SettingsScreen::Run()
 	while (*((vu16*)0x04000004) & 1);
 	while (!(*((vu16*)0x04000004) & 1));
 	_uiContext->GetUIManager().VBlank();
+	SettingsCategoryListAdapter::LoadCommonData(_uiContext->GetUIManager());
 	SettingsItemListEntry::LoadCommonData(_uiContext->GetUIManager());
-	SettingsCategoryListEntry::LoadCommonData(_uiContext->GetUIManager());
+	SingleLineIconListEntry::LoadCommonData(_uiContext->GetUIManager());
 	_vramState = _uiContext->GetUIManager().GetSubObjManager().GetState();	
     GotoCategory(NULL);
 	while (1)

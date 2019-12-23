@@ -49,6 +49,11 @@ itcm_setup_copyloop:
 	stmia r2!, {r3-r10}
 	subs r1, #0x20
 	bne itcm_setup_copyloop
+	
+	//Move wram into place
+	ldr r0,= 0x4000247
+	mov r1, #0
+	strb r1, [r0]
 
 	ldr r0,= fiq_hook
 	sub r0, #0x1C	//relative to source address
@@ -256,30 +261,6 @@ vram_setup_copyloop:
 	ldr r0,= 0x04000249
 	mov r1, #0x82
 	strb r1, [r0]
-	//decompress debugFont to 0x06200000
-	//ldr r0,= debugFont
-	//ldr r1,= 0x06200000
-	//ldr r2,=0x1194
-	//blx r2
-	//svc 0x120000
-
-	mov r0, #0
-	ldr r1,= 0x06202000
-	mov r2, #1024
-gba_setup_fill_sub_loop:
-	str r0, [r1], #4
-	subs r2, #4
-	bne gba_setup_fill_sub_loop
-
-	ldr r0,= 0x06202000
-	ldr r1,= 0x54534554
-	str r1, [r0]
-
-	ldr r0,= 0x05000400
-	ldr r1,= 0x7FFF
-	strh r1, [r0], #2
-	ldr r1,= 0x0000
-	strh r1, [r0]
 
 	ldr r0,= __dtcm2_lma
 	ldr r1,= (16 * 1024)
@@ -357,15 +338,6 @@ fifo_loop_1:
 		beq .
 #endif
 
-	ldr r0,= _dldi_start + 16
-	ldr r1,= 0x06202000
-	mov r2, #48
-dldi_name_copy:
-	ldr r3, [r0], #4
-	str r3, [r1], #4
-	subs r2, #4
-	bne dldi_name_copy
-
 	ldr r0,= 0x33333333
 	mcr p15, 0, r0, c5, c0, 2
 	
@@ -384,7 +356,6 @@ dldi_name_copy:
 
 	mcr	p15, 0, r0, c7, c10, 4
 
-	mov r0, #0x01000000
 	bl sd_init
 	bl dc_wait_write_buffer_empty
 	bl dc_flush_all
@@ -396,55 +367,6 @@ dldi_name_copy:
 
 	ldr r0,= pu_data_permissions
 	mcr p15, 0, r0, c5, c0, 2
-
-	ldr r0,= 0x04001030
-	ldr r1,= 0x100
-	strh r1, [r0]
-	strh r1, [r0, #6]
-
-	ldr r1,= 0x00
-	strh r1, [r0, #2]
-	strh r1, [r0, #4]
-
-	str r1, [r0, #0xC]
-
-	//more displaycap stuff
-	ldr r0,= 0x04001000
-	ldr r1,= 0x40013923 //0x13923
-	str r1, [r0]
-	ldr r1,= 0x1788
-	strh r1, [r0, #0x8]
-	ldr r1,= (0x4084 | (1 << 10))
-	strh r1, [r0, #0xE]
-
-	ldr r2,= gEmuSettingCenterMask
-	ldr r2, [r2]
-	cmp r2, #1
-	bne skip_center_mask
-
-	//center
-	ldr r1,= -(8 * 256)
-	str r1, [r0, #0x38]
-	ldr r1,= -(16 * 256)
-	str r1, [r0, #0x3C]
-	//mask
-	ldr r1,= 0x08F8
-	strh r1, [r0, #0x40]
-	ldr r1,= 0x10B0
-	strh r1, [r0, #0x44]
-	mov r1, #0x18
-	strh r1, [r0, #0x48]
-	mov r1, #1 //(1 << 5)
-	strh r1, [r0, #0x4A]
-	mov r1, #0x10
-	strh r1, [r0, #0x54]
-	ldr r1,= 0x3FFF
-	strh r1, [r0, #0x50]
-skip_center_mask:
-
-	ldr r2,= 0x05000400
-	mov r1, #0
-	strh r1, [r2]
 
 	//setup the oam
 	ldr r2,= 0x07000400
@@ -473,221 +395,8 @@ skip_center_mask:
 	cmp r1, #192
 	blt 1b
 
-	//disable vram h and i
-	ldr r0,= 0x04000248
-	mov r1, #0x00
-	//strb r1, [r0]
-	strb r1, [r0, #1]
-
-	//disable the 3d geometry and render engine and swap the screens
-	ldr r0,= 0x04000304
-	ldrh r1, [r0]
-	bic r1, #0xC
-
-	//set the screen swap setting
-	ldr r2,= gEmuSettingUseBottomScreen
-	ldr r2, [r2]
-	cmp r2, #1
-	bicne r1, #0x8000
-	orreq r1, #0x8000
-
-	ldr r2,= gEmuSettingCenterMask
-	ldr r2, [r2]
-	cmp r2, #1
-	eorne r1, #0x8000 //reversed if no center+mask
-	
-	strh r1, [r0]
-
-	//turn off the other engine display using masterbright
-	ldreq r0,= 0x0400006C
-	ldrne r0,= 0x0400106C
-	ldr r1,= 0x801F
-	strh r1, [r0]
-
-	ldr r2,= gEmuSettingGbaColors
-	ldr r2, [r2]
-	cmp r2, #1
-	eoreq r0, #0x1000
-	ldreq r1,= 0x8008
-	streqh r1, [r0]
-
-	//Copy GBA Bios in place
-//	ldr r0,= bios_tmp
-//	mov r1, #0x4000
-//	mov r2, #0
-//gba_setup_copyloop:
-//	ldmia r0!, {r3-r10}
-//	stmia r2!, {r3-r10}
-//	subs r1, #0x20
-//	bne gba_setup_copyloop
-
-	//patch the stack to be in dtcm for speed
-	//doesn't seem to work right for some reason
-	//ldr r0,= 0x020400F4
-	//ldr r1, [r0]
-	//ldr r2,= 0x03007E00
-	//cmp r1, r2
-	//ldreq r1,= 0x10004000
-	//streq r1, [r0]
-
-	//in order for this to work, we need to find a way to boot up in retail mode 
-	//(so that your flashcard emulates a real ds card and we can use card commands, which is 
-	//much faster as direct sd access, because we don't need to deal with the fat filesystem)
-	//we tempoarly need a stack for this
-	//ldr sp,= 0x10004000
-	//bl card_interface_init
-
-	//copy simple gba rom to 02040000
-//	ldr r0,= rom_bin //simpleRom
-//	ldr r1,= rom_bin_size //simpleRomSize
-//	ldr r1, [r1]
-//	mov r2, #0x02040000
-	//Copy in reverse to prevent overwriting itself
-//	add r0, r1
-//	add r2, r1
-//gba_setup_copyloop_rom2:
-//	ldmdb r0!, {r3-r10}
-//	stmdb r2!, {r3-r10}
-//	subs r1, #0x20
-//	bgt gba_setup_copyloop_rom2
-
-	//Make bios jump to 02040000
-	//ldr r0,= 0xE3A0E781
-	//ldr r1,= 0xCC
-	//str r0, [r1]
-
-	//Move wram into place
-	ldr r0,= 0x4000247
-	mov r1, #0
-	strb r1, [r0]
-
-	//move vram into place
-	//The gba had 3 ram banks:
-	//A - 64kb - always mapped to bg (0x06000000)	-> same on nds as block E
-	//B - 16kb - either mapped to bg or obj (bg in modes 3,4,5) (0x06010000) -> same only for bg as block F
-	//C - 16kb - always mapped to obj (0x06014000)	-> different on nds as block G
-
-	ldr r0,= 0x04000240
-	//mov r1, #0
-	//strb r1, [r0, #0] //disable bank a
-	//strb r1, [r0, #1] //disable bank b
-	////used for debugging on the sub screen, so don't disable it
-	//mapped to the arm7, so don't disable it
-	//strb r1, [r0, #2] //disable bank c
-	//mapped to the arm7, so don't disable it
-	//strb r1, [r0, #3] //disable bank d
-
-	mov r1, #0x81
-	strb r1, [r0, #4]	//bank E to bg at 0x06000000
-
-	mov r1, #0x82	
-	strb r1, [r0, #5]	//bank F to obj at 0x06400000	(would be 0x91 for mapping to bg at 0x06010000)
-
-	mov r1, #0x8A
-	strb r1, [r0, #6]	//bank G to obj at 0x06404000
-
-
-	//Move bg vram into place
-	//ldr r0,= 0x04000244
-	//mov r1, #0x81
-	//strb r1, [r0]
-
-	//ldr r0,= 0x04000245
-	//mov r1, #0x91
-	//strb r1, [r0]
-
-	//ldr r0,= 0x04000246
-	//mov r1, #0x99
-	//strb r1, [r0]
-
-	//ldr r0,= 0x04000240
-	//mov r1, #0x82
-	//strb r1, [r0]
-
-	//map vram h to lcdc for use with eeprom shit
-	//ldr r0,= 0x04000248
-	//mov r1, #0x80
-	//strb r1, [r0]
-
-//	mov r0, #0 //#0xFFFFFFFF
-//	ldr r1,= 0x23F0000 //(0x02400000 - (1584 * 2) - (32 * 1024))//0x06898000
-//	mov r2, #(64 * 1024)
-//gba_setup_fill_H_loop:
-//	str r0, [r1], #4
-//	subs r2, #4
-//	bne gba_setup_fill_H_loop
-
-	//ldr r0,= 0x74
-	//mov r1, #0
-	//str r1, [r0]//fix post boot redirect
-	//ldr r0,= 0x800
-	//ldr r1,= 0x4770
-	//strh r1, [r0]//fix sound bias hang
-
-	//Patch the CpuSet and CpuFastSet bios functions for faster sd access (aka larger blocks instead of 4 bytes each time)
-	//CpuFastSet
-	//ROM:00000BD4                 BEQ     loc_C24
-	//replace with jump to address check code
-
-	//this works unsafe at the moment, because it seems interrupts can occur fucking everything up
-
-	//ldr r0,= bios_cpufastset_sd_patch
-	//ldr r1,= 0xBD4
-	//sub r0, r1	//relative to source address
-	//sub r0, #8	//pc + 8 compensation
-	//mov r1, #0xEA000000
-	//orr r1, r0, lsr #2
-	//ldr r0,= 0xBD4
-	//str r1, [r0]
-
-	//replace the write to haltcnt in waitintr with a cp15 instruction that does the same on arm9
-	//ldr r0,= bios_waitintr_fix
-	//ldr r0, [r0]
-	//mov r1, #0x344
-	//str r0, [r1]
-	//mov r1, #0x1B0
-	//str r0, [r1]
-
-//#ifdef ENABLE_WRAM_ICACHE
-	//ldr r0,= bios_cpuset_cache_patch
-	//mov r1, #0x1F4
-	//str r0, [r1]
-
-	//ldr r0,= bios_cpufastset_cache_patch
-	//mov r1, #0x1F8
-	//str r0, [r1]
-//#endif
-
-	//We need to get into privileged mode, misuse the undefined mode for it
-	//ldr r0,= gba_start_bkpt
-	//sub r0, #0xC	//relative to source address
-	//sub r0, #8	//pc + 8 compensation
-	//mov r1, #0xEA000000
-	//orr r1, r0, lsr #2
-	//mov r0, #0xC
-	//str r1, [r0]
-
 	ldr r0,= gba_start_bkpt_vram
 	bx r0
-
-	//bkpt #0
-	//Try out bios checksum
-	//swi #0xD0000
-	//ldr r1,= 0xBAAE187F
-	//cmp r0, r1
-	//ldreq r0,= 0x05000000
-	//ldreq r1,= 0x3E0
-	//streqh r1, [r0]
-	//ldr r0,= swi_handler
-	//sub r0, #8	//relative to source address
-	//sub r0, #8	//pc + 8 compensation
-	//mov r1, #0xEA000000
-	//orr r1, r0, lsr #2
-	//mov r0, #8
-	//str r1, [r0]
-	//swi #0
-gba_setup_loop:
-	b gba_setup_loop
 
 //.section .itcm
 //swi_handler:

@@ -14,13 +14,20 @@ static const u8 sSomeBuggedMixer[16] =
 
 
 extern "C" void gptc_banjoPilotFix();
+extern "C" void gptc_americanBassFix();
 
 void gptc_patchRom()
 {
 	//fix a soundmixer that has ldm with writeback and rb in rlist
 	u32* buggedMixer = gptc_findSignature(sSomeBuggedMixer);
 	if (buggedMixer)
+	{
 		buggedMixer[1] = 0xE890000F;
+		//some games contain it twice??
+		buggedMixer = gptc_findSignature(sSomeBuggedMixer);
+		if (buggedMixer)
+			buggedMixer[1] = 0xE890000F;
+	}
 
 	u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);
 	if(gameCode == 0x504A4142 || gameCode == 0x454A4142)
@@ -92,6 +99,47 @@ void gptc_patchRom()
 		for(int i = 0; i < 0x24; i+=4)
 			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xCC + i) = 0;
 	}
+	else if(gameCode == 0x45424141)
+	{
+		//Game crashes because of a race condition (caused by timing differences) related to a buffer
+		//that contains some values for display related io registers. It it initialized by zeros,
+		//and later the actual values are written, but before that it already makes a copy to io,
+		//which disables vblank irqs and makes the game crash. This code ensures the irq is not
+		//disabled, which fixes the entire game.
+		*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x13C) = 0x4800; //ldr r0,= gptc_americanBassFix+1
+		*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x13E) = 0x4700; //bx r0
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x140) = (u32)&gptc_americanBassFix + 1;
+	}
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+	//These games all have the same problem (same code)
+	//They uses abort mode for some things, idk why, but make it use undefined mode instead because abt mode is sacred in gbarunner2
+	//Yet to do:
+	//	- 2 Games in 1 - Bionicle + Knights' Kingdom
+	//	- Lego Bionicle - Maze of Shadows
+	//	- Medal of Honor - Infiltrator [UE]
+	//Maybe there are more?
+	else if(gameCode == 0x504E4B42 || gameCode == 0x454E4B42)
+	{
+		//Lego Knights' Kingdom
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xD0) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3ECB48) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3ECB84) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x58574142)
+	{
+		//Alex Rider - Stormbreaker (Europe)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x11C) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3C5978) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3C59B4) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x58574142)
+	{
+		//Alex Rider - Stormbreaker (USA)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x11C) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3D73C0) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3D73FC) = 0xE3A0009B;
+	}
+#endif
 	/*else if(gameCode == 0x45573241 || gameCode == 0x50573241)
 	{
 		//Star Wars - The New Droid Army

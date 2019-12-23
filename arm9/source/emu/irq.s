@@ -254,6 +254,11 @@ loc_138:
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
+	ldr r12,= open_menu_irq_flag_uncached
+	ldr r12, [r12]
+	cmp r12, #1
+	beq openMenuIrq
+
 	ldr r12,= save_save_work_state_uncached
 	ldrb r12, [r12]
 	cmp r12, #3 //sdsave request
@@ -312,6 +317,7 @@ irq_handler_arm7_irq_snd:
 		bne 5f //request queue not empty, don't clear irq
 
 4:
+	mov r12, #0x04000000
 	mov r1, #(1 << 16)
 	mov r12, #0x04000000
 	str r1, [r12, #0x214]
@@ -376,6 +382,61 @@ sdsave_request:
 	ldr r12,= sd_write_save
 	blx r12
 	b finish_nohandle
+
+oldStack:
+	.word 0
+
+openMenuIrq:
+	str sp, oldStack
+	ldr sp,= address_dtcm + (16 * 1024)
+	ldr r12,= igm_execute
+	blx r12
+	ldr sp, oldStack
+
+	mov r12, #0x04000000
+	mov r1, #(1 << 16)
+	str r1, [r12, #0x214]
+	
+	cmp r0, #1
+	bne finish_nohandle
+
+	bl dc_wait_write_buffer_empty
+	bl dc_flush_all
+	bl ic_invalidateAll
+
+	mov r12, #0x04000000
+	str r12, [r12, #0x208]
+	msr cpsr_fc, #0x9f
+
+	ldr r2,= gEmuSettingSkipIntro
+	ldr r2, [r2]
+	cmp r2, #1
+	ldrne r12,= swi_hardReset //with intro
+	ldreq r12,= swi_softReset //without intro
+
+	ldr r2,= pu_data_permissions
+	mcr p15, 0, r2, c5, c0, 2
+
+	mov r2, #0x04000000
+	//disable dma
+	strh r2, [r2, #0xBA]
+	strh r2, [r2, #0xC6]
+	strh r2, [r2, #0xD2]
+	strh r2, [r2, #0xDE]
+	//disable sound
+	strh r2, [r2, #0x82]
+	//disable timers
+	add r3, r2, #0x100
+	strh r2, [r2, #0x2]
+	strh r2, [r2, #0x6]
+	strh r2, [r2, #0xA]
+	strh r2, [r2, #0xE]
+	//disable all irqs and reset irq flags
+	add r3, r2, #0x200
+	strh r2, [r3]
+	strh r2, [r3, #2]
+
+	bx r12
 
 cap_control:
 	eor r1, #0x00010000

@@ -30,7 +30,7 @@ void Dialog::Initialize(UIManager& uiManager)
 				mapEntry = 0;
 			else
 				mapEntry = (15 << 12) | 3;
-			BG_GFX_SUB[(0x4000 >> 1) + y * 32 + x] = mapEntry;
+			BG_GFX_SUB[(0x1000 >> 1) + y * 32 + x] = mapEntry;
 		}
 	}
 	BG_OFFSET_SUB[2].x = -_x;

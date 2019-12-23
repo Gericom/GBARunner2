@@ -17,7 +17,7 @@ extern "C" void timer1_overflow_irq()
 		case SAVE_WORK_STATE_WAIT:
 			vram_cd->save_work.save_state = SAVE_WORK_STATE_SDSAVE;
 			//invoke an irq on arm9
-			*((vu32*)0x04000180) |= (1 << 13);
+			REG_IPC_SYNC |= IPC_SYNC_IRQ_REQUEST;
 			break;
 		case SAVE_WORK_STATE_SDSAVE:
 			break;
@@ -31,5 +31,5 @@ void gba_save_init()
 	REG_TM[1].CNT_H = 0;
 	REG_TM[1].CNT_L = TIMER_FREQ(2 * 1024);
 	REG_TM[1].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_1024;
-	REG_IE |= (1 << 4);
+	REG_IE |= IRQ_TIMER(1);
 }

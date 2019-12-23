@@ -61,7 +61,7 @@ endif
 
 LDFLAGS	=	-specs=../ds_arm7_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*).map
 
-LIBS	:=	-lnds7
+LIBS	:=	# -lnds7
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

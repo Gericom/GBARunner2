@@ -10,9 +10,25 @@
 #include "wifi/wifi.h"
 #include "wifi/wifi_tx.h"
 #include "sio/sio.h"
+#include "rtc.h"
 
-static void vblank_handler()
+static bool sPrevTouchDown = false;
+
+extern "C" void __libnds_exit()
 {
+
+}
+
+extern "C" void irq_vblank()
+{
+	bool touchDown = (REG_KEYXY & (1 << 6)) == 0;
+	if(!sPrevTouchDown && touchDown)
+	{
+		//invoke irq on arm9
+		vram_cd->openMenuIrqFlag = 1;
+		REG_IPC_SYNC |= IPC_SYNC_IRQ_REQUEST;
+	}
+	sPrevTouchDown = touchDown;
 }
 
 extern "C" void my_irq_handler();
@@ -112,6 +128,9 @@ int main()
 	gbs_init();
 	gba_save_init();
 
+	//set vblank irq
+	REG_DISPSTAT |= DISP_VBLANK_IRQ;
+	REG_IE |= IRQ_VBLANK;
 
 	//irqSet(IRQ_VBLANK, vblank_irq_handler);
 	//irqEnable(IRQ_VBLANK);
@@ -147,7 +166,7 @@ int main()
 	{
 		while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 		{
-			if (!(*((vu32*)0x04000136) & 1))
+			if (!(REG_KEYXY & 1))
 				gba_sound_resync();
 		}
 
@@ -229,6 +248,16 @@ int main()
 					}
 					break;
 				}
+			case 0xAA5500FF://set master volume
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;					
+					if(val & 0x80000000)
+						gba_sound_resync();
+					int volume = val & 0x7F;
+					REG_SOUNDCNT = (REG_SOUNDCNT & ~0x7F) | volume;
+					break;
+				}
 			case 0xAA560000: //sio reinit
 				sio_init();
 				break;
@@ -236,9 +265,9 @@ int main()
 				{
 					u8 dateTime[8];
 					u8 cmd = READ_TIME_AND_DATE;
-					rtcTransaction(&cmd, 1, dateTime, 7);
+					rtc_doTransfer(&cmd, 1, dateTime, 7);
 					cmd = READ_STATUS_REG1;
-					rtcTransaction(&cmd, 1, &dateTime[7], 1);
+					rtc_doTransfer(&cmd, 1, &dateTime[7], 1);
 					REG_SEND_FIFO = *(u32*)&dateTime[0];
 					REG_SEND_FIFO = *(u32*)&dateTime[4];
 					break;

@@ -4,7 +4,8 @@
 #include "core/ListAdapter.h"
 #include "core/InputRepeater.h"
 #include "core/ListRecycler.h"
-#include "SettingsCategoryListEntry.h"
+#include "SingleLineIconListEntry.h"
+#include "SettingsCategoryListAdapter.h"
 #include "SettingsItemListEntry.h"
 #include "Toolbar.h"
 #include "UIContext.h"
@@ -20,7 +21,7 @@ struct settings_item_t
 struct settings_category_t
 {
 	const char* name;
-	SettingsCategoryListEntry::CategoryIcon icon;
+	SettingsCategoryListAdapter::CategoryIcon icon;
 	int itemCount;
 	settings_item_t* items;
 };

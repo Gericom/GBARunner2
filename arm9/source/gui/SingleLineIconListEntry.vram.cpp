@@ -6,27 +6,10 @@
 #include "core/NtftFont.h"
 #include "Toolbar.h"
 #include "uiutil.h"
-#include "IconPlayCircle_nbfc.h"
-#include "IconGamepad_nbfc.h"
-#include "IconInformation_nbfc.h"
-#include "SettingsCategoryListEntry.h"
+#include "SingleLineIconListEntry.h"
 
-u16 SettingsCategoryListEntry::sPlayCircleObjAddr;
-u16 SettingsCategoryListEntry::sGamepadObjAddr;
-u16 SettingsCategoryListEntry::sInfoObjAddr;
-
-void SettingsCategoryListEntry::LoadCommonData(UIManager& uiManager)
+void SingleLineIconListEntry::LoadCommonData(UIManager& uiManager)
 {
-	sPlayCircleObjAddr = uiManager.GetSubObjManager().Alloc(IconPlayCircle_nbfc_size);
-	for (int i = 0; i < IconPlayCircle_nbfc_size / 2; i++)
-		SPRITE_GFX_SUB[(sPlayCircleObjAddr >> 1) + i] = ((u16*)IconPlayCircle_nbfc)[i];
-	sGamepadObjAddr = uiManager.GetSubObjManager().Alloc(IconGamepad_nbfc_size);
-	for (int i = 0; i < IconGamepad_nbfc_size / 2; i++)
-		SPRITE_GFX_SUB[(sGamepadObjAddr >> 1) + i] = ((u16*)IconGamepad_nbfc)[i];
-	sInfoObjAddr = uiManager.GetSubObjManager().Alloc(IconInformation_nbfc_size);
-	for (int i = 0; i < IconInformation_nbfc_size / 2; i++)
-	 	SPRITE_GFX_SUB[(sInfoObjAddr >> 1) + i] = ((u16*)IconInformation_nbfc)[i];
-
 	PaletteManager& palMan = uiManager.GetSubObjPalManager();
 	for (int i = 0; i < 16; i++)
 	{
@@ -45,12 +28,12 @@ void SettingsCategoryListEntry::LoadCommonData(UIManager& uiManager)
 	palMan.palette[1 + (7 * 16)].color = RGB5(28, 28, 28);
 }
 
-void SettingsCategoryListEntry::Initialize(UIManager& uiManager)
+void SingleLineIconListEntry::Initialize(UIManager& uiManager)
 {
 	_nameObjAddr = uiManager.GetSubObjManager().Alloc(192 * 16 / 2);
 }
 
-void SettingsCategoryListEntry::Update(UIManager& uiManager)
+void SingleLineIconListEntry::Update(UIManager& uiManager)
 {
 	OamManager&     oamMan = uiManager.GetSubOamManager();
 	int palOffset = 0;
@@ -75,20 +58,7 @@ void SettingsCategoryListEntry::Update(UIManager& uiManager)
 	SpriteEntry* iconOam = oamMan.AllocOams(1);
 	iconOam->attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_SQUARE | OBJ_Y(_offsetY + 8);
 	iconOam->attribute[1] = ATTR1_SIZE_16 | OBJ_X(_offsetX + 10);
-	u16 icon;
-	switch (_icon)
-	{
-		case SETTINGS_CATEGORY_ICON_PLAYCIRCLE:
-			icon = sPlayCircleObjAddr;
-			break;
-		case SETTINGS_CATEGORY_ICON_GAMEPAD:
-			icon = sGamepadObjAddr;
-			break;
-		case SETTINGS_CATEGORY_ICON_INFO:
-			icon = sInfoObjAddr;
-			break;
-	}
-	iconOam->attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(4 + palOffset) | (icon >> 5);
+	iconOam->attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(4 + palOffset) | (_iconObjAddr >> 5);
 
 	SpriteEntry* nameOams = oamMan.AllocOams(6);
 	for (int i = 0; i < 6; i++)
@@ -100,7 +70,7 @@ void SettingsCategoryListEntry::Update(UIManager& uiManager)
 	}
 }
 
-void SettingsCategoryListEntry::VBlank(UIManager& uiManager)
+void SingleLineIconListEntry::VBlank(UIManager& uiManager)
 {
 	if (_nameInvalidated)
 	{
@@ -115,7 +85,7 @@ void SettingsCategoryListEntry::VBlank(UIManager& uiManager)
 	}
 }
 
-void SettingsCategoryListEntry::SetName(const char* name)
+void SingleLineIconListEntry::SetName(const char* name)
 {
 	int len = strlen(name);
 	if (len > 63)

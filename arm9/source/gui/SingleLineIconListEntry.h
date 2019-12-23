@@ -3,30 +3,19 @@
 #include "core/ListEntry.h"
 #include "core/NtftFont.h"
 
-class SettingsCategoryListEntry : public ListEntry
+class SingleLineIconListEntry : public ListEntry
 {
-	static u16 sPlayCircleObjAddr;
-	static u16 sGamepadObjAddr;
-	static u16 sInfoObjAddr;
-
-public:
-	enum CategoryIcon : u16
-	{
-		SETTINGS_CATEGORY_ICON_PLAYCIRCLE,
-		SETTINGS_CATEGORY_ICON_GAMEPAD,
-		SETTINGS_CATEGORY_ICON_INFO
-	};
-
 private:
 	const NtftFont* _font;
-	CategoryIcon _icon;
+	//CategoryIcon _icon;
+	u16 _iconObjAddr;
 	u16       _nameObjAddr;
 	char      _name[128];
 	u16      _nameInvalidated;
 public:	
 	static void LoadCommonData(UIManager& uiManager);
 
-    explicit SettingsCategoryListEntry(const NtftFont* font)
+    explicit SingleLineIconListEntry(const NtftFont* font)
 		: _font(font)
 	{
 	}
@@ -43,5 +32,6 @@ public:
 
 	void SetName(const char* name);
 
-	void SetIcon(CategoryIcon icon) { _icon = icon; }
+	void SetIcon(u16 iconObjAddr) { _iconObjAddr = iconObjAddr; }
+	//void SetIcon(CategoryIcon icon) { _icon = icon; }
 };

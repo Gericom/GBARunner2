@@ -70,6 +70,8 @@
 
 #define sio_work (save_save_work + ((128 * 1024 / 512) * 4) + 8)
 
+#define open_menu_irq_flag_uncached (sio_work + 0x24 + UNCACHED_OFFSET)
+
 #define CACHE_LINKED_LIST_NIL	4096 //0x8000
 
 #endif

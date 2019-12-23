@@ -1,6 +1,7 @@
 #include <nds.h>
 #include <string.h>
 #include "../irq.h"
+#include "../swi.h"
 #include "wifi_common.h"
 #include "wifi_rx.h"
 #include "wifi_tx.h"
@@ -294,14 +295,14 @@ void wifi_initRF()
 void wifi_wakeup()
 {
 	REG_WIFI_SHUTDOWN = WIFI_SHUTDOWN_POWERON;
-	swiDelay(8 * 0x20BA);//we should wait for 8ms
+	swi_delay(8 * 0x20BA);//we should wait for 8ms
 	REG_WIFI_RFR_D_CTRL = 0;
 	if (WIFI_RAM->firmData.wifiData.rfType == 2)
 	{
 		u8 val = wifi_readBBReg(WIFI_BB_REG_01);
 		wifi_writeBBReg(WIFI_BB_REG_01, val & 0x7F);
 		wifi_writeBBReg(WIFI_BB_REG_01, val);
-		swiDelay(40 * 0x20BA);//we should wait for 40ms
+		swi_delay(40 * 0x20BA);//we should wait for 40ms
 	}
 	if (WIFI_RAM->firmData.wifiData.rfType == 2 || WIFI_RAM->firmData.wifiData.rfType == 3)
 		wifi_initRF();
@@ -353,7 +354,7 @@ void wifi_init()
 	//from dswifi
 #define REG_GPIO_WIFI (*(vu16*)0x4004C04)
 	REG_GPIO_WIFI = (REG_GPIO_WIFI & 1) | (1 << 8);
-	swiDelay(0xA3A47); //5ms
+	swi_delay(0xA3A47); //5ms
 
 	//enable power
 	(*(vu32*)0x04000304) |= 2;

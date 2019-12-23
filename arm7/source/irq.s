@@ -17,19 +17,29 @@ my_irq_handler:
 
 	//timer used for sound
 	ands r2, r1, #(1 << 6)
-	bne my_irq_handler_timer3
+	bne timer3
 
 	//timer used for gb sound
 	ands r2, r1, #(1 << 3)
-	bne my_irq_handler_timer0
+	bne timer0
+
+	//vblank
+	ands r2, r1, #1
+	bne vblank
 
 	//timer used for saving
 	ands r2, r1, #(1 << 4)
-	bne my_irq_handler_timer1
+	bne timer1
 
 	ands r2, r1, #(1 << 24)
 	bne my_irq_handler_wifi
 
+	pop {lr}
+	bx lr
+
+vblank:
+	str r2, [r0, #0x214]
+	bl irq_vblank
 	pop {lr}
 	bx lr
 
@@ -45,19 +55,19 @@ my_irq_handler:
 //	pop {lr}
 //	bx lr
 
-my_irq_handler_timer0:
+timer0:
 	str r2, [r0, #0x214]
 	bl gbs_frameSeqTick
 	pop {lr}
 	bx lr
 
-my_irq_handler_timer1:
+timer1:
 	str r2, [r0, #0x214]
 	bl timer1_overflow_irq
 	pop {lr}
 	bx lr
 
-my_irq_handler_timer3:
+timer3:
 	str r2, [r0, #0x214]
 	bl timer3_overflow_irq
 	pop {lr}
