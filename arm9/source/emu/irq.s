@@ -363,10 +363,11 @@ openMenuIrq:
 
 	bl dc_wait_write_buffer_empty
 	bl dc_flush_all
+	bl ic_invalidateAll
 
 	mov r12, #0x04000000
 	str r12, [r12, #0x208]
-	msr cpsr_fc, #0xdf
+	msr cpsr_fc, #0x9f
 
 	ldr r2,= gEmuSettingSkipIntro
 	ldr r2, [r2]
@@ -376,6 +377,25 @@ openMenuIrq:
 
 	ldr r2,= pu_data_permissions
 	mcr p15, 0, r2, c5, c0, 2
+
+	mov r2, #0x04000000
+	//disable dma
+	strh r2, [r2, #0xBA]
+	strh r2, [r2, #0xC6]
+	strh r2, [r2, #0xD2]
+	strh r2, [r2, #0xDE]
+	//disable sound
+	strh r2, [r2, #0x82]
+	//disable timers
+	add r3, r2, #0x100
+	strh r2, [r2, #0x2]
+	strh r2, [r2, #0x6]
+	strh r2, [r2, #0xA]
+	strh r2, [r2, #0xE]
+	//disable all irqs and reset irq flags
+	add r3, r2, #0x200
+	strh r2, [r3]
+	strh r2, [r3, #2]
 
 	bx r12
 
