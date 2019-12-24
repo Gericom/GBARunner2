@@ -106,6 +106,40 @@ itcm_setup_copyloop:
 	mov r1, #0x80
 	strb r1, [r0]
 
+	//copy argv if it exists
+	ldr r0,= 0x02FFFE70
+	ldr r2,= 0x5f617267
+	ldr r1, [r0]
+	cmp r1, r2
+	bne argv_end
+
+	ldr r1, [r0, #4] //pointer to commandline
+	ldr r2, [r0, #8] //length
+	cmp r2, #0
+		ble argv_end
+
+argv_loop1:
+	ldrb r3, [r1], #1
+	subs r2, #1
+	beq argv_end
+	cmp r3, #0
+	bne argv_loop1
+
+	mov r4, #0x03000000
+	ldr r5,= 0x5f617267
+	mov r6, #0
+	str r5, [r4], #4
+argv_loop2:	
+	ldrb r3, [r1], #1
+	strb r3, [r4], #1
+	subs r2, #1
+	streqb r6, [r4], #1
+	beq argv_end
+	cmp r3, #0
+	bne argv_loop2
+
+argv_end:
+
 	//setup display capture
 	ldr r0,= (0x320000 | (1 << 19))
 	ldr r1,= 0x4000064

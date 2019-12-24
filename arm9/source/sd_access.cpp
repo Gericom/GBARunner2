@@ -230,6 +230,19 @@ extern "C" PUT_IN_VRAM void sd_init()
 	settings_initialize();
 
 	int next = 0;
+
+	//argv boot
+	if(*(u32*)0x03000000 == 0x5f617267)
+	{
+		const char* argvPath = (const char*)0x03000004;
+		if(argvPath[2] == ':')
+			argvPath += 3;
+		else if(argvPath[3] == ':')
+			argvPath += 4;
+		if(gbab_loadRom(argvPath) == ROM_LOAD_RESULT_OK)
+			next = 2;
+	}
+	
 	while(true)
 	{
 		uiContext->ResetVram();
