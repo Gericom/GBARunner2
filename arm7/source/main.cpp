@@ -31,13 +31,13 @@ extern "C" void rtcomIrq()
 		{
 			//sSampleGyro = true;
 			s16 gyro0 = rtcom_getData();
-			rtcom_requestNext(4);
+			rtcom_requestNext(8);
 			vram_cd->gyroZ = gyro0 | (rtcom_getData() << 8);
 			rtcom_requestKill();
 			if(sGyroEnabled)
 			{
 				sRtcomState = RTCOM_STATE_EXEC_UCODE3_ACK;
-				rtcom_requestAsync(RTCOM_REQ_EXECUTE_UCODE, 3);
+				rtcom_requestAsync(RTCOM_REQ_EXECUTE_UCODE, 7);
 			}
 			else
 			{
@@ -325,7 +325,7 @@ int main()
 					rtcom_beginComm();
 					REG_IE |= IRQ_NETWORK;
 					sRtcomState = RTCOM_STATE_EXEC_UCODE3_ACK;
-					rtcom_requestAsync(RTCOM_REQ_EXECUTE_UCODE, 3);
+					rtcom_requestAsync(RTCOM_REQ_EXECUTE_UCODE, 7);
 				}
 				break;
 			case 0xAA550102: //disable gyro sampling

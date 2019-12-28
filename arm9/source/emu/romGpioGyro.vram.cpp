@@ -23,7 +23,7 @@ void rio_gyroUpdate()
     if(gRioGpioData & 1)
     {
         vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
-        sGyroSample = (vramcd_uncached->gyroZ >> 5) + 0x6C0;
+        sGyroSample = ((vramcd_uncached->gyroZ * 79) >> 12) + 0x6C0;//(vramcd_uncached->gyroZ >> 6) + 0x6C0;
     }
 
     if(sGyroEdge && !(gRioGpioData & 2))
