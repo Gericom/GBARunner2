@@ -28,10 +28,24 @@ extern "C" void irq_vblank()
 	sPrevTouchDown = touchDown;
 }
 
+static u32 sRateCounter;
+
+extern "C" void irq_vcount()
+{
+	sRateCounter += 484839276;
+	if(sRateCounter >= 1116733440)
+	{
+		sRateCounter -= 1116733440;
+		while(REG_DISPSTAT & DISP_IN_HBLANK);
+		*(vu16*)0x04000006 = *(vu16*)0x04000006;//repeat line
+	}
+}
+
 extern "C" void my_irq_handler();
 
 int main()
 {
+	sRateCounter = 0;
 	//dmaFillWords(0, (void*)0x04000400, 0x100);
 
 	//REG_SOUNDCNT |= SOUND_ENABLE;
@@ -96,6 +110,10 @@ int main()
 	//set vblank irq
 	REG_DISPSTAT |= DISP_VBLANK_IRQ;
 	REG_IE |= IRQ_VBLANK;
+
+	//set vcount irq
+	REG_DISPSTAT = (REG_DISPSTAT & ~0xFF80) | 0xE400 | DISP_YTRIGGER_IRQ;
+	REG_IE |= IRQ_VCOUNT;
 
 	//irqSet(IRQ_VBLANK, vblank_irq_handler);
 	//irqEnable(IRQ_VBLANK);
