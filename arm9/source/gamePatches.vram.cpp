@@ -13,6 +13,15 @@ static const u8 sSomeBuggedMixer[16] =
 // };
 
 
+static const u8 sMP2000SoundInit[16] =
+	{0x53, 0x6D, 0x73, 0x68, 0x70, 0xB5, 0x14, 0x48, 0x02, 0x21, 0x49, 0x42, 0x08, 0x40, 0x13, 0x49};
+
+static const u8 sMP2000SoundInit2[16] =
+	{0x53, 0x6D, 0x73, 0x68, 0x70, 0xB5, 0x1F, 0x48, 0x02, 0x21, 0x49, 0x42, 0x08, 0x40, 0x1E, 0x49};
+
+static const u8 sMP2000SoundInit3[16] =
+	{0x53, 0x6D, 0x73, 0x68, 0xF0, 0xB5, 0x47, 0x46, 0x80, 0xB4, 0x18, 0x48, 0x02, 0x21, 0x49, 0x42};
+    
 extern "C" void gptc_banjoPilotFix();
 extern "C" void gptc_americanBassFix();
 
@@ -27,6 +36,28 @@ void gptc_patchRom()
 		buggedMixer = gptc_findSignature(sSomeBuggedMixer);
 		if (buggedMixer)
 			buggedMixer[1] = 0xE890000F;
+	}
+
+	//todo: it seems not all games have this same signature
+	u32* mp2000Init = gptc_findSignature(sMP2000SoundInit);
+	if (!mp2000Init)
+		mp2000Init = gptc_findSignature(sMP2000SoundInit2);
+	if (!mp2000Init)
+	{
+		mp2000Init = gptc_findSignature(sMP2000SoundInit3);
+		if (mp2000Init)
+			mp2000Init++;
+	}
+	if (mp2000Init)
+	{
+		//this is a music player 2000 game
+		u16* pLdrSoundArea = (u16*)((u32)mp2000Init + 0x16);
+		u16  ldrSoundArea = *pLdrSoundArea;
+		u32* pSoundAreaPtr = (u32*)(((u32)pLdrSoundArea & ~3) + 4 + ((ldrSoundArea & 0xFF) << 2));
+		u32  oldVal = *pSoundAreaPtr;
+		//relocate SoundArea to uncached main memory
+		if (oldVal >= 0x02000000 && oldVal < 0x04000000)
+			*pSoundAreaPtr = (u32)&vram_cd->mp2000SoundArea[0] | 0x00800000;
 	}
 
 	u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);

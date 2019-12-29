@@ -80,6 +80,7 @@ typedef struct
 	sound_emu_work_t sound_emu_work;
 	save_work_t save_work;
 	u32 openMenuIrqFlag;
+	u8 mp2000SoundArea[4096] __attribute__((aligned(32)));
 	u8 tmpSector[512] __attribute__((aligned(32)));
 	FATFS fatFs;
 	FIL fil;

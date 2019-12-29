@@ -110,7 +110,7 @@ void gba_sound_resync()
 
 static void gba_sound_update_ds_channels()
 {
-	if (!soundStarted && soundBufferWriteOffset >= (SOUND_BUFFER_SIZE / 8))
+	if (!soundStarted && ((srcAddress >> 24) == 2 || soundBufferWriteOffset >= (SOUND_BUFFER_SIZE / 8)))
 	{
 		//REG_TM[2].CNT_H = 0;
 		//soundBufferVirtualReadOffset = 0;
@@ -167,39 +167,47 @@ extern "C" void timer3_overflow_irq()
 		return;
 	if (sampcnter == 0) //(FIFO_BLOCK_SIZE - 1))
 	{
-		gba_sound_fifo_update();
-		int writeLength = vram_cd->sound_emu_work.req_read_ptr - vram_cd->sound_emu_work.req_write_ptr - 1;
-		if (writeLength < 0)
-			writeLength += SOUND_EMU_QUEUE_LEN;
-		if (writeLength != 0)
+		if((srcAddress >> 24) == 2)
 		{
-			vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
-			vram_cd->sound_emu_work.req_write_ptr = (vram_cd->sound_emu_work.req_write_ptr + 1) & (SOUND_EMU_QUEUE_LEN - 1);
+			//data is in main memory, directly access it
+			gba_sound_fifo_write16((u8*)srcAddress);
+			//todo: still invoke an arm9 irq if games use dma irq
 		}
 		else
-		{
-			for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
-				soundBuffer[(soundBufferWriteOffset + i) & (SOUND_BUFFER_SIZE - 1)] = soundBuffer[(soundBufferWriteOffset - FIFO_BLOCK_SIZE + i) & (SOUND_BUFFER_SIZE - 1)];
-			soundBufferWriteOffset = (soundBufferWriteOffset + FIFO_BLOCK_SIZE) & (SOUND_BUFFER_SIZE - 1);
-			gba_sound_update_ds_channels();
-			/*vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
-			vram_cd->sound_emu_work.req_read_ptr++;
-			if (vram_cd->sound_emu_work.req_read_ptr >= SOUND_EMU_QUEUE_LEN)
-				vram_cd->sound_emu_work.req_read_ptr -= SOUND_EMU_QUEUE_LEN;
-			vram_cd->sound_emu_work.req_write_ptr++;
-			if (vram_cd->sound_emu_work.req_write_ptr >= SOUND_EMU_QUEUE_LEN)
-				vram_cd->sound_emu_work.req_write_ptr -= SOUND_EMU_QUEUE_LEN;
-
-			for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
-				soundBuffer[(soundBufferWriteOffset + i) % SOUND_BUFFER_SIZE] = soundBuffer[(soundBufferWriteOffset -
-					FIFO_BLOCK_SIZE + i) % SOUND_BUFFER_SIZE];
-			soundBufferWriteOffset += FIFO_BLOCK_SIZE;
-			if (soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
-				soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
-			gba_sound_update_ds_channels();*/
+		{		
+			gba_sound_fifo_update();
+			int writeLength = vram_cd->sound_emu_work.req_read_ptr - vram_cd->sound_emu_work.req_write_ptr - 1;
+			if (writeLength < 0)
+				writeLength += SOUND_EMU_QUEUE_LEN;
+			if (writeLength != 0)
+			{
+				vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
+				vram_cd->sound_emu_work.req_write_ptr = (vram_cd->sound_emu_work.req_write_ptr + 1) & (SOUND_EMU_QUEUE_LEN - 1);
+			}
+			else
+			{
+				for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
+					soundBuffer[(soundBufferWriteOffset + i) & (SOUND_BUFFER_SIZE - 1)] = soundBuffer[(soundBufferWriteOffset - FIFO_BLOCK_SIZE + i) & (SOUND_BUFFER_SIZE - 1)];
+				soundBufferWriteOffset = (soundBufferWriteOffset + FIFO_BLOCK_SIZE) & (SOUND_BUFFER_SIZE - 1);
+				gba_sound_update_ds_channels();
+				/*vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
+				vram_cd->sound_emu_work.req_read_ptr++;
+				if (vram_cd->sound_emu_work.req_read_ptr >= SOUND_EMU_QUEUE_LEN)
+					vram_cd->sound_emu_work.req_read_ptr -= SOUND_EMU_QUEUE_LEN;
+				vram_cd->sound_emu_work.req_write_ptr++;
+				if (vram_cd->sound_emu_work.req_write_ptr >= SOUND_EMU_QUEUE_LEN)
+					vram_cd->sound_emu_work.req_write_ptr -= SOUND_EMU_QUEUE_LEN;
+				for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
+					soundBuffer[(soundBufferWriteOffset + i) % SOUND_BUFFER_SIZE] = soundBuffer[(soundBufferWriteOffset -
+						FIFO_BLOCK_SIZE + i) % SOUND_BUFFER_SIZE];
+				soundBufferWriteOffset += FIFO_BLOCK_SIZE;
+				if (soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
+					soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
+				gba_sound_update_ds_channels();*/
+			}
+			//invoke an irq on arm9
+			*((vu32*)0x04000180) |= (1 << 13);
 		}
-		//invoke an irq on arm9
-		*((vu32*)0x04000180) |= (1 << 13);
 		srcAddress += FIFO_BLOCK_SIZE; //16;
 	}
 	sampcnter++;
@@ -286,6 +294,11 @@ void gba_sound_set_src(uint32_t address)
 {
 	if(srcAddress == address - 16 || srcAddress == address || srcAddress == address + 16)
 		return;
+	u32 oldAddr = srcAddress;
+	if((srcAddress >> 24) != 2 && (address >> 24) == 2)
+	{
+		gba_sound_resync();
+	}
 	srcAddress = address;
 	REG_TM[3].CNT_H = 0;
 	sampcnter = 0;
