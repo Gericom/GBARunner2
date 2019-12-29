@@ -20,6 +20,7 @@ volatile uint32_t soundBufferVirtualReadOffset;
 uint32_t samplesPerBlock;
 
 int sampleFreq;
+int sampleTmr;
 
 volatile int soundStarted;
 
@@ -115,13 +116,12 @@ static void gba_sound_update_ds_channels()
 		//soundBufferVirtualReadOffset = 0;
 		//soundBufferVirtualWriteOffset = soundBufferWriteOffset;
 
-
 		REG_SOUND[0].CNT = 0;
 		REG_SOUND[1].CNT = 0;
 		REG_SOUND[0].SAD = (u32)&soundBuffer[0];
 		REG_SOUND[1].SAD = (u32)&soundBuffer[0];
-		REG_SOUND[0].TMR = sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
-		REG_SOUND[1].TMR = sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
+		REG_SOUND[0].TMR = -sampleTmr;//sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
+		REG_SOUND[1].TMR = -sampleTmr;//sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
 		REG_SOUND[0].PNT = 0;
 		REG_SOUND[1].PNT = 0;
 		REG_SOUND[0].LEN = SOUND_BUFFER_SIZE >> 2; //396 * 10;
@@ -226,14 +226,16 @@ void gbas_updateChannelATimer()
 	if (sampleFreq != freq)
 	{
 		sampleFreq = freq;
+		sampleTmr = (((33513982 + ((sampleFreq + 1) >> 1)) / sampleFreq) + 1) >> 1;
 		REG_TM[3].CNT_H = 0;
 		if (sampleFreq > 0 && sampleFreq < 1000000)
 		{
-			REG_TM[3].CNT_L = ((s16)sTimerReloadVals[sChannelATimer]) << 1;
+			
+			REG_TM[3].CNT_L = -sampleTmr << 1;//((s16)sTimerReloadVals[sChannelATimer]) << 1;
 			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
 			REG_IE |= (1 << 6);
-			REG_SOUND[0].TMR = sTimerReloadVals[sChannelATimer];
-			REG_SOUND[1].TMR = sTimerReloadVals[sChannelATimer];
+			REG_SOUND[0].TMR = -sampleTmr;//sTimerReloadVals[sChannelATimer];
+			REG_SOUND[1].TMR = -sampleTmr;//sTimerReloadVals[sChannelATimer];
 			int volumeL, volumeR;
 			calcChannelVolume(0, volumeL, volumeR);
 			REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
@@ -290,7 +292,7 @@ void gba_sound_set_src(uint32_t address)
 	//timer3_overflow_irq();
 	if (sampleFreq != 0)
 	{
-		REG_TM[3].CNT_L = ((s16)sTimerReloadVals[sChannelATimer]) << 1; // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
+		REG_TM[3].CNT_L = -sampleTmr << 1;//((s16)sTimerReloadVals[sChannelATimer]) << 1; // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
 		REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I; // | REG_TMXCNT_H_PS_64;
 		REG_IE |= (1 << 6);
 	}
