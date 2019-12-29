@@ -6,6 +6,9 @@
 #include "lock.h"
 #include "sound.h"
 
+#define USE_ACTUAL_RATE
+#define ACCESS_MAIN_MEM_DIRECT
+
 #define SOUND_BUFFER_SIZE	8192
 
 #define FIFO_BLOCK_SIZE	16
@@ -87,6 +90,7 @@ void gba_sound_init()
 	soundStarted = 0;
 	soundBufferWriteOffset = 0;
 	sampleFreq = 0;
+	srcAddress = 0;
 	vram_cd->sound_emu_work.req_read_ptr = 0;
 	vram_cd->sound_emu_work.req_write_ptr = 0;
 	vram_cd->sound_emu_work.resp_read_ptr = 0;
@@ -104,9 +108,10 @@ void gba_sound_resync()
 	{
 		soundStarted = 0;
 		soundBufferWriteOffset = 0;
-		srcAddress = 0;
+		//srcAddress = 0;
 		vram_cd->sound_emu_work.req_write_ptr = vram_cd->sound_emu_work.req_read_ptr;
 		vram_cd->sound_emu_work.resp_read_ptr = vram_cd->sound_emu_work.resp_write_ptr;
+		//REG_TM[3].CNT_H = 0;
 		REG_SOUND[0].CNT = 0;
 		REG_SOUND[1].CNT = 0;
 	}
@@ -115,7 +120,7 @@ void gba_sound_resync()
 
 static void gba_sound_update_ds_channels()
 {
-	if (!soundStarted && ((srcAddress >> 24) == 2 || soundBufferWriteOffset >= (SOUND_BUFFER_SIZE / 8)))
+	if (!soundStarted && /*((srcAddress >> 24) == 2 ||*/ soundBufferWriteOffset >= (SOUND_BUFFER_SIZE / 8))//)
 	{
 		//REG_TM[2].CNT_H = 0;
 		//soundBufferVirtualReadOffset = 0;
@@ -170,31 +175,38 @@ extern "C" void timer3_overflow_irq()
 {
 	if (srcAddress == 0)
 		return;
-	if(sRateCounterA + sRateDiffHi >= 0)
+	if(sRateDiffLo != 0)
 	{
-		sampleTmr = sRateTmrLo + 1;
-		REG_TM[3].CNT_L = -sampleTmr << 1;
-		REG_SOUND[0].TMR = -sampleTmr;
-		REG_SOUND[1].TMR = -sampleTmr;
-		sRateCounterA += sRateDiffHi;
-	}
-	else
-	{
-		sampleTmr = sRateTmrLo;
-		REG_TM[3].CNT_L = -sampleTmr << 1;
-		REG_SOUND[0].TMR = -sampleTmr;
-		REG_SOUND[1].TMR = -sampleTmr;
-		sRateCounterA += sRateDiffLo;
+		if(sRateCounterA + sRateDiffHi >= 0)
+		{
+			sampleTmr = sRateTmrLo + 1;
+			REG_TM[3].CNT_L = -sampleTmr << 1;
+			REG_SOUND[0].TMR = -sampleTmr;
+			REG_SOUND[1].TMR = -sampleTmr;
+			sRateCounterA += sRateDiffHi;
+		}
+		else
+		{
+			sampleTmr = sRateTmrLo;
+			REG_TM[3].CNT_L = -sampleTmr << 1;
+			REG_SOUND[0].TMR = -sampleTmr;
+			REG_SOUND[1].TMR = -sampleTmr;
+			sRateCounterA += sRateDiffLo;
+		}
 	}
 	if (sampcnter == 0) //(FIFO_BLOCK_SIZE - 1))
 	{
+#ifdef ACCESS_MAIN_MEM_DIRECT
 		if((srcAddress >> 24) == 2)
 		{
 			//data is in main memory, directly access it
-			gba_sound_fifo_write16((u8*)srcAddress);
+			//gba_sound_fifo_write16((u8*)srcAddress);
+			REG_SOUND[0].SAD = srcAddress;
+			REG_SOUND[1].SAD = srcAddress;
 			//todo: still invoke an arm9 irq if games use dma irq
 		}
 		else
+#endif
 		{		
 			gba_sound_fifo_update();
 			int writeLength = vram_cd->sound_emu_work.req_read_ptr - vram_cd->sound_emu_work.req_write_ptr - 1;
@@ -254,17 +266,24 @@ void gbas_updateChannelATimer()
 		freq = (-16 * 1024 * 1024) / ((int16_t)sTimerReloadVals[sChannelATimer]);
 	if (sampleFreq != freq)
 	{
+		REG_TM[3].CNT_H = 0;
+
 		sampleFreq = freq;
+#ifdef USE_ACTUAL_RATE
 		u32 tmrLo = ((33513982 >> 1) / sampleFreq) << 16;
 		u32 tmrHi = tmrLo + (1 << 16);
 		u32 tmrTgt = ((33513982 >> 1) << 16) / sampleFreq;
+#else
+		u32 tmrLo = (-(int16_t)sTimerReloadVals[sChannelATimer]) << 16;
+		u32 tmrHi = (-(int16_t)sTimerReloadVals[sChannelATimer]) << 16;
+		u32 tmrTgt = (-(int16_t)sTimerReloadVals[sChannelATimer]) << 16;
+#endif
 		sRateDiffLo = tmrTgt - tmrLo;
 		sRateDiffHi = tmrTgt - tmrHi;
 
 		sRateTmrLo = tmrLo >> 16;
 		sampleTmr = tmrLo >> 16;//(((33513982 + ((sampleFreq + 1) >> 1)) / sampleFreq) + 1) >> 1;
 
-		REG_TM[3].CNT_H = 0;
 		if (sampleFreq > 0 && sampleFreq < 1000000)
 		{
 			sRateCounterA = 0;
@@ -322,22 +341,71 @@ void gba_sound_fifo_write(uint32_t samps)
 
 void gba_sound_set_src(uint32_t address)
 {
-	if(srcAddress == address - 16 || srcAddress == address || srcAddress == address + 16)
+	if(soundStarted && (srcAddress == address - 16 || srcAddress == address || srcAddress == address + 16))
 		return;
 	u32 oldAddr = srcAddress;
-	if((srcAddress >> 24) != 2 && (address >> 24) == 2)
-	{
+#ifdef ACCESS_MAIN_MEM_DIRECT
+	if(((srcAddress >> 24) != 2 && (address >> 24) == 2) || ((srcAddress >> 24) == 2 && (address >> 24) != 2))
 		gba_sound_resync();
-	}
+#endif
 	srcAddress = address;
-	REG_TM[3].CNT_H = 0;
-	sampcnter = 0;
+#ifdef ACCESS_MAIN_MEM_DIRECT
+	if((address >> 24) != 2)
+#endif
+	{
+		REG_TM[3].CNT_H = 0;
+		sampcnter = 0;
+	}
 	//timer3_overflow_irq();
 	if (sampleFreq != 0)
 	{
-		REG_TM[3].CNT_L = -sampleTmr << 1;//((s16)sTimerReloadVals[sChannelATimer]) << 1; // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
-		REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I; // | REG_TMXCNT_H_PS_64;
-		REG_IE |= (1 << 6);
+#ifdef ACCESS_MAIN_MEM_DIRECT
+		if((address >> 24) == 2)
+		{
+			if(!soundStarted)
+			{
+				REG_TM[3].CNT_H = 0;
+				REG_SOUND[0].CNT = 0;
+				REG_SOUND[1].CNT = 0;
+				REG_SOUND[0].SAD = address;
+				REG_SOUND[1].SAD = address;
+				REG_SOUND[0].TMR = -sampleTmr;
+				REG_SOUND[1].TMR = -sampleTmr;
+				REG_SOUND[0].PNT = 0;
+				REG_SOUND[1].PNT = 0;
+				REG_SOUND[0].LEN = 16 >> 2;
+				REG_SOUND[1].LEN = 16 >> 2;
+
+				int volumeL, volumeR;
+				calcChannelVolume(0, volumeL, volumeR);
+				REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(volumeL);
+				REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(volumeR);
+				soundStarted = 1;
+				srcAddress = address;// + 16;
+				sRateCounterA = 0;
+				sampcnter = 0;
+
+				REG_TM[3].CNT_L = -sampleTmr << 1;//((s16)sTimerReloadVals[sChannelATimer]) << 1; // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
+				REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I; // | REG_TMXCNT_H_PS_64;
+				REG_IE |= (1 << 6);
+			}
+			else
+			{			
+				//srcAddress = address + 16;
+				//REG_SOUND[0].SAD = address;
+				//REG_SOUND[1].SAD = address;
+			}
+		}
+		else
+#endif
+		{
+			sRateCounterA = 0;
+			REG_TM[3].CNT_L = -sampleTmr << 1;//((s16)sTimerReloadVals[sChannelATimer]) << 1; // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
+			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I; // | REG_TMXCNT_H_PS_64;
+			REG_IE |= (1 << 6);
+		}
 	}
 }
 
