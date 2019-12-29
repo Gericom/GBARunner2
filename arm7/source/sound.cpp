@@ -34,6 +34,11 @@ u16 sTimerReloadVals[4];
 u16 sTimerControlVals[4];
 
 static int sampcnter = 0;
+static s32 sRateCounterA = 0;
+static s32 sRateDiffLo = 0;
+static s32 sRateDiffHi = 0;
+static u32 sRateTmrLo = 0;
+static bool sRateIsHi = false;
 
 /*static void gba_sound_timer2_handler()
 {
@@ -165,6 +170,22 @@ extern "C" void timer3_overflow_irq()
 {
 	if (srcAddress == 0)
 		return;
+	if(sRateCounterA + sRateDiffHi >= 0)
+	{
+		sampleTmr = sRateTmrLo + 1;
+		REG_TM[3].CNT_L = -sampleTmr << 1;
+		REG_SOUND[0].TMR = -sampleTmr;
+		REG_SOUND[1].TMR = -sampleTmr;
+		sRateCounterA += sRateDiffHi;
+	}
+	else
+	{
+		sampleTmr = sRateTmrLo;
+		REG_TM[3].CNT_L = -sampleTmr << 1;
+		REG_SOUND[0].TMR = -sampleTmr;
+		REG_SOUND[1].TMR = -sampleTmr;
+		sRateCounterA += sRateDiffLo;
+	}
 	if (sampcnter == 0) //(FIFO_BLOCK_SIZE - 1))
 	{
 		if((srcAddress >> 24) == 2)
@@ -234,11 +255,20 @@ void gbas_updateChannelATimer()
 	if (sampleFreq != freq)
 	{
 		sampleFreq = freq;
-		sampleTmr = (((33513982 + ((sampleFreq + 1) >> 1)) / sampleFreq) + 1) >> 1;
+		u32 tmrLo = ((33513982 >> 1) / sampleFreq) << 16;
+		u32 tmrHi = tmrLo + (1 << 16);
+		u32 tmrTgt = ((33513982 >> 1) << 16) / sampleFreq;
+		sRateDiffLo = tmrTgt - tmrLo;
+		sRateDiffHi = tmrTgt - tmrHi;
+
+		sRateTmrLo = tmrLo >> 16;
+		sampleTmr = tmrLo >> 16;//(((33513982 + ((sampleFreq + 1) >> 1)) / sampleFreq) + 1) >> 1;
+
 		REG_TM[3].CNT_H = 0;
 		if (sampleFreq > 0 && sampleFreq < 1000000)
 		{
-			
+			sRateCounterA = 0;
+			sRateIsHi = false;
 			REG_TM[3].CNT_L = -sampleTmr << 1;//((s16)sTimerReloadVals[sChannelATimer]) << 1;
 			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
 			REG_IE |= (1 << 6);
