@@ -50,6 +50,8 @@ write_address_timer_counter:
 	ldreq r12,= 16756991
 	smulwbeq r12, r12, r11
 	moveq r12, r12, asr #7
+	moveq r12, r12, lsl #16
+	moveq r12, r12, lsr #16
 #else
 	moveq r12, r11, lsl #17
 	moveq r12, r12, lsr #16
@@ -90,6 +92,8 @@ write_address_timer_control:
 	ldreq r13,= 16756991
 	smulwbeq r12, r13, r12
 	moveq r12, r12, asr #7
+	moveq r12, r12, lsl #16
+	moveq r12, r12, lsr #16
 #else
 	moveq r12, r12, lsl #17
 	moveq r12, r12, lsr #16
@@ -124,6 +128,8 @@ write_address_timer:
 	ldr r13,= 16756991
 	smulwb r12, r13, r11
 	mov r12, r12, asr #7
+	mov r12, r12, lsl #16
+	mov r12, r12, lsr #16
 #else
 	mov r12, r11, lsl #17
 	mov r12, r12, lsr #16
