@@ -56,7 +56,7 @@ void gptc_patchRom()
 		u32* pSoundAreaPtr = (u32*)(((u32)pLdrSoundArea & ~3) + 4 + ((ldrSoundArea & 0xFF) << 2));
 		u32  oldVal = *pSoundAreaPtr;
 		//relocate SoundArea to uncached main memory
-		if (oldVal >= 0x02000000 && oldVal < 0x04000000)
+		if (oldVal >= 0x03000000 && oldVal < 0x04000000)
 			*pSoundAreaPtr = (u32)&vram_cd->mp2000SoundArea[0] + UNCACHED_OFFSET;
 	}
 

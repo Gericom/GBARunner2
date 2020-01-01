@@ -2,6 +2,8 @@
 
 #include "consts.s"
 
+#define USE_ACTUAL_RATE
+
 ADDRESS_TIMER_BASE = 0x04000100
 
 .macro fix_timer_counter_read regb, rega
@@ -44,8 +46,15 @@ write_address_timer_counter:
 	ldrh r12, [r9, #2]
 	orr r11, r12, lsl #16
 	tst r12, #4 //if slave mode, we don't have to fix the reload value
+#ifdef USE_ACTUAL_RATE
+	ldreq r12,= 16756991
+	smulwbeq r12, r12, r11
+	moveq r12, r12, asr #7
+#else
 	moveq r12, r11, lsl #17
 	moveq r12, r12, lsr #16
+#endif	
+	movne r12, r11
 	strh r12, [r9]
 
 	//send info to arm7
@@ -77,8 +86,14 @@ write_address_timer_control:
 	ldrh r12, [r13]
 	
 	tst r11, #4 //if slave mode, we don't have to fix the reload value
+#ifdef USE_ACTUAL_RATE
+	ldreq r13,= 16756991
+	smulwbeq r12, r13, r12
+	moveq r12, r12, asr #7
+#else
 	moveq r12, r12, lsl #17
 	moveq r12, r12, lsr #16
+#endif
 	strh r12, [r9, #-2]
 	strh r11, [r9]
 
@@ -105,8 +120,14 @@ write_address_timer:
 	tst r11, #(4 << 16) //if slave mode, we don't have to fix the reload value
 	strne r11, [r9]
 	bne 1f
+#ifdef USE_ACTUAL_RATE
+	ldr r13,= 16756991
+	smulwb r12, r13, r11
+	mov r12, r12, asr #7
+#else
 	mov r12, r11, lsl #17
 	mov r12, r12, lsr #16
+#endif
 	mov r13, r11, lsr #16
 	orr r13, r12, r13, lsl #16
 	str r13, [r9]

@@ -40,6 +40,48 @@ typedef volatile struct
 
 #define REG_SOUNDBIAS	(*((vu32*)0x04000504))
 
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+#define SOUNDEXCNT_NTR_DSP_RATIO_8_0	(8 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_7_1	(7 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_6_2	(6 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_5_3	(5 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_4_4	(4 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_3_5	(3 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_2_6	(2 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_1_7	(1 << 0)
+#define SOUNDEXCNT_NTR_DSP_RATIO_0_8	(0 << 0)
+
+#define SOUNDEXCNT_FREQ_32				(0 << 13)
+#define SOUNDEXCNT_FREQ_47				(1 << 13)
+
+#define SOUNDEXCNT_MUTE_SOMETHING		(1 << 14)
+
+#define SOUNDEXCNT_ENABLE_SOMETHING		(1 << 15)
+
+#define REG_SOUNDEXCNT	(*((vu32*)0x04004700))
+#endif
+
+struct dsound_channel_t
+{
+	u8 timer;
+	u8 volume;
+	u8 enables;
+	u8 padding;
+
+	int frequency;
+	int curTimer;
+	u32 curAddress;
+
+	volatile bool started;
+	int sampCounter;
+
+	//for samplerate dithering
+	int rateCounter;
+	int rateDiffLo;
+	int rateDiffHi;
+	u32 rateTmrLo;
+};
+
 void gba_sound_init();
 void gba_sound_notify_reset();
 void gba_sound_vblank();
