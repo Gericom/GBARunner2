@@ -22,7 +22,13 @@ all: $(TARGET)_isnitro.nds
 
 #---------------------------------------------------------------------------------
 $(TARGET)_isnitro.nds	:	arm7/$(TARGET).elf arm9/$(TARGET).elf
+	mkdir -p nitrofiles
+ifeq ($(OS),Windows_NT)
 	cmd /c "runbash.bat isnitro.sh \"-c $(TARGET)_isnitro.nds -b icon.bmp GBARunner2;Gericom -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf -d nitrofiles\""
+else
+	chmod +x ./ndstool
+	./ndstool -c $(TARGET)_isnitro.nds -b icon.bmp "GBARunner2;Gericom" -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf -d nitrofiles 
+endif
 	dlditool FatInNitroFS.dldi $(TARGET)_isnitro.nds
 
 #---------------------------------------------------------------------------------
@@ -38,3 +44,4 @@ clean:
 	$(MAKE) -C arm9 clean
 	$(MAKE) -C arm7 clean
 	rm -f $(TARGET).nds $(TARGET).arm7 $(TARGET).arm9
+	rm -rf nitrofiles/ GBARunner2_isnitro.nds
