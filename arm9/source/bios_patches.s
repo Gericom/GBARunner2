@@ -92,3 +92,13 @@ bios_cpufastset_cache_patch:
 	ldr r4,= (gGbaBios + 0xBC8)
 	bx r4
 #endif
+
+.global bios_softResetPatch
+bios_softResetPatch:
+	//set the right protected bios opcode
+	ldr r0,= gBiosOp
+	ldr r1,= 0xE129F000
+	str r1, [r0]
+	mov r0, #0
+	mov r1, #0
+	bx lr

@@ -2,11 +2,6 @@
 
 #include "consts.s"
 
-//bios_op = 0xE129F000 //[00DCh+8] after startup and softreset //before this address 0x27C is read
-//bios_op = 0xE25EF004 //[0134h+8] during irq execution
-//bios_op = 0xE55EC002 //[013Ch+8] after irq execution
-bios_op = 0xE3A02004 //[0188h+8] after swi execution; reads between 0x1C8 and 0x274
-
 .global read_address_from_handler_32bit
 read_address_from_handler_32bit:
 	cmp r9, #0x10000000
@@ -54,8 +49,9 @@ read_address_from_handler_bios_32:
 	cmp r10, #0x4000
 		ldrlt r10, [r9] //if the opcode is in the bios, read the data
 		bxlt lr
-	ldr r10,= bios_op
+	ldr r10,= gBiosOp
 	and r11, r9, #3
+	ldr r10, [r10]
 	mov r11, r11, lsl #3
 	mov r10, r10, ror r11
 	bx lr
@@ -208,7 +204,8 @@ read_address_from_handler_bios_16:
 	sub r10, #8
 	cmp r10, #0x4000
 	ldrlth r10, [r9] //if the opcode is in the bios, read the data
-	ldrge r10,= (bios_op & 0xFFFF)
+	ldrge r10,= gBiosOp
+	ldrgeh r10, [r10]
 	tst r9, #1
 	movne r10, r10, ror #8
 	bx lr
@@ -368,8 +365,9 @@ read_address_from_handler_bios_8:
 	cmp r10, #0x4000
 	ldrltb r10, [r9] //if the opcode is in the bios, read the data
 	bxlt lr
-	ldr r10,= bios_op
+	ldr r10,= gBiosOp
 	and r11, r9, #3
+	ldr r10, [r10]
 	mov r11, r11, lsl #3
 	mov r10, r10, ror r11
 	and r10, r10, #0xFF
