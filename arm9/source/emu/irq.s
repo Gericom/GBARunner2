@@ -214,6 +214,11 @@ irq_cont_handle_gba:
 	bic r2, #(1 << 16)
 	ldr r1,= pu_data_permissions
 	str r2, [r12, #0x210]
+
+	ldr r0,= gBiosOp
+	ldr r2,= 0xE25EF004
+	str r2, [r0]
+
 	mcr p15, 0, r1, c5, c0, 2
 
 	ADR     LR, loc_138
@@ -227,6 +232,11 @@ loc_138:
 	ldr r2,= pu_data_permissions
 	orr r1, #(1 << 16)
 	str r1, [r12, #0x210]
+
+	ldr r0,= gBiosOp
+	ldr r1,= 0xE55EC002
+	str r1, [r0]
+
 	mcr p15, 0, r2, c5, c0, 2
 
 	LDMFD   SP!, {R0-R3,R12,LR}
