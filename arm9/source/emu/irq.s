@@ -253,6 +253,26 @@ irq_handler_arm7_irq:
 	cmp r12, #3 //sdsave request
 	beq sdsave_request
 
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+	ldr r12,= gbaDsndChanIrqFlags_uncached
+	ldr lr, [r12]
+	tst lr, #1
+		beq 4f //no irq
+
+	//clear irq flag
+	mov lr, #0
+	strb lr, [r12]
+
+	ldr r12,= (gbaDsndChans0_uncached)
+	ldr lr, [r12, #(32 + 4)] //src address
+	ldmia lr!, {r0, r1, r2, r3} //fetch 16 samples
+	str lr, [r12, #(32 + 4)] //update src address
+	ldr lr, [r12, #32] //load fifo offset
+	add lr, r12 //add fifo start
+	stmia lr!, {r0, r1, r2, r3} //store samples, update address
+	and lr, #0x1F //get new fifo offset (fifo is 32 byte aligned, so this is fine)
+	str lr, [r12, #32] //update fifo offset
+#else
 	ldr r12,= sound_sound_emu_work_uncached
 	ldrb lr, [r12, #(4 + (SOUND_EMU_QUEUE_LEN * 4) + 2)] //resp_write_ptr
 //1:
@@ -289,6 +309,7 @@ irq_handler_arm7_irq:
 	ldrb r3, [r12, #3] //req_read_ptr
 	cmp r2, r3
 		bne 5f //request queue not empty, don't clear irq
+#endif
 
 4:
 	mov r12, #0x04000000

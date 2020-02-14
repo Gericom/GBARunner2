@@ -80,6 +80,10 @@ typedef struct
 	sound_emu_work_t sound_emu_work;
 	save_work_t save_work;
 	u32 openMenuIrqFlag;
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+	volatile u8 gbaDsndChanIrqFlags[2];
+	gba_dsnd_channel_t gbaDsndChans[2] __attribute__((aligned(32)));
+#endif
 	u8 mp2000SoundArea[8192] __attribute__((aligned(32)));
 	u8 tmpSector[512] __attribute__((aligned(32)));
 	FATFS fatFs;

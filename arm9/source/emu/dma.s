@@ -208,6 +208,10 @@ dma_special_mode_\offs:
 
 	ldr r13, [r9, #(-8 - \offs)] //src
 
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+	ldr r11,= (gbaDsndChans0_uncached + 32 + 4)
+	str r13, [r11]
+#else
 	ldr r11,= 0x04000188
 	ldr r12,= 0xAA5500F8
 7:
@@ -217,6 +221,7 @@ dma_special_mode_\offs:
 
 	str r12, [r11]
 	str r13, [r11]
+#endif
 
 	bx lr
 

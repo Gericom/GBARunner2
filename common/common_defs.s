@@ -6,6 +6,8 @@
 //#define USE_DSI_16MB
 //#define USE_3DS_32MB
 
+//#define USE_LOW_LATENCY_IRQ_AUDIO
+
 #if defined(USE_DSI_16MB)
 #define UNCACHED_OFFSET     (-0x0A000000)
 #define MAIN_MEMORY_BASE    0x0C000000
@@ -68,6 +70,10 @@
 #define save_save_work_uncached (save_save_work + UNCACHED_OFFSET)
 #define save_save_work_state_uncached (save_save_work_uncached + ((128 * 1024 / 512) * 4) + 1)
 #define open_menu_irq_flag_uncached (save_save_work_uncached + ((128 * 1024 / 512) * 4) + 8)
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+#define gbaDsndChanIrqFlags_uncached (open_menu_irq_flag_uncached + 4)
+#define gbaDsndChans0_uncached ((gbaDsndChanIrqFlags_uncached + 2 + 0x1F) & ~0x1F)
+#endif
 
 #define CACHE_LINKED_LIST_NIL	4096 //0x8000
 

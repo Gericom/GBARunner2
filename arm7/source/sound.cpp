@@ -163,8 +163,10 @@ void gba_sound_fifo_update()
 
 extern "C" void timer3_overflow_irq()
 {
+#ifndef USE_LOW_LATENCY_IRQ_AUDIO
 	if (sDSoundChannels[0].curAddress == 0)
 		return;
+#endif
 	if(sDSoundChannels[0].rateDiffLo != 0)
 	{
 		if(sDSoundChannels[0].rateCounter + sDSoundChannels[0].rateDiffHi >= 0)
@@ -198,6 +200,35 @@ extern "C" void timer3_overflow_irq()
 		else
 #endif
 		{		
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+			//invoke an irq on arm9
+			vram_cd->gbaDsndChanIrqFlags[0] = 1;
+			REG_IPC_SYNC |= IPC_SYNC_IRQ_REQUEST;
+			if(!sDSoundChannels[0].started)
+			{
+				REG_SOUND[0].CNT = 0;
+				REG_SOUND[1].CNT = 0;
+				REG_SOUND[0].SAD = (u32)&vram_cd->gbaDsndChans[0].fifoBuffer;
+				REG_SOUND[1].SAD = (u32)&vram_cd->gbaDsndChans[0].fifoBuffer;
+				REG_SOUND[0].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer]; //(u16)-1253;//-1594; //-1253
+				REG_SOUND[1].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer]; //(u16)-1253;//-1594; //-1253
+				REG_SOUND[0].PNT = 0;
+				REG_SOUND[1].PNT = 0;
+				REG_SOUND[0].LEN = 32 >> 2; //396 * 10;
+				REG_SOUND[1].LEN = 32 >> 2; //396 * 10;
+
+				//REG_TM[2].CNT_L = TIMER_FREQ(13378);
+				int volumeL, volumeR;
+				calcChannelVolume(0, volumeL, volumeR);
+				REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(volumeL);
+				//SOUND_CHANNEL_0_SETTINGS;
+				REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(volumeR);
+				//SOUND_CHANNEL_0_SETTINGS;
+				sDSoundChannels[0].started = true;
+			}
+#else
 			gba_sound_fifo_update();
 			int writeLength = vram_cd->sound_emu_work.req_read_ptr - vram_cd->sound_emu_work.req_write_ptr - 1;
 			if (writeLength < 0)
@@ -230,6 +261,7 @@ extern "C" void timer3_overflow_irq()
 			}
 			//invoke an irq on arm9
 			REG_IPC_SYNC |= IPC_SYNC_IRQ_REQUEST;
+#endif
 		}
 		sDSoundChannels[0].curAddress += FIFO_BLOCK_SIZE; //16;		
 	}
