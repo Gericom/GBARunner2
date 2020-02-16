@@ -36,6 +36,16 @@ u32 gEmuSettingWramICache;
 static const char* sEmuSettingSkipIntroName = "skipIntro";
 u32 gEmuSettingSkipIntro;
 
+
+static const char* sInputSectionName = "input";
+settings_input gInputSettings;
+static const char* sInputSettingAButtonName = "buttonA";
+static const char* sInputSettingBButtonName = "buttonB";
+static const char* sInputSettingLButtonName = "buttonL";
+static const char* sInputSettingRButtonName = "buttonR";
+static const char* sInputSettingStartButtonName = "buttonStart";
+static const char* sInputSettingSelectButtonName = "buttonSelect";
+
 static void loadDefaultSettings()
 {
     gEmuSettingUseBottomScreen = false;
@@ -46,6 +56,13 @@ static void loadDefaultSettings()
     gEmuSettingWramICache = true;
     gEmuSettingGbaColors = false;
     gEmuSettingSkipIntro = false;
+
+    gInputSettings.buttonA = 0;
+    gInputSettings.buttonB = 1;
+    gInputSettings.buttonL = 9;
+    gInputSettings.buttonR = 8;
+    gInputSettings.buttonStart = 3;
+    gInputSettings.buttonSelect = 2;
 }
 
 static bool parseBoolean(const char* str, bool def = false)
@@ -55,6 +72,17 @@ static bool parseBoolean(const char* str, bool def = false)
     else if(!strcmp(str, "false"))
         return false;
     return def;
+}
+
+static u32 parseUInt(const char* str)
+{
+    u32 result = 0;
+    char c;
+    while((c = *str++) != 0)
+    {
+        result = result * 10 + (c - '0');
+    }
+    return result;
 }
 
 static void iniPropertyCallback(void* arg, const char* section, const char* key, const char* value)
@@ -77,6 +105,21 @@ static void iniPropertyCallback(void* arg, const char* section, const char* key,
             gEmuSettingGbaColors = parseBoolean(value, false);
         else if(!strcmp(key, sEmuSettingSkipIntroName))
             gEmuSettingSkipIntro = parseBoolean(value, false);
+    }
+    else if(!strcmp(section, sInputSectionName))
+    {
+        if(!strcmp(key, sInputSettingAButtonName))
+            gInputSettings.buttonA = parseUInt(value);
+        else if(!strcmp(key, sInputSettingBButtonName))
+            gInputSettings.buttonB = parseUInt(value);
+        else if(!strcmp(key, sInputSettingLButtonName))
+            gInputSettings.buttonL = parseUInt(value);
+        else if(!strcmp(key, sInputSettingRButtonName))
+            gInputSettings.buttonR = parseUInt(value);
+        else if(!strcmp(key, sInputSettingStartButtonName))
+            gInputSettings.buttonStart = parseUInt(value);
+        else if(!strcmp(key, sInputSettingSelectButtonName))
+            gInputSettings.buttonSelect = parseUInt(value);
     }
 }
 
@@ -103,6 +146,14 @@ bool settings_save()
     writer.WriteBooleanProperty(sEmuSettingWramICacheName, gEmuSettingWramICache);
     writer.WriteBooleanProperty(sEmuSettingGbaColorsName, gEmuSettingGbaColors);
     writer.WriteBooleanProperty(sEmuSettingSkipIntroName, gEmuSettingSkipIntro);
+
+    writer.WriteSection(sInputSectionName);
+    writer.WriteIntegerProperty(sInputSettingAButtonName, gInputSettings.buttonA);
+    writer.WriteIntegerProperty(sInputSettingBButtonName, gInputSettings.buttonB);
+    writer.WriteIntegerProperty(sInputSettingLButtonName, gInputSettings.buttonL);
+    writer.WriteIntegerProperty(sInputSettingRButtonName, gInputSettings.buttonR);
+    writer.WriteIntegerProperty(sInputSettingStartButtonName, gInputSettings.buttonStart);
+    writer.WriteIntegerProperty(sInputSettingSelectButtonName, gInputSettings.buttonSelect);
     f_close(&vram_cd->fil);
     return true;
 }

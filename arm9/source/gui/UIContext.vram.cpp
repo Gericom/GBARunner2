@@ -17,7 +17,7 @@ UIContext::UIContext()
       _robotoRegular9(new NtftFont(RobotoRegular9_ntft)),
       _toolbar(RGB5(103 >> 3, 58 >> 3, 183 >> 3), 0x7FFF, _robotoMedium13, "GBARunner2", 0x7FFF)
 {
-    REG_DISPCNT_SUB = DISPLAY_BG1_ACTIVE | DISPLAY_BG2_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D |
+    REG_DISPCNT_SUB = DISPLAY_BG1_ACTIVE /*| DISPLAY_BG2_ACTIVE*/ | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D |
         DISPLAY_SPR_1D_SIZE_32 | MODE_0_2D;
 
     Toolbar::LoadCommonData(_uiManager);
@@ -59,5 +59,6 @@ void UIContext::FatalError(const char* error)
 		while (!(*((vu16*)0x04000004) & 1));
 		_bgPalMan.Apply(BG_PALETTE_SUB);
 		_uiManager.VBlank();
+        REG_DISPCNT_SUB |= DISPLAY_BG2_ACTIVE;
 	}
 }

@@ -9,5 +9,17 @@ extern u32 gEmuSettingWramICache;
 extern u32 gEmuSettingGbaColors;
 extern u32 gEmuSettingSkipIntro;
 
+struct settings_input
+{
+    u32 buttonA;
+    u32 buttonB;
+    u32 buttonL;
+    u32 buttonR;
+    u32 buttonStart;
+    u32 buttonSelect;
+};
+
+extern settings_input gInputSettings;
+
 void settings_initialize();
 bool settings_save();

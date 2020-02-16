@@ -272,18 +272,18 @@ int InGameMenu::Run()
 
     while (1)
 	{
-		_inputRepeater.Update(~*((vu16*)0x04000130));
-		if (_inputRepeater.GetTriggeredKeys() & (1 << 6))
+		_inputRepeater.Update(~keys_read());
+		if (_inputRepeater.GetTriggeredKeys() & KEY_UP)
 		{
 			if (_selectedEntry > 0)
 				_selectedEntry--;
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & (1 << 7))
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_DOWN)
 		{
 			if (_selectedEntry < _adapter->GetItemCount() - 1)
 				_selectedEntry++;
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & 1)
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_A)
 		{
             if(_selectedEntry == 0)
                 next = 2;
@@ -295,13 +295,13 @@ int InGameMenu::Run()
             while(!(*((vu16*)0x04000130) & 1));
 			break;
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & 2)
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_B)
 		{
             next = 2;
             while(!(*((vu16*)0x04000130) & 2));
             break;
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & (1 << 8))
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_R)
 		{
 			next = 1;
 			break;
