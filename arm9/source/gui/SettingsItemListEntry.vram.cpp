@@ -76,16 +76,20 @@ void SettingsItemListEntry::Update(UIManager& uiManager)
 		palOffset = 2;
 	}
 
+	bool hasSubTitle =
+		_settingsItem->mode == SETTINGS_ITEM_MODE_SIMPLE_ENUM ||
+		(_settingsItem->subTitle && _settingsItem->subTitle[0] != 0);
+
 	SpriteEntry* titleOams = oamMan.AllocOams(6);
 	for (int i = 0; i < 6; i++)
 	{
 		titleOams[i].attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_WIDE |
-			OBJ_Y(_offsetY + (_settingsItem->subTitle[0] != 0 ? 7 : 13));
+			OBJ_Y(_offsetY + (hasSubTitle ? 7 : 13));
 		titleOams[i].attribute[1] = ATTR1_SIZE_32 | OBJ_X(_offsetX + 10 + 32 * i);
 		titleOams[i].attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(3 + palOffset) | ((_titleObjAddr >> 5) + 8 * i);
 	}
 
-    if(_settingsItem->subTitle[0] != 0)
+    if (hasSubTitle)
     {
         SpriteEntry* subTitleOams = oamMan.AllocOams(7);
         for (int i = 0; i < 7; i++)
@@ -105,6 +109,12 @@ void SettingsItemListEntry::Update(UIManager& uiManager)
         checkboxOam->attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(4 + palOffset) | 
             ((*_settingsItem->pValue ? sCheckboxMarkedObjAddr : sCheckboxOutlineObjAddr) >> 5);
     }
+
+	if(_settingsItem->mode == SETTINGS_ITEM_MODE_SIMPLE_ENUM && _settingsItem->pValue && _oldValue != *_settingsItem->pValue)
+	{
+		_subTitleInvalidated = true;
+		_oldValue = *_settingsItem->pValue;
+	}
 }
 
 void SettingsItemListEntry::VBlank(UIManager& uiManager)
@@ -125,10 +135,24 @@ void SettingsItemListEntry::VBlank(UIManager& uiManager)
 		u8* tmp = new u8[224 * 16];
 		for (int i = 0; i < 224 * 16; i += 2)
 			*((u16*)&tmp[i]) = 0;
-		_subTitleFont->CreateStringData(_settingsItem->subTitle, tmp + (8 - ((_subTitleFont->GetFontHeight() + 1) >> 1)) * 224, 224);
+		const char* subTitle;
+		if(_settingsItem->mode == SETTINGS_ITEM_MODE_SIMPLE_ENUM)
+			subTitle = _settingsItem->enumValueNames[*_settingsItem->pValue];
+		else
+			subTitle = _settingsItem->subTitle;
+		_subTitleFont->CreateStringData(subTitle, tmp + (8 - ((_subTitleFont->GetFontHeight() + 1) >> 1)) * 224, 224);
 		for (int i = 0; i < 7; i++)
 			uiutil_convertToObj(tmp + i * 32, 32, 16, 224, &SPRITE_GFX_SUB[(_subTitleObjAddr >> 1) + i * 128]);
 		delete[] tmp;
 		_subTitleInvalidated = false;
 	}
+}
+
+void SettingsItemListEntry::SetSettingsItem(const settings_item_t* settingsItem) 
+{
+	_settingsItem = settingsItem;
+	_titleInvalidated = true;
+	_subTitleInvalidated = true;
+	if(_settingsItem->pValue)
+		_oldValue = *_settingsItem->pValue;
 }

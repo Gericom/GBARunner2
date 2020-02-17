@@ -1,10 +1,13 @@
 #include "vram.h"
 #include "sd_access.h"
 #include "fat/ff.h"
+#include "patchUtil.h"
 #include "bios.h"
 
 extern "C" void bios_cpuset_cache_patch();
 extern "C" void bios_cpufastset_cache_patch();
+extern "C" void bios_softResetPatch();
+extern "C" void bios_swiPatch();
 
 /**
  * \brief Relocates the gba bios so it can be executed from vram
@@ -89,9 +92,11 @@ static void applyRelocation()
  */
 static void applyPatches()
 {
-	//Make bios jump to 02040000
-	//todo: check if this is even needed anymore, it may be handled by prefetch abort just fine
-	//gGbaBios[0xCC >> 2] = 0xE3A0E781;
+	//patch for having the right protected op at boot
+	gGbaBios[0xDC >> 2] = pcu_makeArmBranch((u32)&gGbaBios[0xDC >> 2], (u32)&bios_softResetPatch);
+
+	//patch for having the right protected op after swi
+	gGbaBios[0x184 >> 2] = pcu_makeArmBranch((u32)&gGbaBios[0x184 >> 2], (u32)&bios_swiPatch);
 
 	//fix post boot redirect
 	//todo: maybe I should correctly implement that register instead

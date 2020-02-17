@@ -36,11 +36,8 @@ class FileBrowser
 	CoverLoadState _coverLoadState;
 	u32 _gameId;
 
-	void LoadBios();
 	void LoadFolder(const char* path);
-	void CreateLoadSave(const char* path, const save_type_t* saveType);
-	void LoadFrame(u32 id);
-	void LoadGame(const char* path, u32 id);
+	void LoadGame(const char* path);//, u32 id);
 	void UpdateCover();
 	void InvalidateCover();
 public:

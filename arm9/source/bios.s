@@ -5,8 +5,9 @@ gGbaBios:
 
 .global bios_swiVeneer
 bios_swiVeneer:
-	ldr pc,= (gGbaBios + 0x140)
-
-.pool
+	b (gGbaBios + 0x140)
+	//b swiPatch
 
 .space 0x4000 - (. - gGbaBios)
+
+.pool

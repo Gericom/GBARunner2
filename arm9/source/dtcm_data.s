@@ -1,4 +1,4 @@
-.section .dtcm2
+.section ".dtcm2","ax"
 .altmacro
 
 #include "consts.s"
@@ -309,6 +309,15 @@ timer_shadow_regs_dtcm:
 	.short 0 //reload value
 .endr
 
+//the current bios opcode that is returned if you do a protected read
+//[00DCh+8] = 0xE129F000, after startup and softreset //before this address 0x27C is read
+//[0134h+8] = 0xE25EF004, during irq execution
+//[013Ch+8] = 0xE55EC002, after irq execution
+//[0188h+8] = 0xE3A02004, after swi execution; reads between 0x1C8 and 0x274
+.global gBiosOp
+gBiosOp:
+.word 0xE3A02004
+
 //for some reason the file is ignored without this nop here
-nop
-nop
+@ nop
+@ nop

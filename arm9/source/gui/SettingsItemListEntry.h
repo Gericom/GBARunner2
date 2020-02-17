@@ -8,6 +8,7 @@ struct settings_item_t;
 enum SettingsItemMode : u16
 {
     SETTINGS_ITEM_MODE_SIMPLE,
+	SETTINGS_ITEM_MODE_SIMPLE_ENUM,
     SETTINGS_ITEM_MODE_SWITCH,
     SETTINGS_ITEM_MODE_CHECK
 };
@@ -28,6 +29,7 @@ class SettingsItemListEntry : public ListEntry
     //ItemMode _mode;
     //u16 _checked;
     const settings_item_t* _settingsItem;
+	u32 _oldValue;
 public:	
 	static void LoadCommonData(UIManager& uiManager);
 
@@ -54,12 +56,7 @@ public:
 		_subTitleInvalidated = true;
 	}
 
-    void SetSettingsItem(const settings_item_t* settingsItem) 
-    {
-        _settingsItem = settingsItem;
-        _titleInvalidated = true;
-        _subTitleInvalidated = true;
-    }
+    void SetSettingsItem(const settings_item_t* settingsItem);
 
 	//void SetSubTitle(const char* subTitle);
 

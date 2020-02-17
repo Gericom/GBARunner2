@@ -67,10 +67,9 @@
 #define save_save_work (sound_sound_emu_work + 0x530)
 #define save_save_work_uncached (save_save_work + UNCACHED_OFFSET)
 #define save_save_work_state_uncached (save_save_work_uncached + ((128 * 1024 / 512) * 4) + 1)
-
 #define sio_work (save_save_work + ((128 * 1024 / 512) * 4) + 8)
-
 #define open_menu_irq_flag_uncached (sio_work + 0x24 + UNCACHED_OFFSET)
+#define extKeys_uncached (open_menu_irq_flag_uncached + 4)
 
 #define CACHE_LINKED_LIST_NIL	4096 //0x8000
 
