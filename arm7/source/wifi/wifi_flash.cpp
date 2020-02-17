@@ -1,6 +1,6 @@
 #include <nds.h>
 #include "wifi.h"
-#include "spi.h"
+#include "../spi.h"
 #include "nvram.h"
 #include "../irq.h"
 #include "wifi_flash.h"

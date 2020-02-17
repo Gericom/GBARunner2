@@ -2,6 +2,7 @@
 #include <string.h>
 #include "../irq.h"
 #include "../swi.h"
+#include "../powerMan.h"
 #include "wifi_common.h"
 #include "wifi_rx.h"
 #include "wifi_tx.h"
@@ -382,6 +383,15 @@ void wifi_init()
 	//wifi_shutdown();
 
 	REG_IRQ_IE |= (1 << 24);
+	pmic_setLedConfig(PMIC_CONTROL_LED_BLINK_FAST);
+}
+
+void wifi_deinit()
+{
+	wifi_stop();
+	wifi_shutdown();
+	(*(vu32*)0x04000304) &= ~2;
+	pmic_setLedConfig(PMIC_CONTROL_LED_ON);
 }
 
 void wifi_stop()

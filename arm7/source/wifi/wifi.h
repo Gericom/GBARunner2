@@ -203,5 +203,6 @@ bool wifi_setChannel(int channel);
 bool wifi_setActiveZoneTime(u16 time);
 
 void wifi_init();
+void wifi_deinit();
 void wifi_stop();
 void wifi_start();

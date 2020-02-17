@@ -24,4 +24,5 @@
 #define REG_SPI_CNT     (*(vu16*)0x040001C0)
 #define REG_SPI_DATA    (*(vu16*)0x040001C2)
 
+void spi_waitBusy();
 u8 spi_transferByte(u8 value);
