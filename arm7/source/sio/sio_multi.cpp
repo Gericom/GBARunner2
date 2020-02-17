@@ -140,7 +140,9 @@ void sio_multiStart()
 	vram_cd->sioWork.sioMulti[2] = 0xFFFF;
 	vram_cd->sioWork.sioMulti[3] = 0xFFFF;
 	vram_cd->sioWork.sioIrqFlag = 0;
-    vram_cd->sioWork.sioCntRead = (gSioWork.id << 4) | (gSioWork.id == SIO_ID_MASTER ? 0 : (1 << 2)) | (gSioWork.multiModes[gSioWork.id == SIO_ID_MASTER ? 1 : 0] == SIO_MODE_MULTI ? (1 << 3) : 0);
+    vram_cd->sioWork.sioCntRead =
+		(gSioWork.id << 4) | (gSioWork.id == SIO_ID_MASTER ? 0 : (1 << 2)) |
+		(gSioWork.multiModes[gSioWork.id == SIO_ID_MASTER ? 1 : 0] == SIO_MODE_MULTI ? (1 << 3) : 0);
     wifi_setTxDoneCallback(txDoneCallback, NULL);
 }
 

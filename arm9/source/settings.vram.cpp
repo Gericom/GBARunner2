@@ -60,6 +60,20 @@ static void loadDefaultSettings()
     gEmuSettingGbaColors = false;
     gEmuSettingSkipIntro = false;
 
+    vram_cd->sioWork.masterMac[0] = 0;
+    vram_cd->sioWork.masterMac[1] = 0;
+    vram_cd->sioWork.masterMac[2] = 0;
+    vram_cd->sioWork.masterMac[3] = 0;
+    vram_cd->sioWork.masterMac[4] = 0;
+    vram_cd->sioWork.masterMac[5] = 0;
+
+    vram_cd->sioWork.slaveMac[0] = 0;
+    vram_cd->sioWork.slaveMac[1] = 0;
+    vram_cd->sioWork.slaveMac[2] = 0;
+    vram_cd->sioWork.slaveMac[3] = 0;
+    vram_cd->sioWork.slaveMac[4] = 0;
+    vram_cd->sioWork.slaveMac[5] = 0;
+
     gInputSettings.buttonA = 0;
     gInputSettings.buttonB = 1;
     gInputSettings.buttonL = 9;
@@ -179,6 +193,10 @@ bool settings_save()
     writer.WriteBooleanProperty(sEmuSettingWramICacheName, gEmuSettingWramICache);
     writer.WriteBooleanProperty(sEmuSettingGbaColorsName, gEmuSettingGbaColors);
     writer.WriteBooleanProperty(sEmuSettingSkipIntroName, gEmuSettingSkipIntro);
+
+    writer.WriteSection(sLinkSectionName);
+    writer.WriteMacAddressProperty(sLinkSettingMasterMac, vram_cd->sioWork.masterMac);
+    writer.WriteMacAddressProperty(sLinkSettingSlaveMac, vram_cd->sioWork.slaveMac);
 
     writer.WriteSection(sInputSectionName);
     writer.WriteIntegerProperty(sInputSettingAButtonName, gInputSettings.buttonA);

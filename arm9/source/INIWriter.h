@@ -11,4 +11,5 @@ public:
     void WriteProperty(const char* key, const char* value);
     void WriteBooleanProperty(const char* key, bool value);
     void WriteIntegerProperty(const char* key, int value);
+    void WriteMacAddressProperty(const char* key, const u8* macAddress);
 };

@@ -252,7 +252,6 @@ extern "C" PUT_IN_VRAM void sd_init()
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 	initialize_cache();
 	rio_init(RIO_NONE);
-	REG_SEND_FIFO = 0xAA560000;
 	gbab_setupGfx();
 }
 

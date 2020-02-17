@@ -149,9 +149,12 @@ static void rxDoneCallback(void* arg)
 	}
 }
 
-void sio_init()
+void sio_init(bool isConnected)
 {
     memset(&gSioWork, 0, sizeof(gSioWork));
+    sio_setIsConnected(isConnected);
+    if(!gSioWork.isConnected)
+        return;
 	if (WIFI_RAM->firmData.wifiData.macAddress.address[0] == vram_cd->sioWork.slaveMac[0] &&
 		WIFI_RAM->firmData.wifiData.macAddress.address[1] == vram_cd->sioWork.slaveMac[1] &&
 		WIFI_RAM->firmData.wifiData.macAddress.address[2] == vram_cd->sioWork.slaveMac[2] &&
@@ -189,11 +192,21 @@ void sio_init()
 	}
 	wifi_setRxDoneCallback(rxDoneCallback, NULL);
     REG_WIFI_BUFFERING_SELECT = 0x0FFF;//0x381;
-	REG_WIFI_DS_MASK = 8;	
+	REG_WIFI_DS_MASK = 8;
+}
+
+void sio_setIsConnected(bool isConnected)
+{
+    gSioWork.isConnected = isConnected;
+    gSioWork.multiModes[1] = SIO_MODE_GPIO;
+    gSioWork.multiModes[2] = SIO_MODE_GPIO;
+    gSioWork.multiModes[3] = SIO_MODE_GPIO;
 }
 
 void sio_sendSimplePacket(wifi_macaddr_t* dst, u8 cmd, u8 arg0, u16 arg1, u16 arg2)
 {
+    if(!gSioWork.isConnected)
+        return;
     struct { wifi_pkt_tx_t packet; u32 checksum; } packet =
     {
         {

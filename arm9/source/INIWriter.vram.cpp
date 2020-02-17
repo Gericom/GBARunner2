@@ -28,3 +28,9 @@ void INIWriter::WriteIntegerProperty(const char* key, int value)
 {
     f_printf(_file, "%s=%d\n", key, value);
 }
+
+void INIWriter::WriteMacAddressProperty(const char* key, const u8* macAddress)
+{
+    f_printf(_file, "%s=%02X%02X%02X%02X%02X%02X\n", key,
+        macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
+}

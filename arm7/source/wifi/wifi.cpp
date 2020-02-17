@@ -391,6 +391,8 @@ void wifi_deinit()
 	wifi_stop();
 	wifi_shutdown();
 	(*(vu32*)0x04000304) &= ~2;
+	REG_IRQ_IE &= ~(1 << 24);
+	REG_IRQ_IF = 1 << 24;
 	pmic_setLedConfig(PMIC_CONTROL_LED_ON);
 }
 

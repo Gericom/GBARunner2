@@ -6,12 +6,14 @@
 #include "UIContext.h"
 #include "FileBrowser.h"
 #include "SettingsScreen.h"
+#include "LinkConfigScreen.h"
 #include "settings.h"
 #include "../../common/fifo.h"
 #include "../emu/romGpio.h"
 #include "../gbaBoot.h"
 #include "IconPlay_nbfc.h"
 #include "IconRestart_nbfc.h"
+#include "IconCable_nbfc.h"
 #include "IconPower_nbfc.h"
 #include "../cp15.h"
 #include "InGameMenu.h"
@@ -25,6 +27,7 @@ static const igm_action_t sActions[] =
 {
     { "Resume" },
     { "Reset" },
+    { "Linking Settings" },
     { "Quit to rom browser" }
 };
 
@@ -219,6 +222,13 @@ extern "C" bool igm_execute()
             reboot = true;
             break;
         }
+        else if(next == 4)
+        {
+            LinkConfigScreen* linkConfig = new LinkConfigScreen(uiContext);
+			linkConfig->Run();
+			delete linkConfig;
+			next = 0;
+        }
 	}
 	delete uiContext;
 
@@ -253,10 +263,14 @@ int InGameMenu::Run()
     sIconObjAddrs[1] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconRestart_nbfc_size);
 	for (int i = 0; i < IconRestart_nbfc_size / 2; i++)
 		SPRITE_GFX_SUB[(sIconObjAddrs[1] >> 1) + i] = ((u16*)IconRestart_nbfc)[i];
+
+    sIconObjAddrs[2] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconCable_nbfc_size);
+	for (int i = 0; i < IconCable_nbfc_size / 2; i++)
+		SPRITE_GFX_SUB[(sIconObjAddrs[2] >> 1) + i] = ((u16*)IconCable_nbfc)[i];
         
-    sIconObjAddrs[2] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconPower_nbfc_size);
+    sIconObjAddrs[3] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconPower_nbfc_size);
 	for (int i = 0; i < IconPower_nbfc_size / 2; i++)
-		SPRITE_GFX_SUB[(sIconObjAddrs[2] >> 1) + i] = ((u16*)IconPower_nbfc)[i];
+		SPRITE_GFX_SUB[(sIconObjAddrs[3] >> 1) + i] = ((u16*)IconPower_nbfc)[i];
 
     _vramState = _uiContext->GetUIManager().GetSubObjManager().GetState();
 
@@ -290,6 +304,8 @@ int InGameMenu::Run()
             else if(_selectedEntry == 1)
                 next = 3;
             else if(_selectedEntry == 2)
+                next = 4;
+            else if(_selectedEntry == 3)
                 next = 0;
 
             while(!(*((vu16*)0x04000130) & 1));

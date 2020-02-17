@@ -60,9 +60,9 @@ int main()
 	REG_IME = 1;
 
 	//try wifi
-	wifi_init();
-	wifi_start();
-	sio_init();
+	//wifi_init();
+	//wifi_start();
+	sio_init(false);
 
 	
 	/*struct{wifi_pkt_tx_t packet; u8 payload[8];} sTestPacket =
@@ -260,8 +260,14 @@ int main()
 					REG_SOUNDCNT = (REG_SOUNDCNT & ~0x7F) | volume;
 					break;
 				}
-			case 0xAA560000: //sio reinit
-				sio_init();
+			case 0xAA560000: //wifi link enable
+				wifi_init();
+				wifi_start();
+				sio_init(true);
+				break;
+			case 0xAA560001:
+				sio_setIsConnected(false);
+				wifi_deinit();
 				break;
 			case 0xAA550100: //get rtc data
 				{
