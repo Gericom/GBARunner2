@@ -70,8 +70,9 @@
 #define save_save_work_uncached (save_save_work + UNCACHED_OFFSET)
 #define save_save_work_state_uncached (save_save_work_uncached + ((128 * 1024 / 512) * 4) + 1)
 #define open_menu_irq_flag_uncached (save_save_work_uncached + ((128 * 1024 / 512) * 4) + 8)
+#define extKeys_uncached (open_menu_irq_flag_uncached + 4)
 #ifdef USE_LOW_LATENCY_IRQ_AUDIO
-#define gbaDsndChanIrqFlags_uncached (open_menu_irq_flag_uncached + 4)
+#define gbaDsndChanIrqFlags_uncached (extKeys_uncached + 4)
 #define gbaDsndChans0_uncached ((gbaDsndChanIrqFlags_uncached + 2 + 0x1F) & ~0x1F)
 #endif
 

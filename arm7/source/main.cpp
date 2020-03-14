@@ -18,7 +18,9 @@ extern "C" void __libnds_exit()
 
 extern "C" void irq_vblank()
 {
-	bool touchDown = (REG_KEYXY & (1 << 6)) == 0;
+	u16 keyXY = REG_KEYXY;
+	vram_cd->extKeys = ((keyXY & 3) << 10) | ((keyXY & 0xC0) << 6);
+	bool touchDown = (keyXY & (1 << 6)) == 0;
 	if(!sPrevTouchDown && touchDown)
 	{
 		//invoke irq on arm9
@@ -148,10 +150,10 @@ int main()
 	while (1)
 	{
 		while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-		{
-			if (!(REG_KEYXY & 1))
-				gba_sound_resync();
-		}
+		// {
+		// 	if (!(REG_KEYXY & 1))
+		// 		gba_sound_resync();
+		// }
 
 		u32 cmd = REG_RECV_FIFO;
 		//if((cmd >> 16) != 0xAA55)

@@ -79,7 +79,8 @@ typedef struct
 	sd_info_t sd_info;
 	sound_emu_work_t sound_emu_work;
 	save_work_t save_work;
-	u32 openMenuIrqFlag;
+	vu32 openMenuIrqFlag;
+	vu16 extKeys;
 #ifdef USE_LOW_LATENCY_IRQ_AUDIO
 	volatile u8 gbaDsndChanIrqFlags[2];
 	gba_dsnd_channel_t gbaDsndChans[2] __attribute__((aligned(32)));

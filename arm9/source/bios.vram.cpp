@@ -7,6 +7,7 @@
 extern "C" void bios_cpuset_cache_patch();
 extern "C" void bios_cpufastset_cache_patch();
 extern "C" void bios_softResetPatch();
+extern "C" void bios_swiPatch();
 
 /**
  * \brief Relocates the gba bios so it can be executed from vram
@@ -93,6 +94,9 @@ static void applyPatches()
 {
 	//patch for having the right protected op at boot
 	gGbaBios[0xDC >> 2] = pcu_makeArmBranch((u32)&gGbaBios[0xDC >> 2], (u32)&bios_softResetPatch);
+
+	//patch for having the right protected op after swi
+	gGbaBios[0x184 >> 2] = pcu_makeArmBranch((u32)&gGbaBios[0x184 >> 2], (u32)&bios_swiPatch);
 
 	//fix post boot redirect
 	//todo: maybe I should correctly implement that register instead

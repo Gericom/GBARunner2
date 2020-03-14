@@ -18,37 +18,6 @@
 #include "gbaBoot.h"
 #include "sd_access.h"
 
-typedef enum KEYPAD_BITS
-{
-	KEY_A = BIT(0),
-	//!< Keypad A button.
-	KEY_B = BIT(1),
-	//!< Keypad B button.
-	KEY_SELECT = BIT(2),
-	//!< Keypad SELECT button.
-	KEY_START = BIT(3),
-	//!< Keypad START button.
-	KEY_RIGHT = BIT(4),
-	//!< Keypad RIGHT button.
-	KEY_LEFT = BIT(5),
-	//!< Keypad LEFT button.
-	KEY_UP = BIT(6),
-	//!< Keypad UP button.
-	KEY_DOWN = BIT(7),
-	//!< Keypad DOWN button.
-	KEY_R = BIT(8),
-	//!< Right shoulder button.g
-	KEY_L = BIT(9),
-	//!< Left shoulder button.
-	KEY_X = BIT(10),
-	//!< Keypad X button.
-	KEY_Y = BIT(11),
-	//!< Keypad Y button.
-	KEY_TOUCH = BIT(12),
-	//!< Touchscreen pendown.
-	KEY_LID = BIT(13) //!< Lid state.
-} KEYPAD_BITS;
-
 //#define DONT_CREATE_SAVE_FILES
 
 extern "C" void dc_invalidate_range(void* start, uint32_t length);
