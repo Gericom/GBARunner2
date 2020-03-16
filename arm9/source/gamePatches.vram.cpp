@@ -112,6 +112,50 @@ void gptc_patchRom()
 		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x9992) == 0x7068)
 			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x9992) = 0x46C0;
 	}
+	else if(gameCode == 0x45424442)
+	{
+		//Dragon Ball Z - Taiketsu (USA)
+		//Fix "game cannot be played on this hardware" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD54) == 0x7818)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD54) = 0x2000;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD60) == 0x7810)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD60) = 0x2000;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD80) == 0x7839703A)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD80) = 0x21001C00;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD8C) == 0x78307030)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BD8C) = 0x20001C00;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BDAC) == 0x7008)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BDAC) = 0x1C00;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BDB2) == 0x7008)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x2BDB2) = 0x1C00;
+	}
+	else if(gameCode == 0x50424442)
+	{
+		//Dragon Ball Z - Taiketsu (Europe)
+		//Fix "game cannot be played on this hardware" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE08) == 0x7818)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE08) = 0x2000;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE14) == 0x7810)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE14) = 0x2000;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE34) == 0x7839703A)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE34) = 0x21001C00;
+
+		if (*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE40) == 0x78307030)
+			*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE40) = 0x20001C00;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE58) == 0x7008)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE58) = 0x1C00;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE66) == 0x7008)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE66) = 0x1C00;
+	}
 	else if(gameCode == 0x504A4142 || gameCode == 0x454A4142)
 	{
 		//Banjo-Pilot (Europe) (En,Fr,De,Es,It) and Banjo-Pilot (USA)
