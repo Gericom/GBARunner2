@@ -156,6 +156,25 @@ void gptc_patchRom()
 		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE66) == 0x7008)
 			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FE66) = 0x1C00;
 	}
+	else if(gameCode == 0x45334742)
+	{
+		//Dragon Ball Z - Buu's Fury (USA)
+		//Fix "game will not run on this hardware" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B66) == 0x7032)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B66) = 0
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B6A) == 0x7072)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B6A) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B86) == 0x7008)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B86) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B8C) == 0x7031)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B8C) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B90) == 0x7071)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B90) = 0;
+	}
 	else if(gameCode == 0x504A4142 || gameCode == 0x454A4142)
 	{
 		//Banjo-Pilot (Europe) (En,Fr,De,Es,It) and Banjo-Pilot (USA)
