@@ -5,6 +5,18 @@
 static const u8 sSomeBuggedMixer[16] =
 	{0xF0, 0x1F, 0x2D, 0xE9, 0x0F, 0x00, 0xB0, 0xE8, 0x03, 0x32, 0xA0, 0xE1, 0x01, 0x20, 0x82, 0xE0};
 
+static const u8 sDbzLoGUPatch1[0x24] = 
+	{0x0A, 0x1C, 0x40, 0x0B, 0xE0, 0x21, 0x09, 0x05, 0x41, 0x18, 0x07, 0x31, 0x00, 0x23, 0x08, 0x78,
+	 0x10, 0x70, 0x01, 0x33, 0x01, 0x32, 0x01, 0x39, 0x07, 0x2B, 0xF8, 0xD9, 0x00, 0x20, 0x70, 0xBC,
+	 0x02, 0xBC, 0x08, 0x47
+	};
+
+static const u8 sDbzLoGUPatch2[0x28] = 
+	{0x70, 0xB5, 0x00, 0x04, 0x0A, 0x1C, 0x40, 0x0B, 0xE0, 0x21, 0x09, 0x05, 0x41, 0x18, 0x07, 0x31,
+	 0x00, 0x23, 0x10, 0x78, 0x08, 0x70, 0x01, 0x33, 0x01, 0x32, 0x01, 0x39, 0x07, 0x2B, 0xF8, 0xD9,
+	 0x00, 0x20, 0x70, 0xBC, 0x02, 0xBC, 0x08, 0x47
+	};
+
 // static const u8 sStarWarsNewDroidArmyPatch[40] = {
 // 	0x00, 0x30, 0xA0, 0xE1, 0xFF, 0x7F, 0x83, 0xE8, 0x40, 0x30, 0x80, 0xE2,
 // 	0xFF, 0x7F, 0x93, 0xE8, 0x1E, 0xFF, 0x2F, 0xE1, 0x40, 0x30, 0x80, 0xE2,
@@ -30,7 +42,77 @@ void gptc_patchRom()
 	}
 
 	u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);
-	if(gameCode == 0x504A4142 || gameCode == 0x454A4142)
+	if(gameCode == 0x45474C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku (USA)
+		//Fix "game cannot be played on hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x356) == 0x7002)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x356) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x35E) == 0x7043)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x35E) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x37E) == 0x7001)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x37E) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x382) == 0x7041)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x382) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xE27E) == 0xB0A2)
+		{
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xE27E) = 0x400;
+
+			for(int i = 0; i < sizeof(sDbzLoGUPatch1); i += 4)
+				*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xE280 + i) = *(u32*)&sDbzLoGUPatch1[i];
+
+			for(int i = 0; i < sizeof(sDbzLoGUPatch2); i += 4)
+				*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xE32C + i) = *(u32*)&sDbzLoGUPatch2[i];
+		}
+	}
+	else if(gameCode == 0x50474C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku (Europe)
+		//Fix "game cannot be played on hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x33C) == 0x7119)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x33C) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x340) == 0x7159)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x340) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x356) == 0x705A)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x356) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x35A) == 0x7002)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x35A) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x35E) == 0x7042)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x35E) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x384) == 0x7001)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x384) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x388) == 0x7041)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x388) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x494C) == 0x7002)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x494C) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4950) == 0x7042)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4950) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4978) == 0x7001)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4978) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x497C) == 0x7041)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x497C) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x988E) == 0x7028)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x988E) = 0x46C0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x9992) == 0x7068)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x9992) = 0x46C0;
+	}
+	else if(gameCode == 0x504A4142 || gameCode == 0x454A4142)
 	{
 		//Banjo-Pilot (Europe) (En,Fr,De,Es,It) and Banjo-Pilot (USA)
 		//Prevent race condition from happening
