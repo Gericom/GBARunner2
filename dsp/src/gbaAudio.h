@@ -34,7 +34,7 @@ typedef struct
     vu16 isTransferring;
 
     vs16 curSample;
-} gbaa_daudio_channel_t;
+} gbaa_daudio_channel_t __attribute__((aligned(4)));
 
 typedef struct
 {
