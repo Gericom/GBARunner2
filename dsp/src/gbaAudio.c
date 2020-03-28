@@ -232,7 +232,9 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
             return;
         }
     }
-    
+    const gbat_t* timer = &sTimers[channel->timerIdx];
+    if(!timer->isStarted)
+        return;
     if(channel->fifoCount <= 16 && !sTransferBusy && !(REG_DMA_START & (1 << 5)))
     {
         u32 addr = channel->addrLo | ((u32)channel->addrHi << 16);
