@@ -7,7 +7,7 @@ endif
 
 include $(DEVKITARM)/ds_rules
 
-export TARGET		:=	$(shell basename $(CURDIR))
+export TARGET		:=	GBARunner2
 export TOPDIR		:=	$(CURDIR)
 
 
