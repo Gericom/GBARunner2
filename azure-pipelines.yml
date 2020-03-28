@@ -19,9 +19,9 @@ pool:
 steps:
 - script: |
     cd $(Agent.TempDirectory)
-    powershell.exe -nologo -noprofile -command "& { $client = new-object System.Net.WebClient; $client.DownloadFile("https://github.com/Gericom/GBARunner2BuildTools/raw/master/devkitPro.zip","devkitPro.zip"); }"
+    powershell.exe -nologo -noprofile -command "& { $client = new-object System.Net.WebClient; $client.DownloadFile('https://github.com/Gericom/GBARunner2BuildTools/raw/master/devkitPro.zip','devkitPro.zip'); }"
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('devkitPro.zip', 'bar'); }"
-    powershell.exe -nologo -noprofile -command "& { $client = new-object System.Net.WebClient; $client.DownloadFile("https://github.com/Gericom/GBARunner2BuildTools/raw/master/teak.zip","teak.zip"); }"
+    powershell.exe -nologo -noprofile -command "& { $client = new-object System.Net.WebClient; $client.DownloadFile('https://github.com/Gericom/GBARunner2BuildTools/raw/master/teak.zip','teak.zip'); }"
     powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('teak.zip', 'bar\\teak'); }"
     md $(Build.Repository.LocalPath)\build
   displayName: 'Prepare environment'
