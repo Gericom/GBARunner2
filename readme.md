@@ -20,7 +20,7 @@ A valid bios should have the following checksums:
 ## Compatibility List
 A compatibility list can be found here: https://wiki.gbatemp.net/wiki/GBARunner2
 
-Many thanks to Dodain47 all other testers for investing so much time in testing games!
+Many thanks to Dodain47 and all other testers for investing so much time in testing games!
 
 ## DSP Audio
 GBARunner2 now has support for DSP audio on DSi and 3DS through a custom DSP binary. The compiler is a fork of llvm with a teak backend I made. It can be found here: https://github.com/Gericom/teak-llvm
