@@ -36,6 +36,11 @@ read_address_if:
 	ldrh r10, [r13]
 	ldrh r11, fake_irq_flags
 	orr r10, r10, r11
+#ifdef USE_DSP_AUDIO
+	ldr r13,= 0x0400431C //DSP_SEM
+	ldrh r11, [r13]
+	orr r10, r11
+#endif
 	bx lr
 
 .global read_address_if_bottom8
@@ -44,6 +49,11 @@ read_address_if_bottom8:
 	ldrb r10, [r13, #0x214]
 	ldrb r11, fake_irq_flags
 	orr r10, r10, r11
+#ifdef USE_DSP_AUDIO
+	ldr r13,= 0x0400431C //DSP_SEM
+	ldrb r11, [r13]
+	orr r10, r11
+#endif
 	//ldrb r11, [r13, #0x216]
 	//bic r10, #1
 	//tst r11, #1
@@ -56,6 +66,11 @@ read_address_if_top8:
 	ldrb r10, [r13, #0x215]
 	ldrb r11, (fake_irq_flags + 1)
 	orr r10, r10, r11
+#ifdef USE_DSP_AUDIO
+	ldr r13,= 0x0400431D //DSP_SEM+1
+	ldrb r11, [r13]
+	orr r10, r11
+#endif
 	bx lr
 
 .global read_address_ie_if
@@ -66,7 +81,12 @@ read_address_ie_if:
 	//tst r11, #1
 	//orrne r12, #1
 	//ldrb r11, [r13, #6]
-	ldrh r13, [r13, #4]
+	ldrh r13, [r13, #4]	
+#ifdef USE_DSP_AUDIO
+	ldr r10,= 0x0400431C //DSP_SEM
+	ldrh r10, [r10]
+	orr r13, r10
+#endif
 	ldrh r11, fake_irq_flags
 	orr r13, r13, r11
 	orr r10, r12, r13, lsl #16
@@ -82,6 +102,12 @@ write_address_ie:
 	//bic r11, #1
 	//orrne r11, r11, #(1 << 16)	//fifo sync as early vblank
 	strh r11, [r13]
+#ifdef USE_DSP_AUDIO
+	//enable irqs emulated by the dsp
+	ldr r13,= 0x04004314 //DSP_PMASK
+	mvn r12, r11
+	strh r12, [r13]
+#endif
 	bx lr
 
 .global write_address_ie_bottom8
@@ -94,12 +120,24 @@ write_address_ie_bottom8:
 	//biceq r11, r11, #1	//fifo sync as early vblank
 	//orrne r11, r11, #1	//fifo sync as early vblank
 	//strb r11, [r13, #2]
+#ifdef USE_DSP_AUDIO
+	//enable irqs emulated by the dsp
+	ldr r13,= 0x04004314 //DSP_PMASK
+	mvn r12, r11
+	strb r12, [r13]
+#endif
 	bx lr
 
 .global write_address_ie_top8
 write_address_ie_top8:
 	ldr r13,= 0x4000211
 	strb r11, [r13]
+#ifdef USE_DSP_AUDIO
+	//enable irqs emulated by the dsp
+	ldr r13,= 0x04004315 //DSP_PMASK+1
+	mvn r12, r11
+	strb r12, [r13]
+#endif
 	bx lr
 
 .global write_address_if
@@ -108,8 +146,24 @@ write_address_if:
 	//tst r11, #1
 	//orrne r11, #(1 << 16)
 	orr r11, #0x3E0000
+#ifdef USE_DSP_AUDIO
+	orr r11, #0x1000000 //ack dsp irq
+#endif
 	//orr r11, #0x3F0000
 	str r11, [r13]
+#ifdef USE_DSP_AUDIO
+	//ack irqs emulated by the dsp
+	ldr r13,= 0x04004318 //DSP_PCLEAR
+	strh r11, [r13]
+	//ensure a new irq is issued if any are left
+	ldrh r12, [r13, #-4]
+	mov r10, #-1
+	strh r10, [r13, #-4]
+.rept 8
+	nop
+.endr
+	strh r12, [r13, #-4]
+#endif
 	ldr r13,= fake_irq_flags
 	ldr r12, [r13]
 	bic r12, r11
@@ -122,8 +176,24 @@ write_address_if_bottom8:
 	//tst r11, #1
 	//orrne r11, #(1 << 16)
 	orr r11, #0x3E0000
+#ifdef USE_DSP_AUDIO
+	orr r11, #0x1000000 //ack dsp irq
+#endif
 	//orr r11, #0x3F0000
 	str r11, [r13]
+#ifdef USE_DSP_AUDIO
+	//ack irqs emulated by the dsp
+	ldr r13,= 0x04004318 //DSP_PCLEAR
+	strh r11, [r13]
+	//ensure a new irq is issued if any are left
+	ldrh r12, [r13, #-4]
+	mov r10, #-1
+	strh r10, [r13, #-4]
+.rept 8
+	nop
+.endr
+	strh r12, [r13, #-4]
+#endif
 	ldr r13,= fake_irq_flags
 	ldr r12, [r13]
 	bic r12, r11
@@ -135,8 +205,24 @@ write_address_if_top8:
 	ldr r13,= 0x4000214
 	//orr r11, #0x3F00
 	orr r11, #0x3E00
+#ifdef USE_DSP_AUDIO
+	orr r11, #0x10000 //ack dsp irq
+#endif
 	mov r11, r11, lsl #8
 	str r11, [r13]
+#ifdef USE_DSP_AUDIO
+	//ack irqs emulated by the dsp
+	ldr r13,= 0x04004318 //DSP_PCLEAR
+	strh r11, [r13]
+	//ensure a new irq is issued if any are left
+	ldrh r12, [r13, #-4]
+	mov r10, #-1
+	strh r10, [r13, #-4]
+.rept 8
+	nop
+.endr
+	strh r12, [r13, #-4]
+#endif
 	ldr r13,= fake_irq_flags
 	ldr r12, [r13]
 	bic r12, r11
@@ -153,13 +239,34 @@ write_address_ie_if:
 	//bic r12, //#0x3E0000
 	//str r12, [r13]
 	strh r11, [r13]
+#ifdef USE_DSP_AUDIO
+	//enable irqs emulated by the dsp
+	ldr r10,= 0x04004314 //DSP_PMASK
+	mvn r12, r11
+	strh r12, [r10]
+#endif
 	mov r11, r11, lsr #16
 	//tst r11, #1
 	//orrne r11, #(1 << 16)
 	//orr r11, #0x3E0000
 	//orr r11, #0x3F0000
 	orr r11, #0x3E0000
+#ifdef USE_DSP_AUDIO
+	orr r11, #0x1000000 //ack dsp irq
+#endif
 	str r11, [r13, #4]
+#ifdef USE_DSP_AUDIO
+	//ack irqs emulated by the dsp
+	strh r11, [r10, #4] //DSP_PCLEAR
+	//ensure a new irq is issued if any are left
+	ldrh r12, [r10]
+	mov r13, #-1
+	strh r13, [r10]
+.rept 8
+	nop
+.endr
+	strh r12, [r10]
+#endif
 	ldr r13,= fake_irq_flags
 	ldr r12, [r13]
 	bic r12, r11
@@ -182,6 +289,11 @@ irq_handler:
 	beq cap_control
 irq_cont:
 	ldr r1, [r12, #0x214]
+#ifdef USE_DSP_AUDIO
+	add r2, r12, #0x4300
+	ldrh r2, [r2, #0x1C] //DSP_SEM
+	orr r1, r2
+#endif
 	ldr r3, [r12, #0x210]
 	and r1, r3
 	tst r1, #(1 << 1) //hblank

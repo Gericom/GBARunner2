@@ -250,3 +250,6 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# dsp binaries
+*.cdc

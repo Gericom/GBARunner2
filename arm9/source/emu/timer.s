@@ -59,6 +59,19 @@ write_address_timer_counter:
 	movne r12, r11
 	strh r12, [r9]
 
+#ifdef USE_DSP_AUDIO
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r3,lr}
+1:
+	bic r0, r9, #0xFF000000
+	orr r0, #(2 << 16)
+	mov r1, r11
+	ldr r12,= dsp_sendIpcCommand
+	blx r12
+	cmp r0, #0
+	beq 1b //loop if it failed
+	pop {r0-r3,lr}
+#else
 	//send info to arm7
 	ldr r13,= 0x04000188
 1:
@@ -68,6 +81,7 @@ write_address_timer_counter:
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]
+#endif
 	bx lr
 
 .global write_address_timer_control
@@ -102,6 +116,19 @@ write_address_timer_control:
 	strh r11, [r9]
 
 1:
+#ifdef USE_DSP_AUDIO
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r3,lr}
+2:
+	bic r0, r9, #0xFF000000
+	orr r0, #(2 << 16)
+	mov r1, r11
+	ldr r12,= dsp_sendIpcCommand
+	blx r12
+	cmp r0, #0
+	beq 2b //loop if it failed
+	pop {r0-r3,lr}
+#else
 	ldr r13,= 0x04000188
 2:
 	ldr r10, [r13, #-4]
@@ -110,6 +137,7 @@ write_address_timer_control:
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]
+#endif
 	bx lr
 
 .global write_address_timer
@@ -139,6 +167,19 @@ write_address_timer:
 	str r13, [r9]
 
 1:
+#ifdef USE_DSP_AUDIO
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r3,lr}
+2:
+	bic r0, r9, #0xFF000000
+	orr r0, #(4 << 16)
+	mov r1, r11
+	ldr r12,= dsp_sendIpcCommand
+	blx r12
+	cmp r0, #0
+	beq 2b //loop if it failed
+	pop {r0-r3,lr}
+#else
 	ldr r13,= 0x04000188
 2:
 	ldr r10, [r13, #-4]
@@ -147,4 +188,5 @@ write_address_timer:
 	ldr r12,= 0x04000188
 	str r9, [r12]
 	str r11, [r12]
+#endif
 	bx lr

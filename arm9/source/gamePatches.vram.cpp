@@ -12,7 +12,7 @@ static const u8 sSomeBuggedMixer[16] =
 // 	0x1E, 0xFF, 0x2F, 0xE1
 // };
 
-
+#ifdef USE_MP2000_PATCH
 static const u8 sMP2000SoundInit[16] =
 	{0x53, 0x6D, 0x73, 0x68, 0x70, 0xB5, 0x14, 0x48, 0x02, 0x21, 0x49, 0x42, 0x08, 0x40, 0x13, 0x49};
 
@@ -21,6 +21,7 @@ static const u8 sMP2000SoundInit2[16] =
 
 static const u8 sMP2000SoundInit3[16] =
 	{0x53, 0x6D, 0x73, 0x68, 0xF0, 0xB5, 0x47, 0x46, 0x80, 0xB4, 0x18, 0x48, 0x02, 0x21, 0x49, 0x42};
+#endif
     
 extern "C" void gptc_banjoPilotFix();
 extern "C" void gptc_americanBassFix();
@@ -38,6 +39,7 @@ void gptc_patchRom()
 			buggedMixer[1] = 0xE890000F;
 	}
 
+#ifdef USE_MP2000_PATCH
 	//todo: it seems not all games have this same signature
 	u32* mp2000Init = gptc_findSignature(sMP2000SoundInit);
 	if (!mp2000Init)
@@ -59,6 +61,7 @@ void gptc_patchRom()
 		if (oldVal >= 0x03000000 && oldVal < 0x04000000)
 			*pSoundAreaPtr = (u32)&vram_cd->mp2000SoundArea[0] + UNCACHED_OFFSET;
 	}
+#endif
 
 	u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);
 	if(gameCode == 0x504A4142 || gameCode == 0x454A4142)

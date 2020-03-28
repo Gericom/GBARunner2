@@ -1,6 +1,7 @@
 //this will be copied to the dtcm at runtime (and converted to 16 bit, because the 
 //FUCKING COMPILER OBVIOUSLY DOES NOT HAVE A FEATURE TO EMIT ONLY THE BOTTOM 16 BITS OF AN ADDRESS)
 .section .text
+#include "consts.s"
 
 //32 bit writes means 32 bit alignment
 //this means only address / 4
@@ -35,12 +36,24 @@ address_write_table_32bit:
 .word write_address_ignore
 //0x04000090-0x0400009C
 .rept 4
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_32
+#else
 .word write_address_snd_waveram_32
+#endif
 .endr
 //0x040000A0
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_32
+#else
 .word write_address_snd_fifo_A
+#endif
 //0x040000A4
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_32
+#else
 .word write_address_ignore
+#endif
 //0x040000A8
 .word write_address_ignore
 //0x040000AC
@@ -151,7 +164,11 @@ address_write_table_16bit:
 .endr
 //0x04000090-0x0400009E
 .rept 8
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_16
+#else
 .word write_address_snd_waveram_16
+#endif
 .endr
 //0x040000A0-0x040000AE
 .rept 8
@@ -275,7 +292,11 @@ address_write_table_8bit:
 .endr
 //0x04000090-0x0400009F
 .rept 16
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_8
+#else
 .word write_address_snd_waveram_8
+#endif
 .endr
 //0x040000A0-0x040000AF
 .rept 16

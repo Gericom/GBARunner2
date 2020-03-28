@@ -22,6 +22,14 @@
 #define MAIN_MEMORY_END     0x02400000
 #endif
 
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+#define USE_DSP_AUDIO
+#endif
+
+#ifndef USE_DSP_AUDIO
+//#define USE_MP2000_PATCH
+#endif
+
 #define SD_CACHE_SIZE	                    (1424 * 1024)
 #define GBARUNNER_DATA_SIZE                 0x1C0000
 
