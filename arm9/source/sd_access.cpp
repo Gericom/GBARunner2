@@ -20,6 +20,7 @@
 #include "dsp/dsp.h"
 #include "dsp/DspProcess.h"
 #include "dsp/twlwram.h"
+#include "dsp/dsp_ipc.h"
 #include "GBARunner2_cdc.h"
 #include "sd_access.h"
 
@@ -141,6 +142,13 @@ extern "C" PUT_IN_VRAM void initialize_cache()
 
 extern "C" PUT_IN_VRAM void sd_write_save()
 {
+	//mute sound
+    REG_SEND_FIFO = 0xAA5500FF;
+    REG_SEND_FIFO = 0;
+#ifdef USE_DSP_AUDIO
+	//pause dsp audioto prevent ear ouchy
+	dsp_sendIpcCommand(0x01000000, 1);
+#endif
 	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	if (!vramcd_uncached->save_work.save_enabled || vramcd_uncached->save_work.save_state != SAVE_WORK_STATE_SDSAVE)
 		return;
@@ -162,6 +170,13 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 		cur_cluster = *cluster_table++;
 	}
 	vramcd_uncached->save_work.save_state = SAVE_WORK_STATE_CLEAN;
+	//unmute sound and resync
+    REG_SEND_FIFO = 0xAA5500FF;
+    REG_SEND_FIFO = 0x7F | 0x80000000;
+#ifdef USE_DSP_AUDIO
+	//continue dsp audio
+	dsp_sendIpcCommand(0x01000000, 0);
+#endif
 }
 
 #ifdef USE_DSP_AUDIO
@@ -271,6 +286,10 @@ extern "C" PUT_IN_VRAM void sd_init()
 	initialize_cache();
 	rio_init(RIO_NONE);
 	gbab_setupGfx();
+#ifdef USE_DSP_AUDIO
+	//continue dsp audio
+	dsp_sendIpcCommand(0x01000000, 0);
+#endif
 }
 
 //gets an empty one or wipes the oldest

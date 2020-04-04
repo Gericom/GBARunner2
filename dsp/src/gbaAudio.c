@@ -37,8 +37,10 @@ static gbaa_daudio_channel_t sDAudioChans[2];
 
 static gbat_t sTimers[2];
 
-static u16 sDmaWasDone;
+static vu16 sDmaWasDone;
 static vu16 sTransferBusy;
+
+static vu16 sPaused;
 
 static void initDChan(gbaa_daudio_channel_t* channel)
 {
@@ -75,6 +77,7 @@ void gbaa_init(void)
 
     sDmaWasDone = FALSE;
     sTransferBusy = FALSE;
+    sPaused = TRUE;
 }
 
 void gbaa_start(void)
@@ -187,6 +190,14 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
             sTransferBusy = FALSE;
         channel->isTransferring = FALSE;
         channel->isDmaStarted = 1;
+
+        //if the fifo count is negative and the dma is restarted we cannot catch up anymore
+        if(channel->fifoCount < 0)
+        {
+            channel->fifoCount = 16;//(-channel->fifoCount) & 0xF; //&= 0xF;
+            channel->readOffset = 0;
+            channel->writeOffset = 0;
+        }
     }
     //do nothing if the dma is not in fifo mode
     if((channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_MODE_MASK) != GBAA_DAUDIO_CHANNEL_DMA_MODE_MASK)
@@ -321,43 +332,42 @@ void gbaa_updateMixer(void)
     if(sDmaWasDone)
         ahbm_resetChannel(1);
 
-    gbat_updateTimer(&sTimers[0]);
-    gbat_updateTimer(&sTimers[1]);
+    int left = 0, right = 0;
 
-    int left, right;
-    //master enable
-    if(gGbaAudioRegs.reg_gb_nr52 & 0x80)
+    if(!sPaused)
     {
-        updateDChan(&sDAudioChans[0]);
-        updateDChan(&sDAudioChans[1]);
+        gbat_updateTimer(&sTimers[0]);
+        gbat_updateTimer(&sTimers[1]);
+        
+        //master enable
+        if(gGbaAudioRegs.reg_gb_nr52 & 0x80)
+        {
+            updateDChan(&sDAudioChans[0]);
+            updateDChan(&sDAudioChans[1]);
 
-        dmga_sample(sDmgSamp);
+            dmga_sample(sDmgSamp);
 
-        left = sDmgSamp[0];
-        right = sDmgSamp[1];
+            left = sDmgSamp[0];
+            right = sDmgSamp[1];
 
-        s16 sampA = sDAudioChans[0].curSample << 2;
-        if(sDAudioChans[0].volume == 0)
-        sampA = sampA >> 1;
+            s16 sampA = sDAudioChans[0].curSample << 2;
+            if(sDAudioChans[0].volume == 0)
+            sampA = sampA >> 1;
 
-        if(sDAudioChans[0].enables & 2)
-            left += sampA;
-        if(sDAudioChans[0].enables & 1)
-            right += sampA;
+            if(sDAudioChans[0].enables & 2)
+                left += sampA;
+            if(sDAudioChans[0].enables & 1)
+                right += sampA;
 
-        s16 sampB = sDAudioChans[1].curSample << 2;
-        if(sDAudioChans[1].volume == 0)
-            sampB = sampB >> 1;
+            s16 sampB = sDAudioChans[1].curSample << 2;
+            if(sDAudioChans[1].volume == 0)
+                sampB = sampB >> 1;
 
-        if(sDAudioChans[1].enables & 2)
-            left += sampB;
-        if(sDAudioChans[1].enables & 1)
-            right += sampB;
-    }
-    else
-    {
-        left = 0;
-        right = 0;
+            if(sDAudioChans[1].enables & 2)
+                left += sampB;
+            if(sDAudioChans[1].enables & 1)
+                right += sampB;
+        }
     }
 
     left = applyBias(left);
@@ -371,10 +381,8 @@ void gbaa_updateMixer(void)
     REG_ICU_IRQ_ACK = ICU_IRQ_MASK_BTDMP0;
 }
 
-void gbaa_handleCommand(u32 cmd, u32 arg)
+static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
 {
-    u16 regAddr = cmd & 0xFFFF;
-    u16 length = cmd >> 16;
     if(regAddr == 0x100 && length == 2)
         sTimers[0].reload = arg & 0xFFFF;
     else if(regAddr == 0x102 && length == 2)
@@ -532,7 +540,17 @@ void gbaa_handleCommand(u32 cmd, u32 arg)
             regAddr++;
             arg >>= 8;
         }
-    }    
+    }
+}
+
+void gbaa_handleCommand(u32 cmd, u32 arg)
+{
+    u16 subCmd = cmd >> 24;
+    if(subCmd == 0)
+        handleRegWrite(cmd & 0xFFFF, (cmd >> 16) & 0xFF, arg);
+    else if(subCmd == 1) //set pause
+        sPaused = arg & 1;
+
     // else if(cmd == 0x20)
     // {
     //     //SOUNDCNT_H

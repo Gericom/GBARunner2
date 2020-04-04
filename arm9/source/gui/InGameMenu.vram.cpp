@@ -10,6 +10,7 @@
 #include "../../common/fifo.h"
 #include "../emu/romGpio.h"
 #include "../gbaBoot.h"
+#include "dsp/dsp_ipc.h"
 #include "IconPlay_nbfc.h"
 #include "IconRestart_nbfc.h"
 #include "IconPower_nbfc.h"
@@ -78,6 +79,11 @@ static void prepare()
     //mute sound
     REG_SEND_FIFO = 0xAA5500FF;
     REG_SEND_FIFO = 0;
+
+#ifdef USE_DSP_AUDIO
+	//pause dsp audio
+	dsp_sendIpcCommand(0x01000000, 1);
+#endif
 
     //backup main display control
     sOldMainDispCnt = REG_DISPCNT;
@@ -156,6 +162,11 @@ static void finalize()
     REG_SEND_FIFO = 0xAA5500FF;
     REG_SEND_FIFO = 0x7F | 0x80000000;
 
+#ifdef USE_DSP_AUDIO
+	//continue dsp audio
+	dsp_sendIpcCommand(0x01000000, 0);
+#endif
+
     vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
     vramcd_uncached->openMenuIrqFlag = 0;
 
@@ -221,6 +232,13 @@ extern "C" bool igm_execute()
         }
 	}
 	delete uiContext;
+
+#ifdef USE_DSP_AUDIO
+    //master disable audio on reboot to prevent ear ouchy
+    if(reboot)
+        dsp_sendIpcCommand(0x00010084, 0);
+#endif
+
 
     finalize();
 
