@@ -191,12 +191,13 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
         channel->isTransferring = FALSE;
         channel->isDmaStarted = 1;
 
-        //if the fifo count is negative and the dma is restarted we cannot catch up anymore
-        if(channel->fifoCount < 0)
+        if(channel->fifoCount <= -32)
         {
-            channel->fifoCount = 16;//(-channel->fifoCount) & 0xF; //&= 0xF;
-            channel->readOffset = 0;
-            channel->writeOffset = 0;
+            //skip samples if we are behind by more than a complete dma transfer
+            u16 skip = (-channel->fifoCount) & ~0xF;
+            skip -= 16;
+            channel->fifoCount += skip;
+            channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
         }
     }
     //do nothing if the dma is not in fifo mode
@@ -249,11 +250,12 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
     if(channel->fifoCount <= 16 && !sTransferBusy && !(REG_DMA_START & (1 << 5)))
     {
         u32 addr = channel->addrLo | ((u32)channel->addrHi << 16);
-        // if(channel->fifoCount < 0)
+        // if(channel->fifoCount <= -32)
         // {
         //     //skip samples if we are behind by more than a complete dma transfer
         //     //negate and round down to a multiple of 16
         //     u16 skip = (-channel->fifoCount) & ~0xF;
+        //     skip -= 16;
         //     addr += skip;
         //     channel->fifoCount += skip;
         //     channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
@@ -265,8 +267,8 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
         channel->addrLo = addr & 0xFFFF;
         channel->addrHi = addr >> 16;
         //for debugging
-        *(vu16*)0x1003 = channel->addrLo;
-        *(vu16*)0x1004 = channel->addrHi;
+        //*(vu16*)0x1003 = channel->addrLo;
+        //*(vu16*)0x1004 = channel->addrHi;
     }
 }
 
@@ -281,11 +283,11 @@ static void updateDChan(gbaa_daudio_channel_t* channel)
     {
         if(channel->fifoCount <= 0)
         {
-            if(channel->enables)
-            {
-                //report dropped sample
-                (*(vu16*)0x1006)++;
-            }
+            // if(channel->enables)
+            // {
+            //     //report dropped sample
+            //     (*(vu16*)0x1006)++;
+            // }
             channel->readOffset = (channel->readOffset + 1) & 0x1F;
             channel->fifoCount--;
             continue;
@@ -297,9 +299,9 @@ static void updateDChan(gbaa_daudio_channel_t* channel)
             channel->curSample = ((s16)(samps << 8)) >> 8;
         channel->readOffset = (channel->readOffset + 1) & 0x1F;
         channel->fifoCount--;
-        (*(vu16*)0x1002)++;
+        //(*(vu16*)0x1002)++;
     }
-    (*(vu16*)0x1000)++;
+    //(*(vu16*)0x1000)++;
 }
 
 s16 applyBias(int val)
