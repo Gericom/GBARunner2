@@ -14,10 +14,16 @@
 typedef struct
 {
     vu16 fifo[16];
-    vu16 fifoOverflow[16]; //to make dma transfers easier
+    vu16 fifoOverflow[8]; //to make dma transfers easier
     vu16 readOffset;
     vu16 writeOffset;
     vs16 fifoCount;
+    vu16 dmaRequest;
+
+    vu16 curPlaySamplesLo;
+    vu16 curPlaySamplesHi;
+    vu16 curPlaySampleCount;
+    vu16 isInitial;
 
     vu16 timerIdx;
     u16 volume;
@@ -34,6 +40,14 @@ typedef struct
     vu16 isTransferring;
 
     vs16 curSample;
+
+    vu16 sampleCounterLo;
+    vu16 sampleCounterHi;
+
+    vu16 fetchedSampleCounterLo;
+    vu16 fetchedSampleCounterHi;
+
+    vu16 overrunCounter;
 } gbaa_daudio_channel_t __attribute__((aligned(4)));
 
 typedef struct

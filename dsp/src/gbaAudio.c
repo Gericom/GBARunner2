@@ -48,7 +48,11 @@ static void initDChan(gbaa_daudio_channel_t* channel)
         channel->fifo[i] = 0;
     channel->readOffset = 0;
     channel->writeOffset = 0;
-    channel->fifoCount = 0;
+    channel->fifoCount = 0;    
+    channel->dmaRequest = FALSE;
+    channel->curPlaySamplesLo = 0;
+    channel->curPlaySamplesHi = 0;
+    channel->curPlaySampleCount = 0;
     channel->timerIdx = 0;
     channel->volume = 0;
     channel->enables = 0;
@@ -61,6 +65,12 @@ static void initDChan(gbaa_daudio_channel_t* channel)
     channel->addrLo = 0;
     channel->addrHi = 0;
     channel->curSample = 0;
+    channel->isInitial = TRUE;
+    channel->sampleCounterLo = 0;
+    channel->sampleCounterHi = 0;
+    channel->fetchedSampleCounterLo = 0;
+    channel->fetchedSampleCounterHi = 0;
+    channel->overrunCounter = 0;
 }
 
 void gbaa_init(void)
@@ -175,6 +185,45 @@ static void transferArm9ToDspDma5Async(u32 src, void* dst, u16 len)
 
 static void updateDChanDMA(gbaa_daudio_channel_t* channel)
 {
+    if(channel->isTransferring)// && sDmaWasDone)
+    {
+        if(!sDmaWasDone)
+            return;
+
+        channel->isTransferring = FALSE;
+        sTransferBusy = FALSE;
+
+        u16 newWOffset = channel->writeOffset + 8;
+        if(newWOffset > 16)
+        {
+            newWOffset -= 16;
+            for(u16 i = 0; i < newWOffset; i++)
+                channel->fifo[i] = channel->fifoOverflow[i];
+        }
+        
+        //I don't understand why it causes problems if I apply & 0xF here
+        channel->writeOffset = newWOffset;
+        channel->fifoCount += 16;
+
+        u32 fSampCounter = channel->fetchedSampleCounterLo | (channel->fetchedSampleCounterHi << 16);
+        fSampCounter += 16;
+        channel->fetchedSampleCounterLo = fSampCounter & 0xFFFF;
+        channel->fetchedSampleCounterHi = fSampCounter >> 16;
+        //here we should send an irq to the arm9 if enabled in the dma channel
+        if(channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_IRQ)
+            setSemaphore(channel->dmaIrqMask);
+            //REG_APBP_PSEM = channel->dmaIrqMask; //TODO: check if writing a 0 does not destroy that bit
+
+        //there are games that do not set the repeat bit, and manually enable
+        //the channel again via an interrupt
+        if(!(channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_REPEAT))
+        {
+            channel->dmaControl &= ~GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE;
+            channel->isDmaStarted = 0;
+            //return;
+        }
+    }
+
     if(!(channel->dmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE))
     {
         channel->isDmaStarted = 0;
@@ -191,84 +240,68 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
         channel->isTransferring = FALSE;
         channel->isDmaStarted = 1;
 
-        if(channel->fifoCount <= -32)
+        u32 fSampCounter = channel->fetchedSampleCounterLo | (channel->fetchedSampleCounterHi << 16);
+
+        if(channel->fifoCount <= -16)
         {
             //skip samples if we are behind by more than a complete dma transfer
             u16 skip = (-channel->fifoCount) & ~0xF;
-            skip -= 16;
             channel->fifoCount += skip;
+            fSampCounter += skip;
             channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
         }
+
+        u32 sampCounter = channel->sampleCounterLo | (channel->sampleCounterHi << 16);
+
+        fSampCounter = (fSampCounter + 0xF) & ~0xF;
+        sampCounter = (sampCounter + 0xF) & ~0xF;
+
+        int diff = sampCounter - fSampCounter;
+        if(diff <= -16)
+        {
+            channel->overrunCounter++;
+            if(channel->overrunCounter >= 4)
+            {
+                channel->fifoCount -= 4;
+                channel->writeOffset = (channel->writeOffset - 2) & 0xF;
+                channel->overrunCounter = 0;
+            }
+        }
+
+        channel->sampleCounterLo = 0;
+        channel->sampleCounterHi = 0;
+        channel->fetchedSampleCounterLo = 0;
+        channel->fetchedSampleCounterHi = 0;
     }
     //do nothing if the dma is not in fifo mode
     if((channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_MODE_MASK) != GBAA_DAUDIO_CHANNEL_DMA_MODE_MASK)
         return;
 
-    if(channel->isTransferring)// && sDmaWasDone)
-    {
-        if(!sDmaWasDone)
-            return;
-
-        channel->isTransferring = FALSE;
-        sTransferBusy = FALSE;
-
-        // u32 addr = channel->addrLo | ((u32)channel->addrHi << 16);
-        // addr += 16;
-        // channel->addrLo = addr & 0xFFFF;
-        // channel->addrHi = addr >> 16;
-        // //for debugging
-        // *(vu16*)0x1003 = channel->addrLo;
-        // *(vu16*)0x1004 = channel->addrHi;
-
-        u16 newWOffset = channel->writeOffset + 8;
-        if(newWOffset > 16)
-        {
-            newWOffset -= 16;
-            for(u16 i = 0; i < newWOffset; i++)
-                channel->fifo[i] = channel->fifoOverflow[i];
-        }
-        
-        channel->writeOffset = (channel->writeOffset + 8) & 0xF;
-        channel->fifoCount += 16;
-        //here we should send an irq to the arm9 if enabled in the dma channel
-        if(channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_IRQ)
-            setSemaphore(channel->dmaIrqMask);
-            //REG_APBP_PSEM = channel->dmaIrqMask; //TODO: check if writing a 0 does not destroy that bit
-
-        //there are games that do not set the repeat bit, and manually enable
-        //the channel again via an interrupt
-        if(!(channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_REPEAT))
-        {
-            channel->dmaControl &= ~GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE;
-            channel->isDmaStarted = 0;
-            return;
-        }
-    }
     const gbat_t* timer = &sTimers[channel->timerIdx];
-    if(!timer->isStarted)
+    if(!channel->dmaRequest && !(timer->isStarted && channel->fifoCount < 0))
         return;
-    if(channel->fifoCount <= 16 && !sTransferBusy && !(REG_DMA_START & (1 << 5)))
+    if(!sTransferBusy && !(REG_DMA_START & (1 << 5)))
     {
         u32 addr = channel->addrLo | ((u32)channel->addrHi << 16);
-        // if(channel->fifoCount <= -32)
-        // {
-        //     //skip samples if we are behind by more than a complete dma transfer
-        //     //negate and round down to a multiple of 16
-        //     u16 skip = (-channel->fifoCount) & ~0xF;
-        //     skip -= 16;
-        //     addr += skip;
-        //     channel->fifoCount += skip;
-        //     channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
-        // }
+        if(channel->fifoCount <= -16)
+        {
+            //skip samples if we are behind by more than a complete dma transfer
+            u16 skip = (-channel->fifoCount) & ~0xF;
+            channel->fifoCount += skip;
+            addr += skip;
+            u32 fSampCounter = channel->fetchedSampleCounterLo | (channel->fetchedSampleCounterHi << 16);
+            fSampCounter += skip;
+            channel->fetchedSampleCounterLo = fSampCounter & 0xFFFF;
+            channel->fetchedSampleCounterHi = fSampCounter >> 16;            
+            channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
+        }
         channel->isTransferring = TRUE;
+        channel->dmaRequest = FALSE;
         sTransferBusy = TRUE;
         transferArm9ToDspDma5Async(addr, &channel->fifo[channel->writeOffset], 8);
         addr += 16;
         channel->addrLo = addr & 0xFFFF;
         channel->addrHi = addr >> 16;
-        //for debugging
-        //*(vu16*)0x1003 = channel->addrLo;
-        //*(vu16*)0x1004 = channel->addrHi;
     }
 }
 
@@ -281,27 +314,49 @@ static void updateDChan(gbaa_daudio_channel_t* channel)
         return;
     for(u16 i = 0; i < timer->curNrOverflows; i++)
     {
-        if(channel->fifoCount <= 0)
+        u32 sampCounter = channel->sampleCounterLo | (channel->sampleCounterHi << 16);
+        sampCounter++;
+        channel->sampleCounterLo = sampCounter & 0xFFFF;
+        channel->sampleCounterHi = sampCounter >> 16;
+        if(channel->fifoCount <= 12 && !channel->isTransferring)
+            channel->dmaRequest = TRUE;
+        if(channel->curPlaySampleCount == 0)
         {
-            // if(channel->enables)
-            // {
-            //     //report dropped sample
-            //     (*(vu16*)0x1006)++;
-            // }
-            channel->readOffset = (channel->readOffset + 1) & 0x1F;
-            channel->fifoCount--;
-            continue;
+            if(channel->fifoCount >= 4)
+            {
+                channel->curPlaySamplesLo = channel->fifo[channel->readOffset];
+                u16 newOffs = (channel->readOffset + 1) & 0xF;
+                channel->curPlaySamplesHi = channel->fifo[newOffs];
+                channel->isInitial = FALSE;
+                channel->curPlaySampleCount = 4;
+                channel->readOffset = (newOffs + 1) & 0xF;
+                channel->fifoCount -= 4;
+            }
+            else
+            {
+                if(channel->isInitial)
+                {                    
+                    channel->isInitial = FALSE;
+                    continue;
+                }
+                u16 samp = channel->curSample & 0xFF;
+                samp |= samp << 8;
+                channel->curPlaySamplesLo = samp;
+                // channel->curPlaySamplesHi = samp;
+                channel->curPlaySampleCount = 2;
+                channel->readOffset = (channel->readOffset + 1) & 0xF;
+                channel->fifoCount -= 2;
+            }            
         }
-        u16 samps = channel->fifo[channel->readOffset >> 1];
-        if(channel->readOffset & 1)
-            channel->curSample = ((s16)(samps & 0xFF00)) >> 8;
-        else
-            channel->curSample = ((s16)(samps << 8)) >> 8;
-        channel->readOffset = (channel->readOffset + 1) & 0x1F;
-        channel->fifoCount--;
-        //(*(vu16*)0x1002)++;
+
+        u32 curPlaySamples = channel->curPlaySamplesLo | (channel->curPlaySamplesHi << 16);
+        channel->curSample = ((s16)((curPlaySamples & 0xFF) << 8)) >> 8;
+        curPlaySamples >>= 8;
+        channel->curPlaySamplesLo = curPlaySamples & 0xFFFF;
+        channel->curPlaySamplesHi = curPlaySamples >> 16;
+        channel->curPlaySampleCount--;
     }
-    //(*(vu16*)0x1000)++;
+    updateDChanDMA(channel);
 }
 
 s16 applyBias(int val)
@@ -327,7 +382,7 @@ void gbaa_updateDma(void)
 //because passing a stack address is not yet supported
 static s16 sDmgSamp[2];
 
-//called once per 47kHz sample
+//called once per 32kHz sample
 void gbaa_updateMixer(void)
 {
     sDmaWasDone = (REG_DMA_START & (1 << 5)) == 0;
@@ -383,6 +438,49 @@ void gbaa_updateMixer(void)
     REG_ICU_IRQ_ACK = ICU_IRQ_MASK_BTDMP0;
 }
 
+static void resetFifo(gbaa_daudio_channel_t* channel)
+{
+    channel->fifoCount = 0;
+    channel->readOffset = 0;
+    channel->writeOffset = 0;
+    if(channel->isTransferring)
+        sTransferBusy = FALSE;
+    channel->isTransferring = FALSE;
+    channel->curPlaySampleCount = 0;
+    channel->curPlaySamplesLo = 0;
+    channel->curPlaySamplesHi = 0;
+    channel->curSample = 0;
+    channel->dmaRequest = FALSE;
+    channel->isInitial = TRUE;
+    channel->sampleCounterLo = 0;
+    channel->sampleCounterHi = 0;
+    channel->fetchedSampleCounterLo = 0;
+    channel->fetchedSampleCounterHi = 0;
+    channel->overrunCounter = 0;
+}
+
+static void writeFifo32(gbaa_daudio_channel_t* channel, u32 val)
+{
+    if(channel->fifoCount + 4 > 28)
+    {
+        channel->readOffset = 0;
+        channel->writeOffset = 0;
+        channel->fifoCount = 0;
+    }
+    else
+    {
+        channel->fifo[channel->writeOffset] = val & 0xFFFF;
+        channel->fifo[channel->writeOffset + 1] = val >> 16;
+        channel->writeOffset = (channel->writeOffset + 2) & 0xF;
+        channel->fifoCount += 4;
+
+        u32 fSampCounter = channel->fetchedSampleCounterLo | (channel->fetchedSampleCounterHi << 16);
+        fSampCounter += 4;
+        channel->fetchedSampleCounterLo = fSampCounter & 0xFFFF;
+        channel->fetchedSampleCounterHi = fSampCounter >> 16;
+    }
+}
+
 static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
 {
     if(regAddr == 0x100 && length == 2)
@@ -424,23 +522,13 @@ static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
     {
         sDAudioChans[0].dmaControl = arg >> 16;
         if(!(sDAudioChans[0].dmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE))
-        {
             sDAudioChans[0].isDmaStarted = 0;
-            if(sDAudioChans[0].isTransferring)
-                sTransferBusy = FALSE;
-            sDAudioChans[0].isTransferring = FALSE;
-        }
     }
     else if(regAddr == 0xC6 && length == 2)
     {
         sDAudioChans[0].dmaControl = arg & 0xFFFF;
         if(!(sDAudioChans[0].dmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE))
-        {
             sDAudioChans[0].isDmaStarted = 0;
-            if(sDAudioChans[0].isTransferring)
-                sTransferBusy = FALSE;
-            sDAudioChans[0].isTransferring = FALSE;
-        }
     }
     else if(regAddr == 0xC8 && length == 4)
     {
@@ -451,52 +539,22 @@ static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
     {
         sDAudioChans[1].dmaControl = arg >> 16;
         if(!(sDAudioChans[1].dmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE))
-        {
             sDAudioChans[1].isDmaStarted = 0;
-            if(sDAudioChans[1].isTransferring)
-                sTransferBusy = FALSE;
-            sDAudioChans[1].isTransferring = FALSE;
-        }
     }
     else if(regAddr == 0xD2 && length == 2)
     {
         sDAudioChans[1].dmaControl = arg & 0xFFFF;
         if(!(sDAudioChans[1].dmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE))
-        {
             sDAudioChans[1].isDmaStarted = 0;
-            if(sDAudioChans[1].isTransferring)
-                sTransferBusy = FALSE;
-            sDAudioChans[1].isTransferring = FALSE;
-        }
     }
     else if(regAddr == 0xA0 && length == 2)
-    {
-        sDAudioChans[0].fifo[sDAudioChans[0].writeOffset] = arg & 0xFFFF;
-        sDAudioChans[0].writeOffset = (sDAudioChans[0].writeOffset + 1) & 0xF;
-        sDAudioChans[0].fifoCount += 2;
-    }
+        writeFifo32(&sDAudioChans[0], (arg & 0xFFFF) | (arg << 16));
     else if(regAddr == 0xA0 && length == 4)
-    {
-        sDAudioChans[0].fifo[sDAudioChans[0].writeOffset] = arg & 0xFFFF;
-        sDAudioChans[0].writeOffset = (sDAudioChans[0].writeOffset + 1) & 0xF;
-        sDAudioChans[0].fifo[sDAudioChans[0].writeOffset] = arg >> 16;
-        sDAudioChans[0].writeOffset = (sDAudioChans[0].writeOffset + 1) & 0xF;
-        sDAudioChans[0].fifoCount += 4;
-    }
+        writeFifo32(&sDAudioChans[0], arg);
     else if(regAddr == 0xA4 && length == 2)
-    {
-        sDAudioChans[1].fifo[sDAudioChans[1].writeOffset] = arg & 0xFFFF;
-        sDAudioChans[1].writeOffset = (sDAudioChans[1].writeOffset + 1) & 0xF;
-        sDAudioChans[1].fifoCount += 2;
-    }
+        writeFifo32(&sDAudioChans[1], (arg & 0xFFFF) | (arg << 16));
     else if(regAddr == 0xA4 && length == 4)
-    {
-        sDAudioChans[1].fifo[sDAudioChans[1].writeOffset] = arg & 0xFFFF;
-        sDAudioChans[1].writeOffset = (sDAudioChans[1].writeOffset + 1) & 0xF;
-        sDAudioChans[1].fifo[sDAudioChans[1].writeOffset] = arg >> 16;
-        sDAudioChans[1].writeOffset = (sDAudioChans[1].writeOffset + 1) & 0xF;
-        sDAudioChans[1].fifoCount += 4;
-    }
+        writeFifo32(&sDAudioChans[1], arg);
     else if(regAddr >= 0x60 && regAddr < 0xB0)
     {
         for (u16 i = 0; i < length; i++)
@@ -516,26 +574,12 @@ static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
                 sDAudioChans[0].enables = arg & 3;
                 sDAudioChans[0].timerIdx = (arg >> 2) & 1;
                 if(arg & (1 << 3))
-                {
-                    sDAudioChans[0].fifoCount = 0;
-                    sDAudioChans[0].readOffset = 0;
-                    sDAudioChans[0].writeOffset = 0;
-                    if(sDAudioChans[0].isTransferring)
-                        sTransferBusy = FALSE;
-                    sDAudioChans[0].isTransferring = FALSE;
-                }
+                    resetFifo(&sDAudioChans[0]);
                 
                 sDAudioChans[1].enables = (arg >> 4) & 3;
                 sDAudioChans[1].timerIdx = (arg >> 6) & 1;
                 if(arg & (1 << 7))
-                {
-                    sDAudioChans[1].fifoCount = 0;
-                    sDAudioChans[1].readOffset = 0;
-                    sDAudioChans[1].writeOffset = 0;
-                    if(sDAudioChans[1].isTransferring)
-                        sTransferBusy = FALSE;
-                    sDAudioChans[1].isTransferring = FALSE;
-                }
+                    resetFifo(&sDAudioChans[1]);
             }
             else
                 dmga_writeReg(regAddr & 0xFF, arg & 0xFF);
@@ -552,26 +596,4 @@ void gbaa_handleCommand(u32 cmd, u32 arg)
         handleRegWrite(cmd & 0xFFFF, (cmd >> 16) & 0xFF, arg);
     else if(subCmd == 1) //set pause
         sPaused = arg & 1;
-
-    // else if(cmd == 0x20)
-    // {
-    //     //SOUNDCNT_H
-    //     dmga_setMixVolume(arg & 3);
-
-    //     sDAudioChans[0].volume = (arg >> 2) & 1;
-    //     sDAudioChans[0].enables = (arg >> 8) & 3;
-    //     sDAudioChans[0].timerIdx = (arg >> 10) & 1;
-    //     if(arg & (1 << 11))
-    //         sDAudioChans[0].fifoCount = 0;
-
-    //     sDAudioChans[1].volume = (arg >> 3) & 1;
-    //     sDAudioChans[1].enables = (arg >> 12) & 3;
-    //     sDAudioChans[1].timerIdx = (arg >> 14) & 1;
-    //     if(arg & (1 << 15))
-    //         sDAudioChans[1].fifoCount = 0;
-    // }
-    // else if(cmd == 0x30)
-    // {
-    //     dmga_writeReg(arg & 0xFF, (arg >> 8) & 0xFF);
-    // }
 }
