@@ -238,7 +238,7 @@ void stopChannel(int channel)
 static void frameSeqUpdateLength(void)
 {
 	for (s16 i = 0; i < 4; i++)
-		if ((sChannelPlaying & (1 << i)) && sChannelUseLen[i] && sChannelLengthCounter[i] > 0)
+		if (sChannelUseLen[i] && sChannelLengthCounter[i])
 			if (--sChannelLengthCounter[i] == 0)
 				stopChannel(i);
 }
@@ -327,9 +327,9 @@ static void frameSeqUpdateSweep(void)
 	{
 		if(--sChannel1Sweep.step == 0)
 		{
-			if(dmga_updateSweep(&sChannel1Sweep, 0, &sChannelFreq[0]))
-				startChannel(0);
-			else
+			if(!dmga_updateSweep(&sChannel1Sweep, 0, &sChannelFreq[0]))
+				// startChannel(0);
+			// else
 				stopChannel(0);
 			updateChannelFreq(0);
 		}
@@ -546,7 +546,7 @@ void dmga_sample(s16* pSamp)
 //assumes an 8 bit write
 void dmga_writeReg(u16 reg, u16 val)
 {
-	if (!sMasterEnable && reg != 0x84)
+	if (!sMasterEnable && reg != 0x84 && reg < 0x90)
 		return;
 	switch (reg)
 	{
