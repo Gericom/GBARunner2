@@ -227,7 +227,7 @@ dma12_send_dsp_\offs:
 	beq 7b //loop if it failed
 
 8:
-	ldr r1, [r9, #(-4 - \offs)] //dst
+	ldr r1, [r10, #-6] //dst
 	add r0, r9, #(-4 - \offs)
 	and r0, #0xFF
 	orr r0, #(4 << 16)

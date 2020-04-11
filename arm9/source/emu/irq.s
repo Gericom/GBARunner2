@@ -288,16 +288,16 @@ irq_handler:
 	tst r1, #0x80000000
 	beq cap_control
 irq_cont:
-	ldr r1, [r12, #0x214]
 	ldr r2,= fake_irq_flags
+	ldr r1, [r12, #0x214]
 	ldr r2, [r2]
+	ldr r3, [r12, #0x210]
 	orr r1, r2
 #ifdef USE_DSP_AUDIO
 	add r2, r12, #0x4300
 	ldrh r2, [r2, #0x1C] //DSP_SEM
 	orr r1, r2
 #endif
-	ldr r3, [r12, #0x210]
 	and r1, r3
 	tst r1, #(1 << 1) //hblank
 		beq 1f

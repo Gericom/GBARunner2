@@ -42,12 +42,6 @@ static vu16 sTransferBusy;
 
 static vu16 sPaused;
 
-static vu16 sFifoALo;
-static vu16 sFifoAHi;
-
-static vu16 sFifoBLo;
-static vu16 sFifoBHi;
-
 static void initDChan(gbaa_daudio_channel_t* channel)
 {
     for(short i = 0; i < 16; i++)
@@ -342,7 +336,7 @@ static void updateDChan(gbaa_daudio_channel_t* channel)
     updateDChanDMA(channel);
     const gbat_t* timer = &sTimers[channel->timerIdx];
     //more than 2 implies a samplerate higher than 64kHz
-    if(timer->curNrOverflows > 2)
+    if(timer->curNrOverflows > 10)//2)
         return;
     for(u16 i = 0; i < timer->curNrOverflows; i++)
     {
@@ -441,7 +435,7 @@ void gbaa_updateMixer(void)
 
             s16 sampA = sDAudioChans[0].curSample << 2;
             if(sDAudioChans[0].volume == 0)
-            sampA = sampA >> 1;
+                sampA = sampA >> 1;
 
             if(sDAudioChans[0].enables & 2)
                 left += sampA;
@@ -491,7 +485,7 @@ static void resetFifo(gbaa_daudio_channel_t* channel)
     channel->overrunCounter = 0;
 }
 
-static void writeFifo32(gbaa_daudio_channel_t* channel, u32 val)
+static void writeFifo32(gbaa_daudio_channel_t* channel, u32 val, u32 mask)
 {
     if(channel->fifoCount + 4 > 28)
     {
@@ -501,8 +495,11 @@ static void writeFifo32(gbaa_daudio_channel_t* channel, u32 val)
     }
     else
     {
-        channel->fifo[channel->writeOffset] = val & 0xFFFF;
-        channel->fifo[channel->writeOffset + 1] = val >> 16;
+        u32 old = channel->fifo[channel->writeOffset] | (channel->fifo[channel->writeOffset + 1] << 16);
+        old &= ~mask;
+        old |= val & mask;
+        channel->fifo[channel->writeOffset] = old & 0xFFFF;
+        channel->fifo[channel->writeOffset + 1] = old >> 16;
         channel->writeOffset = (channel->writeOffset + 2) & 0xF;
         channel->fifoCount += 4;
 
@@ -589,34 +586,22 @@ static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
         if(!(sDAudioChans[1].dmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE))
             sDAudioChans[1].isDmaStarted = 0;
     }
-    //else if(regAddr == 0xA0 && length == 1)
-    //    writeFifo32(&sDAudioChans[0], (arg & 0xFF) | ((arg & 0xFF) << 8) | ((arg & 0xFF) << 16) | ((arg & 0xFF) << 24));
-    else if(regAddr == 0xA0 && length == 2)
+    else if(regAddr >= 0xA0 && regAddr <= 0xA7)
     {
-        sFifoALo = arg & 0xFFFF;
-        writeFifo32(&sDAudioChans[0], (arg & 0xFFFF) | (sFifoAHi << 16));
+        u32 mask;
+        if(length == 1)
+            mask = 0xFF;
+        else if(length == 2)
+            mask = 0xFFFF;
+        else
+            mask = 0xFFFFFFFF;
+        mask <<= (regAddr & 3) * 8;
+        arg <<= (regAddr & 3) * 8;
+        if(regAddr & 4)
+            writeFifo32(&sDAudioChans[1], arg, mask);
+        else
+            writeFifo32(&sDAudioChans[0], arg, mask);
     }
-    else if(regAddr == 0xA2 && length == 2)
-    {
-        sFifoAHi = arg & 0xFFFF;
-        writeFifo32(&sDAudioChans[0], sFifoALo | ((arg & 0xFFFF) << 16));
-    }
-    else if(regAddr == 0xA0 && length == 4)
-        writeFifo32(&sDAudioChans[0], arg);
-    //else if(regAddr == 0xA4 && length == 1)
-    //    writeFifo32(&sDAudioChans[1], (arg & 0xFF) | ((arg & 0xFF) << 8) | ((arg & 0xFF) << 16) | ((arg & 0xFF) << 24));
-    else if(regAddr == 0xA4 && length == 2)
-    {
-        sFifoBLo = arg & 0xFFFF;
-        writeFifo32(&sDAudioChans[1], (arg & 0xFFFF) | (sFifoBHi << 16));
-    }
-    else if(regAddr == 0xA6 && length == 2)
-    {
-        sFifoBHi = arg & 0xFFFF;
-        writeFifo32(&sDAudioChans[1], sFifoBLo | ((arg & 0xFFFF) << 16));
-    }
-    else if(regAddr == 0xA4 && length == 4)
-        writeFifo32(&sDAudioChans[1], arg);
     else if(regAddr >= 0x60 && regAddr < 0xB0)
     {
         for (u16 i = 0; i < length; i++)

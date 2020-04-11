@@ -457,10 +457,10 @@ static void updateChannel4(void)
     u32 cycles = sChannel4Div * 2;
 	if(!cycles)
 		cycles = 1;
-	cycles <<= sChannel4ShiftFreq + 5;
+	cycles <<= sChannel4ShiftFreq + 5 + 7;
 
 	u32 counter = sChannel4CounterLo | ((u32)sChannel4CounterHi << 16);
-	counter += 512;//352;	
+	counter += 65615;//512;//352;	
 	//u16 sampAcc = 0;
 	//u16 sampCount = 0;
 	while(counter >= cycles)
@@ -589,9 +589,13 @@ void dmga_writeReg(u16 reg, u16 val)
 				//sChannelVolumeTimer[0] = 0;
 				//sChannel1FreqShadow = sChannelFreq[0];
 				//sChannel1SweepTimer = 0;
+				sChannel1Timer.isStarted = 0;
 				sChannel1Sweep.realFreq = sChannelFreq[0];
 				dmga_resetSweep(&sChannel1Sweep);
-				if(dmga_resetEnvelope(&sChannel1Env))
+				u16 playing = dmga_resetEnvelope(&sChannel1Env);
+				if(playing && sChannel1Sweep.shift)
+					playing = dmga_updateSweep(&sChannel1Sweep, TRUE, &sChannelFreq[0]);
+				if(playing)
 					startChannel(0);
 				else
 					stopChannel(0);
@@ -628,6 +632,7 @@ void dmga_writeReg(u16 reg, u16 val)
 					sChannelLengthCounter[1] = 64;
 				//sChannelVolume[1] = gGbaAudioRegs.reg_gb_nr21_22 >> 12;
 				//sChannelVolumeTimer[1] = 0;
+				sChannel2Timer.isStarted = 0;
 				if(dmga_resetEnvelope(&sChannel2Env))
 					startChannel(1);
 				else
@@ -658,7 +663,7 @@ void dmga_writeReg(u16 reg, u16 val)
 				if (vol == 0)
 					sChannelVolume[2] = 0;
 				else if (vol == 1)
-					sChannelVolume[2] = 15;
+					sChannelVolume[2] = 16;
 				else if (vol == 2)
 					sChannelVolume[2] = 8;
 				else
@@ -679,6 +684,7 @@ void dmga_writeReg(u16 reg, u16 val)
 			{
 				if (sChannelLengthCounter[2] == 0)
 					sChannelLengthCounter[2] = 256;
+				sChannel3Timer.isStarted = 0;
 				if(sChannel3IsEnabled)
 				{
 					sChannel3Ptr = sChannel3CurPlayBank ? 32 : 0;
