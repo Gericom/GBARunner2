@@ -328,8 +328,6 @@ static void frameSeqUpdateSweep(void)
 		if(--sChannel1Sweep.step == 0)
 		{
 			if(!dmga_updateSweep(&sChannel1Sweep, 0, &sChannelFreq[0]))
-				// startChannel(0);
-			// else
 				stopChannel(0);
 			updateChannelFreq(0);
 		}

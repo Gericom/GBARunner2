@@ -207,6 +207,7 @@ write_dma_control_\offs:
 	strh r11, [r9, #(2 - \offs)]
 	bx lr
 
+#ifdef USE_DSP_AUDIO
 dma12_send_dsp_\offs:
 	mov r12, r11, lsr #11
 	and r12, #3
@@ -226,6 +227,16 @@ dma12_send_dsp_\offs:
 	beq 7b //loop if it failed
 
 8:
+	ldr r1, [r9, #(-4 - \offs)] //dst
+	add r0, r9, #(-4 - \offs)
+	and r0, #0xFF
+	orr r0, #(4 << 16)
+	ldr r12,= dsp_sendIpcCommand
+	blx r12
+	cmp r0, #0
+	beq 8b //loop if it failed
+
+9:
 	ldrh r1, [r10]
 	add r0, r9, #(2 - \offs)
 	and r0, #0xFF
@@ -234,11 +245,12 @@ dma12_send_dsp_\offs:
 	ldr r12,= dsp_sendIpcCommand
 	blx r12
 	cmp r0, #0
-	beq 8b //loop if it failed
+	beq 9b //loop if it failed
 	pop {r0-r3,lr}
 	
 	strh r11, [r9, #(2 - \offs)]
 	bx lr
+#endif
 
 dma_special_mode_\offs:
 	bic r12, r11, #0x8000

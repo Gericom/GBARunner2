@@ -42,6 +42,12 @@ static vu16 sTransferBusy;
 
 static vu16 sPaused;
 
+static vu16 sFifoALo;
+static vu16 sFifoAHi;
+
+static vu16 sFifoBLo;
+static vu16 sFifoBHi;
+
 static void initDChan(gbaa_daudio_channel_t* channel)
 {
     for(short i = 0; i < 16; i++)
@@ -62,8 +68,13 @@ static void initDChan(gbaa_daudio_channel_t* channel)
     channel->isDmaStarted = 0;
     channel->srcAddrLo = 0;
     channel->srcAddrHi = 0;
-    channel->addrLo = 0;
-    channel->addrHi = 0;
+    channel->curSrcAddrLo = 0;
+    channel->curSrcAddrHi = 0;
+    channel->dstAddrLo = 0;
+    channel->dstAddrHi = 0;
+    channel->curDstAddrLo = 0;
+    channel->curDstAddrHi = 0;
+    channel->fifoAddrLo = 0;
     channel->curSample = 0;
     channel->isInitial = TRUE;
     channel->sampleCounterLo = 0;
@@ -80,8 +91,10 @@ void gbaa_init(void)
 
     initDChan(&sDAudioChans[0]);
     sDAudioChans[0].dmaIrqMask = 1 << 9;
+    sDAudioChans[0].fifoAddrLo = 0xA0;
     initDChan(&sDAudioChans[1]);
     sDAudioChans[1].dmaIrqMask = 1 << 10;
+    sDAudioChans[1].fifoAddrLo = 0xA4;
 
     dmga_init();
 
@@ -231,42 +244,47 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
     }
     if(!channel->isDmaStarted)
     {
+        if(channel->curDstAddrHi == 0x0400 && channel->curDstAddrLo == channel->fifoAddrLo)
+        {
+            u32 fSampCounter = channel->fetchedSampleCounterLo | (channel->fetchedSampleCounterHi << 16);
+
+            if(channel->fifoCount <= -16)
+            {
+                //skip samples if we are behind by more than a complete dma transfer
+                u16 skip = (-channel->fifoCount) & ~0xF;
+                channel->fifoCount += skip;
+                fSampCounter += skip;
+                channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
+            }
+
+            u32 sampCounter = channel->sampleCounterLo | (channel->sampleCounterHi << 16);
+
+            fSampCounter = (fSampCounter + 0xF) & ~0xF;
+            sampCounter = (sampCounter + 0xF) & ~0xF;
+
+            int diff = sampCounter - fSampCounter;
+            if(diff <= -16)
+            {
+                channel->overrunCounter++;
+                if(channel->overrunCounter >= 4)
+                {
+                    channel->fifoCount -= 4;
+                    channel->writeOffset = (channel->writeOffset - 2) & 0xF;
+                    channel->overrunCounter = 0;
+                }
+            }
+        }
+
         //latch source address to address counter
-        channel->addrLo = channel->srcAddrLo;
-        channel->addrHi = channel->srcAddrHi;
+        channel->curSrcAddrLo = channel->srcAddrLo;
+        channel->curSrcAddrHi = channel->srcAddrHi;
+        channel->curDstAddrLo = channel->dstAddrLo;
+        channel->curDstAddrHi = channel->dstAddrHi;
         channel->curDmaControl = channel->dmaControl;
         if(channel->isTransferring)
             sTransferBusy = FALSE;
         channel->isTransferring = FALSE;
         channel->isDmaStarted = 1;
-
-        u32 fSampCounter = channel->fetchedSampleCounterLo | (channel->fetchedSampleCounterHi << 16);
-
-        if(channel->fifoCount <= -16)
-        {
-            //skip samples if we are behind by more than a complete dma transfer
-            u16 skip = (-channel->fifoCount) & ~0xF;
-            channel->fifoCount += skip;
-            fSampCounter += skip;
-            channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
-        }
-
-        u32 sampCounter = channel->sampleCounterLo | (channel->sampleCounterHi << 16);
-
-        fSampCounter = (fSampCounter + 0xF) & ~0xF;
-        sampCounter = (sampCounter + 0xF) & ~0xF;
-
-        int diff = sampCounter - fSampCounter;
-        if(diff <= -16)
-        {
-            channel->overrunCounter++;
-            if(channel->overrunCounter >= 4)
-            {
-                channel->fifoCount -= 4;
-                channel->writeOffset = (channel->writeOffset - 2) & 0xF;
-                channel->overrunCounter = 0;
-            }
-        }
 
         channel->sampleCounterLo = 0;
         channel->sampleCounterHi = 0;
@@ -282,7 +300,22 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
         return;
     if(!sTransferBusy && !(REG_DMA_START & (1 << 5)))
     {
-        u32 addr = channel->addrLo | ((u32)channel->addrHi << 16);
+        channel->dmaRequest = FALSE;
+        if(channel->curDstAddrHi != 0x0400 || channel->curDstAddrLo != channel->fifoAddrLo)
+        {
+            //this dma won't do anything to the fifo, but we will raise the irq if enabled
+            if(channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_IRQ)
+                setSemaphore(channel->dmaIrqMask);
+
+            if(!(channel->curDmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_REPEAT))
+            {
+                channel->dmaControl &= ~GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE;
+                channel->isDmaStarted = 0;
+            }
+            return;
+        }
+
+        u32 addr = channel->curSrcAddrLo | ((u32)channel->curSrcAddrHi << 16);
         if(channel->fifoCount <= -16)
         {
             //skip samples if we are behind by more than a complete dma transfer
@@ -296,12 +329,11 @@ static void updateDChanDMA(gbaa_daudio_channel_t* channel)
             channel->writeOffset = (channel->writeOffset + (skip >> 1)) & 0xF;
         }
         channel->isTransferring = TRUE;
-        channel->dmaRequest = FALSE;
         sTransferBusy = TRUE;
         transferArm9ToDspDma5Async(addr, &channel->fifo[channel->writeOffset], 8);
         addr += 16;
-        channel->addrLo = addr & 0xFFFF;
-        channel->addrHi = addr >> 16;
+        channel->curSrcAddrLo = addr & 0xFFFF;
+        channel->curSrcAddrHi = addr >> 16;
     }
 }
 
@@ -518,6 +550,11 @@ static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
         sDAudioChans[0].srcAddrLo = arg & 0xFFFF;
         sDAudioChans[0].srcAddrHi = arg >> 16;
     }
+    else if(regAddr == 0xC0 && length == 4)
+    {        
+        sDAudioChans[0].dstAddrLo = arg & 0xFFFF;
+        sDAudioChans[0].dstAddrHi = arg >> 16;
+    }
     else if(regAddr == 0xC4 && length == 4)
     {
         sDAudioChans[0].dmaControl = arg >> 16;
@@ -535,6 +572,11 @@ static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
         sDAudioChans[1].srcAddrLo = arg & 0xFFFF;
         sDAudioChans[1].srcAddrHi = arg >> 16;
     }
+    else if(regAddr == 0xCC && length == 4)
+    {
+        sDAudioChans[1].dstAddrLo = arg & 0xFFFF;
+        sDAudioChans[1].dstAddrHi = arg >> 16;
+    }
     else if(regAddr == 0xD0 && length == 4)
     {
         sDAudioChans[1].dmaControl = arg >> 16;
@@ -547,12 +589,32 @@ static void handleRegWrite(u16 regAddr, u16 length, u32 arg)
         if(!(sDAudioChans[1].dmaControl & GBAA_DAUDIO_CHANNEL_DMA_CONTROL_ENABLE))
             sDAudioChans[1].isDmaStarted = 0;
     }
+    //else if(regAddr == 0xA0 && length == 1)
+    //    writeFifo32(&sDAudioChans[0], (arg & 0xFF) | ((arg & 0xFF) << 8) | ((arg & 0xFF) << 16) | ((arg & 0xFF) << 24));
     else if(regAddr == 0xA0 && length == 2)
-        writeFifo32(&sDAudioChans[0], (arg & 0xFFFF) | (arg << 16));
+    {
+        sFifoALo = arg & 0xFFFF;
+        writeFifo32(&sDAudioChans[0], (arg & 0xFFFF) | (sFifoAHi << 16));
+    }
+    else if(regAddr == 0xA2 && length == 2)
+    {
+        sFifoAHi = arg & 0xFFFF;
+        writeFifo32(&sDAudioChans[0], sFifoALo | ((arg & 0xFFFF) << 16));
+    }
     else if(regAddr == 0xA0 && length == 4)
         writeFifo32(&sDAudioChans[0], arg);
+    //else if(regAddr == 0xA4 && length == 1)
+    //    writeFifo32(&sDAudioChans[1], (arg & 0xFF) | ((arg & 0xFF) << 8) | ((arg & 0xFF) << 16) | ((arg & 0xFF) << 24));
     else if(regAddr == 0xA4 && length == 2)
-        writeFifo32(&sDAudioChans[1], (arg & 0xFFFF) | (arg << 16));
+    {
+        sFifoBLo = arg & 0xFFFF;
+        writeFifo32(&sDAudioChans[1], (arg & 0xFFFF) | (sFifoBHi << 16));
+    }
+    else if(regAddr == 0xA6 && length == 2)
+    {
+        sFifoBHi = arg & 0xFFFF;
+        writeFifo32(&sDAudioChans[1], sFifoBLo | ((arg & 0xFFFF) << 16));
+    }
     else if(regAddr == 0xA4 && length == 4)
         writeFifo32(&sDAudioChans[1], arg);
     else if(regAddr >= 0x60 && regAddr < 0xB0)

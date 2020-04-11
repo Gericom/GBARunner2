@@ -171,9 +171,20 @@ address_write_table_16bit:
 #endif
 .endr
 //0x040000A0-0x040000AE
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_16
+.word write_address_snd_16
+.word write_address_snd_16
+.word write_address_snd_16
+.word write_address_ignore
+.word write_address_ignore
+.word write_address_ignore
+.word write_address_ignore
+#else
 .rept 8
 .word write_address_ignore
 .endr
+#endif
 //0x040000B0
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000B2
@@ -299,9 +310,18 @@ address_write_table_8bit:
 #endif
 .endr
 //0x040000A0-0x040000AF
+#ifdef USE_DSP_AUDIO
+.rept 8
+.word write_address_snd_8
+.endr
+.rept 8
+.word write_address_ignore
+.endr
+#else
 .rept 16
 .word write_address_ignore
 .endr
+#endif
 //0x040000B0-0x040000DF
 .word write_dma_shadow_8
 .word write_dma_shadow_8

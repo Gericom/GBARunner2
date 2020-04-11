@@ -35,8 +35,13 @@ typedef struct
     vu16 isDmaStarted;
     vu16 srcAddrLo;
     vu16 srcAddrHi;
-    vu16 addrLo;
-    vu16 addrHi;
+    vu16 curSrcAddrLo;
+    vu16 curSrcAddrHi;
+    vu16 dstAddrLo;
+    vu16 dstAddrHi;
+    vu16 curDstAddrLo;
+    vu16 curDstAddrHi;
+    vu16 fifoAddrLo;
     vu16 isTransferring;
 
     vs16 curSample;
