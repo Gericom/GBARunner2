@@ -2,7 +2,9 @@
 
 #include "consts.s"
 
+#ifndef USE_GBA_ADJUSTED_SYNC
 #define USE_ACTUAL_RATE
+#endif
 
 ADDRESS_TIMER_BASE = 0x04000100
 

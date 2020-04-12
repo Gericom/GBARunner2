@@ -6,6 +6,9 @@
 //#define USE_DSI_16MB
 //#define USE_3DS_32MB
 
+#define USE_GBA_ADJUSTED_SYNC
+
+//this is currently broken
 //#define USE_LOW_LATENCY_IRQ_AUDIO
 
 #if defined(USE_DSI_16MB)

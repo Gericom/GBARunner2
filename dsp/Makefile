@@ -110,11 +110,12 @@ else
 
 %.o: %.c
 	@echo $(notdir $<)
-	$(CLANG) $(CFLAGS) -o $@ $<
+	$(CLANG) -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) -o $@ $<
 
 %.o: %.s
 	@echo $(notdir $<)
-	$(MC) $(ASFLAGS) --filetype=obj -o $@ $<
+	$(CLANG) -x assembler-with-cpp -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) -o $@ $<
+# $(MC) -MMD -MP -MF $(DEPSDIR)/$*.d $(ASFLAGS) --filetype=obj -o $@ $<
  
 #---------------------------------------------------------------------------------
 # main targets

@@ -1,4 +1,5 @@
 #include "teak/teak.h"
+#include "../../common/common_defs.s"
 #include "gbaTimer.h"
 #include "gbaAudio.h"
 #include "dmg/dmgSweep.h"
@@ -460,7 +461,12 @@ static void updateChannel4(void)
 	cycles <<= sChannel4ShiftFreq + 5 + 7;
 
 	u32 counter = sChannel4CounterLo | ((u32)sChannel4CounterHi << 16);
-	counter += 65615;//512;//352;	
+	
+#ifdef USE_GBA_ADJUSTED_SYNC
+        counter += 512 << 7;
+#else
+        counter += 65615;
+#endif
 	//u16 sampAcc = 0;
 	//u16 sampCount = 0;
 	while(counter >= cycles)

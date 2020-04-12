@@ -1,14 +1,17 @@
 #include <nds.h>
 #include <string.h>
 #include "timer.h"
+#include "../../common/common_defs.s"
 #include "../../common/fifo.h"
 #include "../../common/sd_vram.h"
 #include "lock.h"
 #include "system.h"
 #include "sound.h"
 
+#ifndef USE_GBA_ADJUSTED_SYNC
 #define USE_ACTUAL_RATE
-#define ACCESS_MAIN_MEM_DIRECT
+#endif
+//#define ACCESS_MAIN_MEM_DIRECT
 
 #define SOUND_BUFFER_SIZE	8192
 

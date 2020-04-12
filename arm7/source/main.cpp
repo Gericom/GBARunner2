@@ -11,8 +11,6 @@
 #include "../../common/gba.h"
 #include "rtc.h"
 
-//#define GBA_ADJUSTED_SYNC
-
 static bool sPrevTouchDown = false;
 
 extern "C" void __libnds_exit()
@@ -34,19 +32,15 @@ extern "C" void irq_vblank()
 	sPrevTouchDown = touchDown;
 }
 
-#ifdef GBA_ADJUSTED_SYNC
-static s32 sRateCounter;
-#else
 static u32 sRateCounter;
-#endif
 
 extern "C" void irq_vcount()
 {
-#ifdef GBA_ADJUSTED_SYNC
-	sRateCounter += NDS_CYCLES_PER_FRAME - (GBA_CYCLES_PER_FRAME << 1);//248631205;
-	if(sRateCounter >= (NDS_CYCLES_PER_LINE >> 1))//2132570823)
+#ifdef USE_GBA_ADJUSTED_SYNC
+	sRateCounter += (GBA_CYCLES_PER_FRAME << 1) - NDS_CYCLES_PER_FRAME;
+	if(sRateCounter >= NDS_CYCLES_PER_LINE)
 	{
-		sRateCounter -= NDS_CYCLES_PER_LINE;//2132570823;
+		sRateCounter -= NDS_CYCLES_PER_LINE;
 		while(REG_DISPSTAT & DISP_IN_HBLANK);
 		*(vu16*)0x04000006 = *(vu16*)0x04000006;//repeat line
 	}

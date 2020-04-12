@@ -1,4 +1,5 @@
 #include "teak/teak.h"
+#include "../../common/common_defs.s"
 #include "gbaTimer.h"
 
 extern u16 gbat_updateTimerAsm(u32* counter, u16 reload, u32 gbaTicks);
@@ -36,7 +37,11 @@ void gbat_updateTimer(gbat_t* timer)
         if(timer->control & GBAT_CONTROL_SLAVE)
            return;//todo: implement chaining
 
-        u32 ticks = 33594931;/*23068672;//*///23096515;
+#ifdef USE_GBA_ADJUSTED_SYNC
+        u32 ticks = 512 << 16;
+#else
+        u32 ticks = 33594931;
+#endif
         switch(timer->control & GBAT_CONTROL_PRESCALE_MASK)
         {
             case GBAT_CONTROL_PRESCALE_64:
