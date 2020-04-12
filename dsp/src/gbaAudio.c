@@ -360,11 +360,11 @@ static void updateDChan(gbaa_daudio_channel_t* channel)
             }
             else
             {
-                if(channel->isInitial)
-                {                    
-                    channel->isInitial = FALSE;
-                    continue;
-                }
+                // if(channel->isInitial)
+                // {                    
+                //     channel->isInitial = FALSE;
+                //     continue;
+                // }
                 u16 samp = channel->curSample & 0xFF;
                 samp |= samp << 8;
                 channel->curPlaySamplesLo = samp;

@@ -437,7 +437,7 @@ static void updateChannel3(void)
 	if(!(ptr & 1))
 		samps >>= 4;
 	u16 samp = (u16)(samps & 0xF) * sChannelVolume[2];
-	sChannel3Sample = samp >> 4;
+	sChannel3Sample = (samp >> 4) ^ 0xF;
 	ptr++;
 	if(sChannel3IsMode64)
 		ptr &= 0x3F;
