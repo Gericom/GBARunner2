@@ -8,18 +8,41 @@
 
 ADDRESS_TIMER_BASE = 0x04000100
 
-.macro fix_timer_counter_read regb, rega
-	mov \regb, \rega, lsl #16
+// .macro fix_timer_counter_read regb, rega
+// 	mov \regb, \rega, lsl #16
+// 	tst \rega, #(4 << 16)
+// 	movne \regb, \regb, lsr #16 //if slave mode, don't divide by 2
+// 	moveq \regb, \regb, lsr #17 //if normal mode, fix timer value
+// 	orreq \regb, \regb, #0x8000 //set top bit as we assume this bit was 1 (we don't really have a proper way of fixing that)
+// .endm
+
+.macro fix_timer_counter_read regb, rega, regc
 	tst \rega, #(4 << 16)
-	movne \regb, \regb, lsr #16 //if slave mode, don't divide by 2
-	moveq \regb, \regb, lsr #17 //if normal mode, fix timer value
-	orreq \regb, \regb, #0x8000 //set top bit as we assume this bit was 1 (we don't really have a proper way of fixing that)
+	mov \regb, \rega, lsl #16
+		movne \regb, \regb, lsr #16 //if slave mode, don't divide by 2
+		bne 1f
+	mov \regb, \regb, lsr #17 //if normal mode, fix timer value
+	tst \regc, #0x8000
+		orrne \regb, #0x8000
+	cmp \regb, \regc
+		eorlt \regb, #0x8000
+1:
 .endm
 
 .global read_address_timer_counter
 read_address_timer_counter:
 	ldr r10, [r9] //read full info
-	fix_timer_counter_read r10, r10
+
+	ldr r12,= ADDRESS_TIMER_BASE
+	ldr r13,= timer_shadow_regs_count_dtcm
+	sub r12, r9, r12
+	add r13, r12, lsr #1
+	ldrh r11, [r13]
+
+	fix_timer_counter_read r10, r10, r11
+
+	strh r10, [r13]
+
 	//ldrh r10, [r9]
 	//mov r10, r10, lsr #1
 	bx lr
@@ -27,7 +50,18 @@ read_address_timer_counter:
 .global read_address_timer
 read_address_timer:
 	ldr r10, [r9]
-	fix_timer_counter_read r12, r10
+
+	
+	ldr r12,= ADDRESS_TIMER_BASE
+	ldr r13,= timer_shadow_regs_count_dtcm
+	sub r12, r9, r12
+	add r13, r12, lsr #1
+	ldrh r11, [r13]
+
+	fix_timer_counter_read r12, r10, r11
+
+	strh r12, [r13]
+
 	mov r10, r10, lsr #16
 	orr r10, r12, r10, lsl #16
 	//mov r12, r10, lsr #16

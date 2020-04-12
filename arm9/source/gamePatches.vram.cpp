@@ -173,6 +173,16 @@ void gptc_patchRom()
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3D73C0) = 0xE3A0001B;
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3D73FC) = 0xE3A0009B;
 	}
+	else if(gameCode == 0x50565342)
+	{
+		//Smashing Drive (Europe) (En,Fr,De,Es,It)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7F4C2C) = 0xE8990E00;
+	}
+	else if(gameCode == 0x45565342)
+	{
+		//Smashing Drive (USA)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7F62B8) = 0xE8990E00;
+	}
 #endif
 	/*else if(gameCode == 0x45573241 || gameCode == 0x50573241)
 	{
