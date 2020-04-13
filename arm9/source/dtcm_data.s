@@ -303,6 +303,9 @@ dma_shadow_regs_dtcm:
 	.short 0 //control
 .endr
 
+//dummy reload of fake timer before 0
+.short 0
+
 .global timer_shadow_regs_dtcm
 timer_shadow_regs_dtcm:
 .rept 4
