@@ -127,6 +127,7 @@ write_address_timer_control:
 	sub r12, r9, r12
 	add r13, r12, lsr #1
 	ldrh r12, [r13]
+	strh r12, [r13, #8] //store shadow reload to shadow counter
 	
 	tst r11, #4 //if slave mode, we don't have to fix the reload value
 #ifdef USE_ACTUAL_RATE
@@ -175,6 +176,7 @@ write_address_timer:
 	sub r12, r9, r12
 	add r13, r12, lsr #1
 	strh r11, [r13]
+	strh r11, [r13, #8] //store shadow reload to shadow counter
 
 	tst r11, #(4 << 16) //if slave mode, we don't have to fix the reload value
 		strne r11, [r9]
