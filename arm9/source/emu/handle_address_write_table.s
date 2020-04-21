@@ -10,8 +10,10 @@
 address_write_table_32bit:
 //0x04000000
 .word write_address_dispcontrol
-//0x04000004-0x0400001C
-.rept 7
+//0x04000004
+.word write_address_dispstat
+//0x04000008-0x0400001C
+.rept 6
 .word write_address_nomod_32
 .endr
 //0x04000020
@@ -289,8 +291,16 @@ address_write_table_8bit:
 .word write_address_ignore
 //0x04000003
 .word write_address_ignore
+//0x04000004
+.word write_address_nomod_8
+//0x04000005
+.word write_address_nomod_8
+//0x04000006
+.word write_address_ignore
+//0x04000007
+.word write_address_ignore
 //0x04000004-0x0400005F
-.rept 92
+.rept 88
 .word write_address_nomod_8
 .endr
 //0x04000060-0x04000084
