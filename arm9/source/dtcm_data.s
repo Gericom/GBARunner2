@@ -318,6 +318,8 @@ timer_shadow_regs_count_dtcm:
 	.short 0 //counter value
 .endr
 
+.align 2
+
 //the current bios opcode that is returned if you do a protected read
 //[00DCh+8] = 0xE129F000, after startup and softreset //before this address 0x27C is read
 //[0134h+8] = 0xE25EF004, during irq execution
