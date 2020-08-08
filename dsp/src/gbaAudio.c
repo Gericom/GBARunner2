@@ -158,6 +158,7 @@ static void transferArm9ToDspDma5Async(u32 src, void* dst, u16 len)
     ahbm_resetChannel(1);
 
     REG_DMA_CHAN_SEL = 5; //set dma channel for config
+    REG_DMA_START &= ~(1 << 5); //set dma channel for config
     REG_DMA_CHAN_SRC_LO = src & 0xFFFF; //src address bit 15:0
     REG_DMA_CHAN_SRC_HI = src >> 16; //src address bit 31:16
     REG_DMA_CHAN_DST_LO = (u16)dst; //dst address bit 15:0
@@ -178,6 +179,7 @@ static void transferArm9ToDspDma5Async(u32 src, void* dst, u16 len)
         DMA_CHAN_XFER_CONFIG_32BIT;
       
     REG_DMA_CHAN_UNK_81DC = 0x300; //idk
+    REG_DMA_CHAN_CONTROL = 1 << 2; //start
 
     u16 config = AHBM_CHAN_CONFIG1_SIZE(AHBM_CHAN_CONFIG1_SIZE_32BIT);
     //Important: Bursts with defined length may never cross 1024 byte boundaries!
@@ -187,7 +189,7 @@ static void transferArm9ToDspDma5Async(u32 src, void* dst, u16 len)
         config |= AHBM_CHAN_CONFIG1_BURST(AHBM_CHAN_CONFIG1_BURST_INCR4);
     ahbm_configChannel(1, config, 0x200, 1 << 5);
 
-    REG_DMA_CHAN_CONTROL = 0x4000 | (1 << 2); //start
+    REG_DMA_START |= 1 << 5;
 }
 
 static void updateDChanDMA(gbaa_daudio_channel_t* channel)
