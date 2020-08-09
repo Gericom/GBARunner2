@@ -381,9 +381,28 @@ gba_start_bkpt_vram:
 	ldr r2,= gEmuSettingSkipIntro
 	ldr r2, [r2]
 	cmp r2, #1
-	ldrne r0,= (gGbaBios + 0x68) //with intro
-	ldreq r0,= (gGbaBios + 0xB4) //without intro
-	bx r0
+
+	mov r2, #0x04000000
+	//disable dma
+	strh r2, [r2, #0xBA]
+	strh r2, [r2, #0xC6]
+	strh r2, [r2, #0xD2]
+	strh r2, [r2, #0xDE]
+	//disable sound
+	strh r2, [r2, #0x82]
+	//disable timers
+	add r3, r2, #0x100
+	strh r2, [r2, #0x2]
+	strh r2, [r2, #0x6]
+	strh r2, [r2, #0xA]
+	strh r2, [r2, #0xE]
+	//disable all irqs and reset irq flags
+	add r3, r2, #0x200
+	strh r2, [r3]
+	strh r2, [r3, #2]
+
+	bne swi_hardReset
+	b swi_softReset
 
 
 .global swi_softReset

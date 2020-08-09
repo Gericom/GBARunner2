@@ -13,7 +13,7 @@
 #include "gui/FileBrowser.h"
 #include "gui/SettingsScreen.h"
 #include "settings.h"
-#include "bios.h"
+#include "bios/bios.h"
 #include "crc16.h"
 #include "emu/romGpio.h"
 #include "gbaBoot.h"
