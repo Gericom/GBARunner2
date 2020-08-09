@@ -148,7 +148,12 @@ __secure_area__ = .;
 
 	.vram __vram_start : AT (__vram_lma)
 	{
-		bios.o
+		__bios_start = .;
+		bios.o(.vram)
+		bios_divide.o(.vram)
+		bios_reset.o(.vram)
+		bios_swi.vram.o(.text)
+		. = . + 0x4000 - (. - __bios_start);
 		*(.vram)
 		*vram.*(.text)
 		*vram.*(.text.*)

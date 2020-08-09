@@ -85,6 +85,7 @@ static void applyRelocation()
 	//*(vu32*)0x01000000 = 0x00000000;// 0xEAFFFFFE; //b .
 	//*(vu32*)0x01000008 = 0xEAFFFFFE;
 	*(vu32*)0x01000008 = 0xE3A0F51A; //mov pc, #bios_swiVeneer
+	*(vu32*)0x06800000 = pcu_makeArmBranch(0x06800000, (u32)&gGbaBios[0x140 >> 2]);
 }
 
 /**
@@ -129,8 +130,13 @@ BiosLoadResult bios_load()
 		result = f_open(&vram_cd->fil, "0:/gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
 	if (result != FR_OK)
 		result = f_open(&vram_cd->fil, "0:/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
+	// if (result != FR_OK)
+	// 	return BIOS_LOAD_RESULT_NOT_FOUND;
 	if (result != FR_OK)
-		return BIOS_LOAD_RESULT_NOT_FOUND;
+	{
+		*(vu32*)0x01000008 = 0xE3A0F51A; //mov pc, #bios_swiVeneer
+		return BIOS_LOAD_RESULT_OK;
+	}
 	if (vram_cd->fil.obj.objsize != BIOS_SIZE)
 	{
 		f_close(&vram_cd->fil);
