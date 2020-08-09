@@ -5,7 +5,7 @@ GBARunner2
 GBARunner2 is a hypervisor that runs GBA games on DS/DSi/3DS in DS mode.
 ## Usage Notes
 - If you have a gba folder on the root of your sd, this folder will be opened by default
-- Games generally **don't** need to be SRAM patched unless stated in the compatibility list (see below). If it is needed needed, you can use [gbata](http://www.no-intro.org/gbadat/tools/gbata7a-en.zip).
+- Games generally **don't** need to be SRAM patched unless stated in the compatibility list (see below). If it is needed, you can use [gbata](http://www.no-intro.org/gbadat/tools/gbata7a-en.zip).
 - If you are using GBARunner2 with TWiLightMenu on a DSi or 3DS with the SD card, make sure you use the dldi on ARM7 build
 - The settings are accessed by **pressing R** on the rom selection menu. Settings are saved when leaving the settings menu
 
