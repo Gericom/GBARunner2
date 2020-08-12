@@ -37,8 +37,8 @@ data_abort_handler_thumb:
 	ldrh r10, [r11, #-8]
 	//todo: fill up this interlock
 #ifdef ENABLE_HICODE
-	sub r11, #0x08000000
-	cmp r11, #0x02000000
+	sub r13, r11, #0x08000000
+	cmp r13, #0x02000000
 		blo data_abort_handler_thumb_load_from_cache
 data_abort_handler_thumb_cont:
 #endif
@@ -196,8 +196,8 @@ abt_handleArm_load_from_cache:
 abt_handleArm:
 	ldr r10, [r11, #-8]
 #ifdef ENABLE_HICODE
-	sub r11, #0x08000000
-	cmp r11, #0x02000000
+	sub r14, r11, #0x08000000
+	cmp r14, #0x02000000
 		blo abt_handleArm_load_from_cache
 abt_handleArm_cont:
 #endif

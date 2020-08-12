@@ -87,7 +87,6 @@ bios_cpuset_cache_patch:
 .global bios_cpufastset_cache_patch
 bios_cpufastset_cache_patch:
 	STMFD   SP!, {R4-R10,LR}
-<<<<<<< HEAD:arm9/source/bios_patches.s
 	ldr r4,= gEmuSettingWramICache
 	ldr r4, [r4]
 	cmp r4, #0

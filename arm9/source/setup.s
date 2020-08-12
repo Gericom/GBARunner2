@@ -465,28 +465,50 @@ instruction_abort_handler:
 #ifdef ABT_NO_FIQ
 	msr cpsr_c, #0xD7	//immediately disable fiqs
 #endif
-	cmp lr, #0x08000000
-	blt instruction_abort_handler_error
-	cmp lr, #0x0E000000
-	bge instruction_abort_handler_error
-instruction_abort_handler_cont:
 #ifdef ENABLE_HICODE
-	//cmp lr, #ROM_ADDRESS_MAX
-	//blt 1f
+	sub lr, #4
+	cmp lr, #0x08000000
+		blo instruction_abort_handler_error_2
+	cmp lr, #0x0C000000
+		blo instruction_abort_handler_gba_rom_abs
+	cmp lr, #0x0F000000
+		blo instruction_abort_handler_gba_rom_rel
+	b instruction_abort_handler_error_2
+
+instruction_abort_handler_gba_rom_abs:
+	cmp lr, #ROM_ADDRESS_MAX
+		blo instruction_abort_handler_gba_rom_mainmem
+	
 	mcr p15, 0, r13, c5, c0, 0
 	add r13, #1
 	add r13, #(16 * 1024)
 	push {r0-r3,r12,lr}
-	sub r0, lr, #4
+	mov r0, lr
 	bl hic_mapCode
 	ldr lr,= pu_data_permissions
 	mcr p15, 0, lr, c5, c0, 2
 	pop {r0-r3,r12,lr}
 	sub r13, #(16 * 1024)
 	sub r13, #1
-	subs pc, lr, #4
-1:
-#endif
+	movs pc, lr
+
+instruction_abort_handler_gba_rom_mainmem:
+	bic lr, #0x06000000
+	add lr, #GBA_ADDR_TO_DS_HIGH
+	add lr, #GBA_ADDR_TO_DS_LOW
+	movs pc, lr
+
+instruction_abort_handler_gba_rom_rel:
+	sub lr, #GBA_ADDR_TO_DS_HIGH
+	sub lr, #GBA_ADDR_TO_DS_LOW
+	b instruction_abort_handler_gba_rom_abs
+
+#else
+	cmp lr, #0x08000000
+	blt instruction_abort_handler_error
+	cmp lr, #0x0E000000
+	bge instruction_abort_handler_error
+instruction_abort_handler_cont:
 	bic lr, #0x06000000
 	add lr, #GBA_ADDR_TO_DS_HIGH
 	add lr, #GBA_ADDR_TO_DS_LOW
@@ -513,6 +535,7 @@ instruction_abort_handler_error_cont:
 	movlt lr, r12
 	ldrlt r12, [r13, #1]
 	blt instruction_abort_handler_cont
+#endif
 instruction_abort_handler_error_2:
 #ifdef ABT_NO_FIQ
 	msr cpsr_c, #0x97	//enable fiqs

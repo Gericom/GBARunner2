@@ -19,7 +19,11 @@
 
 //#define ABT_NO_FIQ
 
+//currently only on dsi and 3ds, because I haven't found a mpu configuration
+//for DS yet that allows me to disallow execution in the regions I need to
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
 #define ENABLE_HICODE
+#endif
 
 //enabling the wram icache can significantly improve
 //speed in some games (dk3, rayman3, riviera), however

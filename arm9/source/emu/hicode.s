@@ -82,8 +82,8 @@ hic_loadSector:
 //load from main memory
 hic_loadSectorFast:
     bic r12, r1, #0x06000000
-    sub r12, #0x05000000
-	sub r12, #0x00FC0000
+    add r12, #GBA_ADDR_TO_DS_HIGH
+	add r12, #GBA_ADDR_TO_DS_LOW
     orr r1, #(1 << 4) //valid flag
 
     mov r0, #0x80000000 //load bit + segment 0
