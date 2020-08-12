@@ -97,15 +97,6 @@ write_dma_control_\offs:
 	andeq r12, r11, #0x8000
 	cmpeq r12, #0x8000
 	bxeq lr
-#ifdef ENABLE_WRAM_ICACHE
-	//invalidate icache
-	mov r12, #0
-	mcr p15, 0, r12, c7, c5, 0
-#ifdef ENABLE_HICODE
-	//unmap code
-	mcr	p15, 0, r12, c6, c3, 0
-#endif
-#endif
 	//fix mode
 	mov r12, r11, lsr #12
 	and r12, #3
@@ -120,6 +111,23 @@ write_dma_control_\offs:
 	cmp r12, #0x02000000
 		biclt r11, r11, #0x8000
 		blt 6f
+
+#ifdef ENABLE_WRAM_ICACHE
+	ldr r13,= gEmuSettingWramICache
+	ldr r13, [r13]
+	cmp r13, #0
+
+	andne r13, r12, #0xFF000000
+	cmpne r13, #0x04000000
+		//invalidate icache
+		movne r13, #0
+		mcrne p15, 0, r13, c7, c5, 0
+#ifdef ENABLE_HICODE
+		//unmap code
+		mcrne p15, 0, r13, c6, c3, 0
+#endif
+#endif
+
 	//dst vram
 	and r13, r12, #0xFF000000
 	cmp r13, #0x06000000
@@ -233,8 +241,8 @@ dma_rom_src_\offs:
 	bgt dma_rom_from_sd_\offs
 5:
 	//fix the address and perform the dma normally
-	sub r13, #0x05000000
-	sub r13, #0x00FC0000
+	add r13, #GBA_ADDR_TO_DS_HIGH
+	add r13, #GBA_ADDR_TO_DS_LOW
 	str r13, [r9, #(-8 - \offs)] //store in actual src register
 	b 4b
 

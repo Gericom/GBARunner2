@@ -1,5 +1,6 @@
 #include <nds/arm9/sprite.h>
 #include <nds/arm9/background.h>
+#include "sd_access.h"
 #include "vram.h"
 #include "vramheap.h"
 #include "vector.h"
@@ -11,7 +12,7 @@
 #include "SettingsCategoryListAdapter.h"
 #include "SettingsItemListAdapter.h"
 #include "SettingsItemListEntry.h"
-#include "SettingsCategoryListEntry.h"
+#include "SingleLineIconListEntry.h"
 #include "UIContext.h"
 #include "settings.h"
 #include "SettingsScreen.h"
@@ -19,24 +20,47 @@
 #define STRINGIFY2(x)	#x
 #define STRINGIFY(x)	STRINGIFY2(x)
 
-static settings_item_t sEmulationItems[] =
+static PUT_IN_VRAM settings_item_t sEmulationItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", &gEmuSettingUseBottomScreen },
-    //{ SETTINGS_ITEM_MODE_CHECK, "Enable autosaving", "Writes back the save to sd after a game saves", &gEmuSettingAutoSave },
-    { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", &gEmuSettingCenterMask },
-	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", &gEmuSettingMainMemICache },    
-	//{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", &gEmuSettingWramICache },
-    { SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", &gEmuSettingSkipIntro }
+    //{ SETTINGS_ITEM_MODE_CHECK, "Enable autosaving", "Writes back the save to sd after a game saves", NULL, &gEmuSettingAutoSave },
+	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", NULL, &gEmuSettingMainMemICache },    
+	{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", NULL, &gEmuSettingWramICache },
+    { SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", NULL, &gEmuSettingSkipIntro }
 };
 
-static settings_item_t sInputItems[] =
+static PUT_IN_VRAM settings_item_t sDisplayItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_SIMPLE, "GBA A button", "DS A button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA B button", "DS B button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA L button", "DS L button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA R button", "DS R button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA START button", "DS START button", NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "GBA SELECT button", "DS SELECT button", NULL }
+	{ SETTINGS_ITEM_MODE_CHECK, "Display game on bottom screen", "", NULL, &gEmuSettingUseBottomScreen },
+    { SETTINGS_ITEM_MODE_CHECK, "Enable border frame", "Enables the usage of gba border frames", NULL, &gEmuSettingFrame },
+    { SETTINGS_ITEM_MODE_CHECK, "Enable center and mask", "Centers the game with a border. Adds 1 frame delay", NULL, &gEmuSettingCenterMask },
+	{ SETTINGS_ITEM_MODE_CHECK, "Simulate GBA colors", "Darkens the colors to simulate a GBA screen", NULL, &gEmuSettingGbaColors }
+};
+
+static PUT_IN_VRAM const char* sDSButtonNames[] =
+{
+	"A Button",
+	"B Button",
+	"SELECT Button",
+	"START Button",
+	"D-Pad Right",
+	"D-Pad Left",
+	"D-Pad Up",
+	"D-Pad Down",
+	"R Button",
+	"L Button",
+	"X Button",
+	"Y Button",
+	"Screen Touch"
+};
+
+static PUT_IN_VRAM settings_item_t sInputItems[] =
+{    
+	{ SETTINGS_ITEM_MODE_SIMPLE_ENUM, "GBA A Button", NULL, sDSButtonNames, &gInputSettings.buttonA },
+    { SETTINGS_ITEM_MODE_SIMPLE_ENUM, "GBA B Button", NULL, sDSButtonNames, &gInputSettings.buttonB },
+    { SETTINGS_ITEM_MODE_SIMPLE_ENUM, "GBA L Button", NULL, sDSButtonNames, &gInputSettings.buttonL },
+    { SETTINGS_ITEM_MODE_SIMPLE_ENUM, "GBA R Button", NULL, sDSButtonNames, &gInputSettings.buttonR },
+    { SETTINGS_ITEM_MODE_SIMPLE_ENUM, "GBA START Button", NULL, sDSButtonNames, &gInputSettings.buttonStart },
+    { SETTINGS_ITEM_MODE_SIMPLE_ENUM, "GBA SELECT Button", NULL, sDSButtonNames, &gInputSettings.buttonSelect }
 };
 
 #ifndef GIT_COMMIT_DATE
@@ -49,32 +73,35 @@ static settings_item_t sInputItems[] =
 #define GIT_BRANCH unavailable
 #endif
 
-static settings_item_t sInfoItems[] =
+static PUT_IN_VRAM settings_item_t sInfoItems[] =
 {    
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", STRINGIFY(GIT_COMMIT_DATE), NULL },
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit hash", STRINGIFY(GIT_COMMIT_HASH), NULL },
-    { SETTINGS_ITEM_MODE_SIMPLE, "Branch", STRINGIFY(GIT_BRANCH), NULL },
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit date", STRINGIFY(GIT_COMMIT_DATE), NULL, NULL },
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Commit hash", STRINGIFY(GIT_COMMIT_HASH), NULL, NULL },
+    { SETTINGS_ITEM_MODE_SIMPLE, "Branch", STRINGIFY(GIT_BRANCH), NULL, NULL },
     { SETTINGS_ITEM_MODE_SIMPLE, "DLDI Cpu", 
 #ifdef ARM7_DLDI
 		"ARM 7"
 #else
 		"ARM 9"
 #endif
-		, NULL },
-	{ SETTINGS_ITEM_MODE_SIMPLE, "Wram i-cache", 
-#ifdef ENABLE_WRAM_ICACHE
-		"On"
+		, NULL, NULL },
+	{ SETTINGS_ITEM_MODE_SIMPLE, "Version", 
+#if defined(USE_DSI_16MB)
+		"DSi"
+#elif defined(USE_3DS_32MB)
+		"3DS"
 #else
-		"Off"
+		"DS"
 #endif
-		, NULL }
+		, NULL, NULL }
 };
 
 static const settings_category_t sCategories[] =
 {
-    { "Emulation Settings", SettingsCategoryListEntry::SETTINGS_CATEGORY_ICON_PLAYCIRCLE, sizeof(sEmulationItems) / sizeof(settings_item_t), sEmulationItems },
-    //{ "Input Settings", SettingsCategoryListEntry::SETTINGS_CATEGORY_ICON_GAMEPAD, sizeof(sInputItems) / sizeof(settings_item_t), sInputItems },
-    { "About GBARunner2", SettingsCategoryListEntry::SETTINGS_CATEGORY_ICON_INFO, sizeof(sInfoItems) / sizeof(settings_item_t), sInfoItems }
+    { "\"Emulation\" Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_PLAYCIRCLE, sizeof(sEmulationItems) / sizeof(settings_item_t), sEmulationItems, NULL },
+	{ "Display Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_EYE, sizeof(sDisplayItems) / sizeof(settings_item_t), sDisplayItems, NULL },
+    { "Input Settings", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_GAMEPAD, sizeof(sInputItems) / sizeof(settings_item_t), sInputItems, SettingsScreen::ButtonMapCallback },
+    { "About GBARunner2", SettingsCategoryListAdapter::SETTINGS_CATEGORY_ICON_INFO, sizeof(sInfoItems) / sizeof(settings_item_t), sInfoItems, NULL }
 };
 
 void SettingsScreen::GotoCategory(const settings_category_t* category)
@@ -115,6 +142,48 @@ void SettingsScreen::GotoCategory(const settings_category_t* category)
 	_uiContext->GetUIManager().VBlank();
 }
 
+void SettingsScreen::ButtonMapCallback()
+{
+	UIManager& uiManager = _uiContext->GetUIManager();
+	u16 vramState = uiManager.GetSubObjManager().GetState();
+	Dialog* dialog = new Dialog(
+		_uiContext->GetRobotoMedium13(), _selectedCategory->items[_selectedEntry].title,
+		_uiContext->GetRobotoRegular11(), "Press the button to map\nwithin 4 seconds ...");
+	uiManager.AddElement(dialog);
+	_uiContext->GetUIManager().VBlank();
+	uiManager.GetSubObjPalManager().DimRows(0x3FFF);
+	_uiContext->GetBGPalManager().DimRows(0x7FFF);
+	int frameCounter = 0;
+	while (1)
+	{
+		_inputRepeater.Update(~keys_read());
+		if(_inputRepeater.GetTriggeredKeys())
+		{
+			u32 key = 31 - __builtin_clz(_inputRepeater.GetTriggeredKeys());
+			//dpad, touch and lid
+			if (key == 4 || key == 5 || key == 6 || key == 7 || key == 12 || key == 13)
+				break;
+			if(_selectedCategory->items[_selectedEntry].pValue)
+				*_selectedCategory->items[_selectedEntry].pValue = 31 - __builtin_clz(_inputRepeater.GetTriggeredKeys());
+			break;
+		}
+		uiManager.Update();
+		while (*((vu16*)0x04000004) & 1);
+		while (!(*((vu16*)0x04000004) & 1));
+		_uiContext->GetBGPalManager().Apply(BG_PALETTE_SUB);
+		uiManager.VBlank();
+		REG_DISPCNT_SUB |= DISPLAY_BG2_ACTIVE;
+		frameCounter++;
+		if(frameCounter == 4 * 60)
+			break;
+	}
+	uiManager.RemoveElement(dialog);
+	delete dialog;
+	uiManager.GetSubObjPalManager().UndimRows(0x3FFF);
+	_uiContext->GetBGPalManager().UndimRows(0x7FFF);
+	uiManager.GetSubObjManager().SetState(vramState);
+}
+
 void SettingsScreen::Run()
 {
 	_uiContext->GetToolbar().SetTitle("Settings");
@@ -124,40 +193,47 @@ void SettingsScreen::Run()
 	while (*((vu16*)0x04000004) & 1);
 	while (!(*((vu16*)0x04000004) & 1));
 	_uiContext->GetUIManager().VBlank();
+	SettingsCategoryListAdapter::LoadCommonData(_uiContext->GetUIManager());
 	SettingsItemListEntry::LoadCommonData(_uiContext->GetUIManager());
-	SettingsCategoryListEntry::LoadCommonData(_uiContext->GetUIManager());
+	SingleLineIconListEntry::LoadCommonData(_uiContext->GetUIManager());
 	_vramState = _uiContext->GetUIManager().GetSubObjManager().GetState();	
     GotoCategory(NULL);
 	while (1)
 	{
-		_inputRepeater.Update(~*((vu16*)0x04000130));
-		if (_inputRepeater.GetTriggeredKeys() & (1 << 6))
+		_inputRepeater.Update(~keys_read());
+		if (_inputRepeater.GetTriggeredKeys() & KEY_UP)
 		{
 			if (_selectedEntry > 0)
 				_selectedEntry--;
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & (1 << 7))
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_DOWN)
 		{
 			if (_selectedEntry < _adapter->GetItemCount() - 1)
 				_selectedEntry++;
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & 1)
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_A)
 		{
 			if(_selectedCategory)
 			{
-				if(_selectedCategory->items[_selectedEntry].mode == SETTINGS_ITEM_MODE_CHECK)
-					*_selectedCategory->items[_selectedEntry].pValue = !*_selectedCategory->items[_selectedEntry].pValue;
+				if(_selectedCategory->activateCallback)
+					_selectedCategory->activateCallback(this);
+				else
+				{
+					//default callback
+					if(_selectedCategory->items[_selectedEntry].mode == SETTINGS_ITEM_MODE_CHECK)
+						*_selectedCategory->items[_selectedEntry].pValue = !*_selectedCategory->items[_selectedEntry].pValue;
+				}
 			}
 			else
 				GotoCategory(&sCategories[_selectedEntry]);
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & 2)
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_B)
 		{
 			if(_selectedCategory)
 				GotoCategory(NULL);
 			else
 			{
-				while(!(*((vu16*)0x04000130) & 2));
+				while(!(*((vu16*)0x04000130) & KEY_B));
 				break;
 			}
 		}
@@ -167,6 +243,7 @@ void SettingsScreen::Run()
 		while (!(*((vu16*)0x04000004) & 1));
 		_uiContext->GetBGPalManager().Apply(BG_PALETTE_SUB);
 		_uiContext->GetUIManager().VBlank();
+		REG_DISPCNT_SUB &= ~DISPLAY_BG2_ACTIVE;
 	}
 	if (_listRecycler)
 		_uiContext->GetUIManager().RemoveElement(_listRecycler);
@@ -174,4 +251,5 @@ void SettingsScreen::Run()
 	//clear everything except the toolbar
 	_uiContext->GetUIManager().Update();
 	_uiContext->GetUIManager().VBlank();
+	REG_DISPCNT_SUB &= ~DISPLAY_BG2_ACTIVE;
 }

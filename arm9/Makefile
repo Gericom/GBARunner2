@@ -15,7 +15,7 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/emu source/gui source/gui/core source/fat source/save
+SOURCES		:=	source source/emu source/gui source/gui/core source/fat source/save source/bios
 INCLUDES	:=	include source
 DATA		:=	data
 
@@ -44,6 +44,14 @@ ifdef ENABLE_WRAM_ICACHE
 	CFLAGS	+=  -DENABLE_WRAM_ICACHE
 endif
 
+ifdef USE_DSI_16MB
+	CFLAGS	+=  -DUSE_DSI_16MB
+endif
+
+ifdef USE_3DS_32MB
+	CFLAGS	+=  -DUSE_3DS_32MB
+endif
+
 GIT_HASH := $(shell git rev-parse HEAD)
 GIT_DATE := $(shell git log -1 "--date=format:%d-%m-%Y\ %H:%M" --pretty=format:%cd)
 GIT_BRANCH := $(shell git describe --all --exact-match | sed 's/heads\///' | sed 's/remotes\/origin\///')
@@ -65,6 +73,14 @@ endif
 
 ifdef ENABLE_WRAM_ICACHE
 	ASFLAGS	+=  -DENABLE_WRAM_ICACHE
+endif
+
+ifdef USE_DSI_16MB
+	ASFLAGS	+=  -DUSE_DSI_16MB
+endif
+
+ifdef USE_3DS_32MB
+	ASFLAGS	+=  -DUSE_3DS_32MB
 endif
 
 LDFLAGS	=	-specs=../ds_arm9_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -nodefaultlibs

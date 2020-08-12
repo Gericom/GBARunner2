@@ -35,6 +35,14 @@ ifdef ARM7_DLDI
 	CFLAGS	+=  -DARM7_DLDI
 endif
 
+ifdef USE_DSI_16MB
+	CFLAGS	+=  -DUSE_DSI_16MB
+endif
+
+ifdef USE_3DS_32MB
+	CFLAGS	+=  -DUSE_3DS_32MB
+endif
+
 CXXFLAGS	:=	$(CFLAGS) -fno-exceptions -fno-rtti
 
 
@@ -44,9 +52,17 @@ ifdef ARM7_DLDI
 	ASFLAGS	+=  -DARM7_DLDI
 endif
 
+ifdef USE_DSI_16MB
+	ASFLAGS	+=  -DUSE_DSI_16MB
+endif
+
+ifdef USE_3DS_32MB
+	ASFLAGS	+=  -DUSE_3DS_32MB
+endif
+
 LDFLAGS	=	-specs=../ds_arm7_gbarunner.specs -g $(ARCH) -Wl,-Map,$(notdir $*).map
 
-LIBS	:=	-lnds7
+LIBS	:=	# -lnds7
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

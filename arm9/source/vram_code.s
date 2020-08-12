@@ -342,15 +342,25 @@ gba_start_bkpt_vram:
 	ldr r1,= 0x7FFF
 	strh r1, [r0]
 
-	ldr r2,= gEmuSettingMainMemICache
+	ldr r2,= gEmuSettingWramICache
 	ldr r2, [r2]
 	cmp r2, #1
 	beq 1f
+	//disable wram i-cache
+	mrc p15, 0, r0, c2, c0, 1
+	bic r0, #((1 << 0) | (1 << 7))
+	mcr p15, 0, r0, c2, c0, 1
+1:
+
+	ldr r2,= gEmuSettingMainMemICache
+	ldr r2, [r2]
+	cmp r2, #1
+	beq 2f
 	//disable main memory i-cache
 	mrc p15, 0, r0, c2, c0, 1
 	bic r0, #(1 << 5)
 	mcr p15, 0, r0, c2, c0, 1
-1:
+2:
 	mrc p15, 0, r0, c1, c0, 0
 	//orr r0, #(1<<15)
 	orr r0, #(1 | (1 << 2))	//enable pu and data cache
@@ -371,6 +381,34 @@ gba_start_bkpt_vram:
 	ldr r2,= gEmuSettingSkipIntro
 	ldr r2, [r2]
 	cmp r2, #1
-	ldrne r0,= (gGbaBios + 0x68) //with intro
-	ldreq r0,= (gGbaBios + 0xB4) //without intro
-	bx r0
+
+	mov r2, #0x04000000
+	//disable dma
+	strh r2, [r2, #0xBA]
+	strh r2, [r2, #0xC6]
+	strh r2, [r2, #0xD2]
+	strh r2, [r2, #0xDE]
+	//disable sound
+	strh r2, [r2, #0x82]
+	//disable timers
+	add r3, r2, #0x100
+	strh r2, [r2, #0x2]
+	strh r2, [r2, #0x6]
+	strh r2, [r2, #0xA]
+	strh r2, [r2, #0xE]
+	//disable all irqs and reset irq flags
+	add r3, r2, #0x200
+	strh r2, [r3]
+	strh r2, [r3, #2]
+
+	bne swi_hardReset
+	b swi_softReset
+
+
+.global swi_softReset
+swi_softReset:
+	swi 0x000000
+
+.global swi_hardReset
+swi_hardReset:
+	swi 0x260000

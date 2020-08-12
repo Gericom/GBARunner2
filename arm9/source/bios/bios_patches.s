@@ -71,11 +71,14 @@ bios_cpufastset_sd_patch_fifo_loop:
 .global bios_cpuset_cache_patch
 bios_cpuset_cache_patch:
 	PUSH    {R4,R5,LR}
-	mov r4, #0
-	mcr p15, 0, r4, c7, c5, 0
+	ldr r4,= gEmuSettingWramICache
+	ldr r4, [r4]
+	cmp r4, #0
+		movne r4, #0
+		mcrne p15, 0, r4, c7, c5, 0
 #ifdef ENABLE_HICODE
-	//unmap code
-	mcr	p15, 0, r4, c6, c3, 0
+		//unmap code
+		mcrne p15, 0, r4, c6, c3, 0
 #endif
 	//don't use the armv5 interworking!
 	ldr r4,= (gGbaBios + 0xB4F)
@@ -84,13 +87,37 @@ bios_cpuset_cache_patch:
 .global bios_cpufastset_cache_patch
 bios_cpufastset_cache_patch:
 	STMFD   SP!, {R4-R10,LR}
-	mov r4, #0
-	mcr p15, 0, r4, c7, c5, 0
+<<<<<<< HEAD:arm9/source/bios_patches.s
+	ldr r4,= gEmuSettingWramICache
+	ldr r4, [r4]
+	cmp r4, #0
+		movne r4, #0
+		mcrne p15, 0, r4, c7, c5, 0
 #ifdef ENABLE_HICODE
-	//unmap code
-	mcr	p15, 0, r4, c6, c3, 0
+		//unmap code
+		mcrne p15, 0, r4, c6, c3, 0
 #endif
 	//don't use the armv5 interworking!
 	ldr r4,= (gGbaBios + 0xBC8)
 	bx r4
 #endif
+
+.global bios_softResetPatch
+bios_softResetPatch:
+	//set the right protected bios opcode
+	ldr r0,= gBiosOp
+	ldr r1,= 0xE129F000
+	str r1, [r0]
+	mov r0, #0
+	mov r1, #0
+	bx lr
+
+.global bios_swiPatch
+bios_swiPatch:
+	ldr r11,= gBiosOp
+	ldr r12,= 0xE3A02004
+	str r12, [r11]
+	pop {r11, r12, lr}
+	movs pc, lr
+
+.pool

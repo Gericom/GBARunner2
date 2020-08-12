@@ -10,8 +10,17 @@ class NtftFont;
 
 class FileBrowser
 {
+	enum CoverLoadState : u16
+	{
+		COVER_LOAD_STATE_IDLE,
+		COVER_LOAD_STATE_OPEN,
+		COVER_LOAD_STATE_LOAD,
+		COVER_LOAD_STATE_COPY
+	};
+
 	int      _entryCount;
 	FILINFO  _entries[64];
+	u32 _ids[64];
 	FILINFO* _sortedEntries[64];
 
 	UIContext* _uiContext;
@@ -24,14 +33,16 @@ class FileBrowser
 	int _selectedEntry;
 
 	u16 _vramState;
+	CoverLoadState _coverLoadState;
+	u32 _gameId;
 
-	void LoadBios();
 	void LoadFolder(const char* path);
-	void CreateLoadSave(const char* path, const save_type_t* saveType);
-	void LoadGame(const char* path);
+	void LoadGame(const char* path);//, u32 id);
+	void UpdateCover();
+	void InvalidateCover();
 public:
 	FileBrowser(UIContext* uiContext)
-		: _uiContext(uiContext), _listRecycler(NULL), _adapter(NULL), _inputRepeater(0x3F3, 20, 8), _selectedEntry(0)
+		: _uiContext(uiContext), _listRecycler(NULL), _adapter(NULL), _inputRepeater(0x3F3, 20, 8), _selectedEntry(0), _coverLoadState(COVER_LOAD_STATE_IDLE)
 	{
 	}
 

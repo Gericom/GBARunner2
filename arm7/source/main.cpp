@@ -7,9 +7,27 @@
 #include "dldi_handler.h"
 #include "../../common/fifo.h"
 #include "../../common/common_defs.s"
+#include "rtc.h"
 
-static void vblank_handler()
+static bool sPrevTouchDown = false;
+
+extern "C" void __libnds_exit()
 {
+
+}
+
+extern "C" void irq_vblank()
+{
+	u16 keyXY = REG_KEYXY;
+	vram_cd->extKeys = ((keyXY & 3) << 10) | ((keyXY & 0xC0) << 6);
+	bool touchDown = (keyXY & (1 << 6)) == 0;
+	if(!sPrevTouchDown && touchDown)
+	{
+		//invoke irq on arm9
+		vram_cd->openMenuIrqFlag = 1;
+		REG_IPC_SYNC |= IPC_SYNC_IRQ_REQUEST;
+	}
+	sPrevTouchDown = touchDown;
 }
 
 extern "C" void my_irq_handler();
@@ -27,6 +45,14 @@ int main()
 	REG_IF = ~0;
 
 	*((vu32*)0x0380FFFC) = (vu32)&my_irq_handler;
+
+#if defined(USE_DSI_16MB)
+	//enable 16 MB mode
+	*((vu32*)0x04004008) = (*((vu32*)0x04004008) & ~(3 << 14)) | (2 << 14); 
+#elif defined(USE_3DS_32MB)
+	//enable 32 MB mode
+	*((vu32*)0x04004008) = (*((vu32*)0x04004008) & ~(3 << 14)) | (3 << 14); 
+#endif
 
 	REG_IME = 1;
 
@@ -54,7 +80,7 @@ int main()
 #ifdef ARM7_DLDI
 	while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
 	uint8_t* dldi_src = (uint8_t*)REG_RECV_FIFO;
-	memcpy((void*)0x03806800, dldi_src, 32 * 1024);
+	memcpy((void*)0x0380A800, dldi_src, 16 * 1024);
 	if(!dldi_handler_init())
 	{
 		REG_SEND_FIFO = 0x46494944;
@@ -69,6 +95,9 @@ int main()
 	gbs_init();
 	gba_save_init();
 
+	//set vblank irq
+	REG_DISPSTAT |= DISP_VBLANK_IRQ;
+	REG_IE |= IRQ_VBLANK;
 
 	//irqSet(IRQ_VBLANK, vblank_irq_handler);
 	//irqEnable(IRQ_VBLANK);
@@ -103,10 +132,10 @@ int main()
 	while (1)
 	{
 		while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
-		{
-			if (!(*((vu32*)0x04000136) & 1))
-				gba_sound_resync();
-		}
+		// {
+		// 	if (!(REG_KEYXY & 1))
+		// 		gba_sound_resync();
+		// }
 
 		u32 cmd = REG_RECV_FIFO;
 		//if((cmd >> 16) != 0xAA55)
@@ -186,13 +215,23 @@ int main()
 					}
 					break;
 				}
+			case 0xAA5500FF://set master volume
+				{
+					while (REG_FIFO_CNT & FIFO_CNT_EMPTY);
+					val = REG_RECV_FIFO;					
+					if(val & 0x80000000)
+						gba_sound_resync();
+					int volume = val & 0x7F;
+					REG_SOUNDCNT = (REG_SOUNDCNT & ~0x7F) | volume;
+					break;
+				}
 			case 0xAA550100: //get rtc data
 				{
 					u8 dateTime[8];
 					u8 cmd = READ_TIME_AND_DATE;
-					rtcTransaction(&cmd, 1, dateTime, 7);
+					rtc_doTransfer(&cmd, 1, dateTime, 7);
 					cmd = READ_STATUS_REG1;
-					rtcTransaction(&cmd, 1, &dateTime[7], 1);
+					rtc_doTransfer(&cmd, 1, &dateTime[7], 1);
 					REG_SEND_FIFO = *(u32*)&dateTime[0];
 					REG_SEND_FIFO = *(u32*)&dateTime[4];
 					break;

@@ -11,42 +11,12 @@
 #include "gui/UIContext.h"
 #include "gui/FileBrowser.h"
 #include "gui/SettingsScreen.h"
-#include "sd_access.h"
 #include "settings.h"
-#include "bios.h"
+#include "bios/bios.h"
 #include "crc16.h"
 #include "emu/romGpio.h"
-
-typedef enum KEYPAD_BITS
-{
-	KEY_A = BIT(0),
-	//!< Keypad A button.
-	KEY_B = BIT(1),
-	//!< Keypad B button.
-	KEY_SELECT = BIT(2),
-	//!< Keypad SELECT button.
-	KEY_START = BIT(3),
-	//!< Keypad START button.
-	KEY_RIGHT = BIT(4),
-	//!< Keypad RIGHT button.
-	KEY_LEFT = BIT(5),
-	//!< Keypad LEFT button.
-	KEY_UP = BIT(6),
-	//!< Keypad UP button.
-	KEY_DOWN = BIT(7),
-	//!< Keypad DOWN button.
-	KEY_R = BIT(8),
-	//!< Right shoulder button.g
-	KEY_L = BIT(9),
-	//!< Left shoulder button.
-	KEY_X = BIT(10),
-	//!< Keypad X button.
-	KEY_Y = BIT(11),
-	//!< Keypad Y button.
-	KEY_TOUCH = BIT(12),
-	//!< Touchscreen pendown.
-	KEY_LID = BIT(13) //!< Lid state.
-} KEYPAD_BITS;
+#include "gbaBoot.h"
+#include "sd_access.h"
 
 //#define DONT_CREATE_SAVE_FILES
 
@@ -70,11 +40,11 @@ extern "C" ITCM_CODE __attribute__ ((noinline)) void read_sd_sectors_safe(sec_t 
 //map cd to arm7
 //REG_VRAMCNT_CD = VRAM_CD_ARM7;
 	//REG_VRAMCNT_C = VRAM_C_ARM7;
-	dc_invalidate_range(buffer, numSectors * 512);
 	REG_SEND_FIFO = 0xAA5500DF;
 	REG_SEND_FIFO = sector;
 	REG_SEND_FIFO = numSectors;
 	REG_SEND_FIFO = (uint32_t)buffer;//arm7_address;
+	dc_invalidate_range(buffer, numSectors * 512);
 	//wait for response
 	do
 	{
@@ -119,7 +89,7 @@ extern "C" ITCM_CODE __attribute__((noinline)) void write_sd_sectors_safe(sec_t 
 }
 #endif
 
-PUT_IN_VRAM void initialize_cache()
+extern "C" PUT_IN_VRAM void initialize_cache()
 {
 	vram_cd->sd_info.access_counter = 0;
 	//--Issue #2--
@@ -166,7 +136,7 @@ PUT_IN_VRAM void initialize_cache()
 
 extern "C" PUT_IN_VRAM void sd_write_save()
 {
-	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) | 0x00800000);
+	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	if (!vramcd_uncached->save_work.save_enabled || vramcd_uncached->save_work.save_state != SAVE_WORK_STATE_SDSAVE)
 		return;
 	uint16_t crc = crc16(0xFFFF, vram_cd->save_work.save_fat_table, sizeof(vram_cd->save_work.save_fat_table));
@@ -190,16 +160,21 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 }
 
 //to be called after dldi has been initialized (with the appropriate init function)
-extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
+extern "C" PUT_IN_VRAM void sd_init()
 {
 	vramheap_init();
-    *(vu8*)0x04000243 = 0x84;
-	*(vu8*)0x04000249 = 0x00;
+	REG_DISPCNT = 0xA0000;
+    VRAM_D_CR = 0x84;
+	VRAM_I_CR = 0x00;
 	UIContext* uiContext = new UIContext();
 	uiContext->GetUIManager().Update();
 	while (*((vu16*)0x04000004) & 1);
 	while (!(*((vu16*)0x04000004) & 1));
 	uiContext->GetUIManager().VBlank();
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+	if(!*((vu32*)0x04004008))
+		uiContext->FatalError("SCFG Locked!");
+#endif
 	if (f_mount(&vram_cd->fatFs, "", 1) != FR_OK)
 		uiContext->FatalError("Couldn't mount sd card!");
 #ifndef ISNITRODEBUG
@@ -224,6 +199,19 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	settings_initialize();
 
 	int next = 0;
+
+	//argv boot
+	if(*(u32*)0x03000000 == 0x5f617267)
+	{
+		const char* argvPath = (const char*)0x03000004;
+		if(argvPath[2] == ':')
+			argvPath += 3;
+		else if(argvPath[3] == ':')
+			argvPath += 4;
+		if(gbab_loadRom(argvPath) == ROM_LOAD_RESULT_OK)
+			next = 2;
+	}
+	
 	while(true)
 	{
 		uiContext->ResetVram();
@@ -253,7 +241,7 @@ extern "C" PUT_IN_VRAM void sd_init(uint8_t* bios_dst)
 	vram_cd->sd_info.cluster_mask = (1 << vram_cd->sd_info.cluster_shift) - 1;
 	initialize_cache();
 	rio_init(RIO_NONE);
-	*(vu8*)0x04000243 = 0x80;
+	gbab_setupGfx();
 }
 
 //gets an empty one or wipes the oldest

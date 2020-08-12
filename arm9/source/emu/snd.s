@@ -12,7 +12,7 @@ write_address_snd_fifo_A:
 .global read_address_snd_32
 read_address_snd_32:
 	//store register value into shadow register
-	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	ldr r13,= (sound_sound_emu_work_uncached + 0x508 - 0x60) //uncached start of shadow registers - register base
 	and r12, r9, #0xFF
 	ldr r10, [r13, r12]
 	//todo: mask out the unreadable parts somehow
@@ -21,7 +21,7 @@ read_address_snd_32:
 .global read_address_snd_16
 read_address_snd_16:
 	//store register value into shadow register
-	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	ldr r13,= (sound_sound_emu_work_uncached + 0x508 - 0x60) //uncached start of shadow registers - register base
 	and r12, r9, #0xFF
 	ldrh r10, [r13, r12]
 	//todo: mask out the unreadable parts somehow
@@ -30,7 +30,7 @@ read_address_snd_16:
 .global read_address_snd_8
 read_address_snd_8:
 	//store register value into shadow register
-	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	ldr r13,= (sound_sound_emu_work_uncached + 0x508 - 0x60) //uncached start of shadow registers - register base
 	and r12, r9, #0xFF
 	ldrb r10, [r13, r12]
 	//todo: mask out the unreadable parts somehow
@@ -39,7 +39,7 @@ read_address_snd_8:
 .global write_address_snd_32
 write_address_snd_32:
 	//store register value into shadow register
-	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	ldr r13,= (sound_sound_emu_work_uncached + 0x508 - 0x60) //uncached start of shadow registers - register base
 	and r12, r9, #0xFF
 
 	//clear reset bit for NRx4 registers
@@ -68,7 +68,7 @@ write_address_snd_32:
 .global write_address_snd_16
 write_address_snd_16:
 	//store register value into shadow register
-	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	ldr r13,= (sound_sound_emu_work_uncached + 0x508 - 0x60) //uncached start of shadow registers - register base
 	and r12, r9, #0xFF
 
 	//clear reset bit for NRx4 registers
@@ -97,7 +97,7 @@ write_address_snd_16:
 .global write_address_snd_8
 write_address_snd_8:
 	//store register value into shadow register
-	ldr r13,= ((sound_sound_emu_work + 0x508 - 0x60) | 0x00800000) //uncached start of shadow registers - register base
+	ldr r13,= (sound_sound_emu_work_uncached + 0x508 - 0x60) //uncached start of shadow registers - register base
 	and r12, r9, #0xFF
 
 	//clear reset bit for NRx4 registers

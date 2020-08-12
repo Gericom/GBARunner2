@@ -214,6 +214,11 @@ irq_cont_handle_gba:
 	bic r2, #(1 << 16)
 	ldr r1,= pu_data_permissions
 	str r2, [r12, #0x210]
+
+	ldr r0,= gBiosOp
+	ldr r2,= 0xE25EF004
+	str r2, [r0]
+
 	mcr p15, 0, r1, c5, c0, 2
 
 	ADR     LR, loc_138
@@ -227,12 +232,22 @@ loc_138:
 	ldr r2,= pu_data_permissions
 	orr r1, #(1 << 16)
 	str r1, [r12, #0x210]
+
+	ldr r0,= gBiosOp
+	ldr r1,= 0xE55EC002
+	str r1, [r0]
+
 	mcr p15, 0, r2, c5, c0, 2
 
 	LDMFD   SP!, {R0-R3,R12,LR}
 	SUBS    PC, LR, #4
 
 irq_handler_arm7_irq:
+	ldr r12,= open_menu_irq_flag_uncached
+	ldr r12, [r12]
+	cmp r12, #1
+	beq openMenuIrq
+
 	ldr r12,= save_save_work_state_uncached
 	ldrb r12, [r12]
 	cmp r12, #3 //sdsave request
@@ -272,15 +287,16 @@ irq_handler_arm7_irq:
 
 	ldrb r2, [r12, #2] //req_write_ptr
 	ldrb r3, [r12, #3] //req_read_ptr
-	mov r12, #0x04000000
 	cmp r2, r3
 		bne 5f //request queue not empty, don't clear irq
 
 4:
+	mov r12, #0x04000000
 	mov r1, #(1 << 16)
 	str r1, [r12, #0x214]
 
 5:
+	mov r12, #0x04000000
 	ldr r3, [r12, #0x210]
 
 	ldr r2,= fake_irq_flags
@@ -338,6 +354,61 @@ sdsave_request:
 	blx r12
 	b finish_nohandle
 
+oldStack:
+	.word 0
+
+openMenuIrq:
+	str sp, oldStack
+	ldr sp,= address_dtcm + (16 * 1024)
+	ldr r12,= igm_execute
+	blx r12
+	ldr sp, oldStack
+
+	mov r12, #0x04000000
+	mov r1, #(1 << 16)
+	str r1, [r12, #0x214]
+	
+	cmp r0, #1
+	bne finish_nohandle
+
+	bl dc_wait_write_buffer_empty
+	bl dc_flush_all
+	bl ic_invalidateAll
+
+	mov r12, #0x04000000
+	str r12, [r12, #0x208]
+	msr cpsr_fc, #0x9f
+
+	ldr r2,= gEmuSettingSkipIntro
+	ldr r2, [r2]
+	cmp r2, #1
+	ldrne r12,= swi_hardReset //with intro
+	ldreq r12,= swi_softReset //without intro
+
+	ldr r2,= pu_data_permissions
+	mcr p15, 0, r2, c5, c0, 2
+
+	mov r2, #0x04000000
+	//disable dma
+	strh r2, [r2, #0xBA]
+	strh r2, [r2, #0xC6]
+	strh r2, [r2, #0xD2]
+	strh r2, [r2, #0xDE]
+	//disable sound
+	strh r2, [r2, #0x82]
+	//disable timers
+	add r3, r2, #0x100
+	strh r2, [r2, #0x2]
+	strh r2, [r2, #0x6]
+	strh r2, [r2, #0xA]
+	strh r2, [r2, #0xE]
+	//disable all irqs and reset irq flags
+	add r3, r2, #0x200
+	strh r2, [r3]
+	strh r2, [r3, #2]
+
+	bx r12
+
 cap_control:
 	eor r1, #0x00010000
 	tst r1, #0x00010000
@@ -347,6 +418,9 @@ cap_control:
 	mov r2, #0x84
 	strneb r2, [r12, #0x242]
 	streqb r2, [r12, #0x243]
+	movne r2, #0x00
+	moveq r2, #0x81
+	strb r2, [r12, #0x249]
 	orr r1, #0x80000000
 	str r1, [r12, #0x64]
 
@@ -370,6 +444,7 @@ cap_control:
 	mov r3, r1, lsr #3
 	mov r3, r3, lsl #5
 	add r3, r3, r0, lsr #3
+	add r3, #512
 	orr r3, #0xF000 //fully visible
 	strh r3, [r2], #4
 

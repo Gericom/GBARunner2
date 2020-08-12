@@ -79,6 +79,8 @@ typedef struct
 	sd_info_t sd_info;
 	sound_emu_work_t sound_emu_work;
 	save_work_t save_work;
+	vu32 openMenuIrqFlag;
+	vu16 extKeys;
 	u8 tmpSector[512] __attribute__((aligned(32)));
 	FATFS fatFs;
 	FIL fil;

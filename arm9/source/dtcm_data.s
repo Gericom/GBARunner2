@@ -1,4 +1,4 @@
-.section .dtcm2
+.section ".dtcm2","ax"
 .altmacro
 
 #include "consts.s"
@@ -17,7 +17,15 @@ cpu_mode_switch_dtcm:
 .global dbgDatarightsTmp
 dbgDatarightsTmp:
 	.word 0
-.rept 11
+ //for arml_instLdrhStrh
+	.word 0x000F000F //0x50
+	.word 0xE0800000 //0x54
+	.word 0xE0400000 //0x58
+	.word 0xE0809000 //0x5C
+	.word 0xE0409000 //0x60
+//for arml_instLdrStr	
+	.word 0x000F0FFF //0x64
+.rept 5
 	.word 0
 .endr
 	.word data_abort_handler_arm_usr_sys //usr
@@ -78,6 +86,7 @@ thumb_table:
 	.word thumb10_address_calc_1
 	.word thumb10_address_calc_1
 	.word thumb10_address_calc_1
+	//this may not be right, isn't this thumb11?
 	.word thumb10_address_calc_0
 	.word thumb10_address_calc_0
 	.word thumb10_address_calc_0
@@ -300,6 +309,15 @@ timer_shadow_regs_dtcm:
 	.short 0 //reload value
 .endr
 
+//the current bios opcode that is returned if you do a protected read
+//[00DCh+8] = 0xE129F000, after startup and softreset //before this address 0x27C is read
+//[0134h+8] = 0xE25EF004, during irq execution
+//[013Ch+8] = 0xE55EC002, after irq execution
+//[0188h+8] = 0xE3A02004, after swi execution; reads between 0x1C8 and 0x274
+.global gBiosOp
+gBiosOp:
+.word 0xE3A02004
+
 //for some reason the file is ignored without this nop here
-nop
-nop
+@ nop
+@ nop

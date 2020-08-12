@@ -37,12 +37,13 @@ data_abort_handler_thumb:
 	ldrh r10, [r11, #-8]
 	//todo: fill up this interlock
 #ifdef ENABLE_HICODE
-	cmp r11, #0x08000000
-		bge data_abort_handler_thumb_load_from_cache
+	sub r11, #0x08000000
+	cmp r11, #0x02000000
+		blo data_abort_handler_thumb_load_from_cache
 data_abort_handler_thumb_cont:
 #endif
-	add r12, r12, #(address_thumb_table_dtcm - reg_table)
-	ldr pc, [r12, r10, lsr #7] //todo: this construct actually involves an interlock!
+	add r13, r12, #(address_thumb_table_dtcm - reg_table)
+	ldr pc, [r13, r10, lsr #7] //todo: this construct actually involves an interlock!
 
 #ifdef ENABLE_HICODE
 data_abort_handler_thumb_load_from_cache:
@@ -195,8 +196,9 @@ abt_handleArm_load_from_cache:
 abt_handleArm:
 	ldr r10, [r11, #-8]
 #ifdef ENABLE_HICODE
-	cmp r11, #0x08000000
-		bge abt_handleArm_load_from_cache
+	sub r11, #0x08000000
+	cmp r11, #0x02000000
+		blo abt_handleArm_load_from_cache
 abt_handleArm_cont:
 #endif
 	ldr r14, [r12, #0x48] //0x08088008
