@@ -161,7 +161,7 @@ void gptc_patchRom()
 		//Dragon Ball Z - Buu's Fury (USA)
 		//Fix "game will not run on this hardware" error
 		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B66) == 0x7032)
-			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B66) = 0
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B66) = 0;
 
 		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B6A) == 0x7072)
 			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B6A) = 0;
