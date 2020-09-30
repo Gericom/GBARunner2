@@ -23,9 +23,10 @@
 static PUT_IN_VRAM settings_item_t sEmulationItems[] =
 {    
     //{ SETTINGS_ITEM_MODE_CHECK, "Enable autosaving", "Writes back the save to sd after a game saves", NULL, &gEmuSettingAutoSave },
-	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", NULL, &gEmuSettingMainMemICache },    
+	{ SETTINGS_ITEM_MODE_CHECK, "Enable DS main memory i-cache", "Boosts speed, but causes timing bugs in a few games", NULL, &gEmuSettingMainMemICache },
 	{ SETTINGS_ITEM_MODE_CHECK, "Enable wram i-cache", "Boosts speed, but some games may crash", NULL, &gEmuSettingWramICache },
-    { SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", NULL, &gEmuSettingSkipIntro }
+	{ SETTINGS_ITEM_MODE_CHECK, "Skip bios intro", "Directly boot the game without playing the intro", NULL, &gEmuSettingSkipIntro },
+	{ SETTINGS_ITEM_MODE_CHECK, "Use saves directory", "Store save files in saves subdirectory (like TWiLightMenu++)", NULL, &gEmuSettingUseSavesDir },
 };
 
 static PUT_IN_VRAM settings_item_t sDisplayItems[] =

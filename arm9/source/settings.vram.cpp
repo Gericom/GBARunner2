@@ -18,6 +18,9 @@ u32 gEmuSettingUseBottomScreen;
 static const char* sEmuSettingAutoSaveName = "autoSave";
 u32 gEmuSettingAutoSave;
 
+static const char* sEmuSettingUseSavesDir = "useSavesDir";
+u32 gEmuSettingUseSavesDir;
+
 static const char* sEmuSettingFrameName = "frame";
 u32 gEmuSettingFrame;
 
@@ -50,6 +53,7 @@ static void loadDefaultSettings()
 {
     gEmuSettingUseBottomScreen = false;
     gEmuSettingAutoSave = true;
+    gEmuSettingUseSavesDir = false;
     gEmuSettingFrame = true;
     gEmuSettingCenterMask = true;
     gEmuSettingMainMemICache = true;
@@ -93,6 +97,8 @@ static void iniPropertyCallback(void* arg, const char* section, const char* key,
             gEmuSettingUseBottomScreen = parseBoolean(value, false);
         else if(!strcmp(key, sEmuSettingAutoSaveName))
             gEmuSettingAutoSave = parseBoolean(value, true);
+        else if(!strcmp(key, sEmuSettingUseSavesDir))
+            gEmuSettingUseSavesDir = parseBoolean(value, false);
         else if(!strcmp(key, sEmuSettingFrameName))
             gEmuSettingFrame = parseBoolean(value, true);
         else if(!strcmp(key, sEmuSettingCenterMaskName))
@@ -140,6 +146,7 @@ bool settings_save()
     writer.WriteSection(sEmulationSectionName);
     writer.WriteBooleanProperty(sEmuSettingUseBottomScreenName, gEmuSettingUseBottomScreen);
     //writer.WriteBooleanProperty(sEmuSettingAutoSaveName, gEmuSettingAutoSave);
+    writer.WriteBooleanProperty(sEmuSettingUseSavesDir, gEmuSettingUseSavesDir);
     writer.WriteBooleanProperty(sEmuSettingFrameName, gEmuSettingFrame);
     writer.WriteBooleanProperty(sEmuSettingCenterMaskName, gEmuSettingCenterMask);
     writer.WriteBooleanProperty(sEmuSettingMainMemICacheName, gEmuSettingMainMemICache);

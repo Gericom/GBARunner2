@@ -214,6 +214,14 @@ RomLoadResult gbab_loadRom(const char* path)
     u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);
     gbab_loadFrame(gameCode);
 
+    if (gEmuSettingUseSavesDir)
+		if (f_chdir("saves") != FR_OK) {
+			if (f_mkdir("saves") != FR_OK)
+				return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
+			if (f_chdir("saves") != FR_OK)
+				return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
+		}
+
     char nameBuf[256];
 	for (int i = 0; i < 256; i++)
 	{
@@ -229,5 +237,9 @@ RomLoadResult gbab_loadRom(const char* path)
 	long_name_ptr[3] = 'v';
 	long_name_ptr[4] = '\0';
 
-    return createLoadSave(nameBuf, saveType);
+    RomLoadResult result = createLoadSave(nameBuf, saveType);
+
+    if (gEmuSettingUseSavesDir) f_chdir("..");
+
+    return result;
 }
