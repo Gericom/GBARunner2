@@ -214,14 +214,6 @@ RomLoadResult gbab_loadRom(const char* path)
     u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);
     gbab_loadFrame(gameCode);
 
-    if (gEmuSettingUseSavesDir)
-		if (f_chdir("saves") != FR_OK) {
-			if (f_mkdir("saves") != FR_OK)
-				return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
-			if (f_chdir("saves") != FR_OK)
-				return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
-		}
-
     char nameBuf[256];
 	for (int i = 0; i < 256; i++)
 	{
@@ -231,13 +223,36 @@ RomLoadResult gbab_loadRom(const char* path)
 			break;
 	}
 
-	char* long_name_ptr = strrchr(nameBuf, '.');
+    char* filename = &nameBuf[0];
+
+    if (gEmuSettingUseSavesDir) {
+        // enter the directory of the game,
+        // and then the saves directory
+        char* end_directory = strrchr(filename, '/');
+        if (end_directory == NULL)
+            end_directory = strrchr(filename, '\\');
+        if (end_directory != NULL) {
+            end_directory[0] = '\0';
+            if (f_chdir(filename) != FR_OK)
+                return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
+            filename = end_directory+1;
+        }
+
+        if (f_chdir("saves") != FR_OK) {
+            if (f_mkdir("saves") != FR_OK)
+                return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
+            if (f_chdir("saves") != FR_OK)
+                return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
+        }
+    }
+
+    char* long_name_ptr = strrchr(filename, '.');
 	long_name_ptr[1] = 's';
 	long_name_ptr[2] = 'a';
 	long_name_ptr[3] = 'v';
 	long_name_ptr[4] = '\0';
 
-    RomLoadResult result = createLoadSave(nameBuf, saveType);
+    RomLoadResult result = createLoadSave(filename, saveType);
 
     if (gEmuSettingUseSavesDir) f_chdir("..");
 
