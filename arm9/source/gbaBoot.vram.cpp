@@ -146,6 +146,9 @@ static RomLoadResult createLoadSave(const char* path, const save_type_t* saveTyp
 			return ROM_LOAD_RESULT_SAVE_CREATE_ERR;
 #endif
 	}
+#ifndef ISNITRODEBUG
+	else f_touch(path);
+#endif
 
 	if (saveType && (saveType->type & SAVE_TYPE_TYPE_MASK) == SAVE_TYPE_EEPROM && vram_cd->fil.obj.objsize == 512)
 		vram_cd->save_work.saveSize = 512;
