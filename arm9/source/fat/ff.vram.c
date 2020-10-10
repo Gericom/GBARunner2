@@ -248,6 +248,44 @@
 #endif
 #define GET_FATTIME()	((DWORD)(FF_NORTC_YEAR - 1980) << 25 | (DWORD)FF_NORTC_MON << 21 | (DWORD)FF_NORTC_MDAY << 16)
 #else
+
+DWORD get_fattime() {
+	uint8_t sRtcDateTime[8];
+
+	(*((volatile uint32_t*)0x04000188)) = 0xAA550100;
+	while (*((volatile uint32_t*)0x04000184) & (1 << 8));
+	*(uint32_t*)&sRtcDateTime[0] = (*((volatile uint32_t*)0x04100000));
+	while (*((volatile uint32_t*)0x04000184) & (1 << 8));
+	*(uint32_t*)&sRtcDateTime[4] = (*((volatile uint32_t*)0x04100000));
+
+	// RTC contents:
+	// year from 2000, month 1 to 12, day 1 to X, weekday,
+	// hour 0-11 and 52-63, minute, second, status bit
+
+	// ignore upper bits from 24 hour mode
+	sRtcDateTime[4] = sRtcDateTime[4] & 0x3f;
+
+	// convert decimal-looking hex to actual hex
+	for (uint8_t i = 0; i < 7; i++)
+		sRtcDateTime[i] = 10*((sRtcDateTime[i] & 0xf0) >> 4)
+			+ (sRtcDateTime[i] & 0x0f);
+
+	// convert DS year (starting 2000) to FAT year (starting 1980)
+	sRtcDateTime[0] += 20;
+
+	// validity checks; return low integer for error cases.
+	if (sRtcDateTime[0] > 127) return 0;
+	if ((sRtcDateTime[1] == 0) || (sRtcDateTime[1] > 12)) return 1;
+	if ((sRtcDateTime[2] == 0) || (sRtcDateTime[2] > 31)) return 2;
+	if (sRtcDateTime[4] > 23) return 3;
+	if (sRtcDateTime[5] > 60) return 4;
+	if (sRtcDateTime[6] > 62) return 5; // allow leap seconds :)
+
+	// cram all these numbers into 32 bits
+	return (sRtcDateTime[0] << 25) | (sRtcDateTime[1] << 21)
+		| (sRtcDateTime[2] << 16) | (sRtcDateTime[4] << 11)
+		| (sRtcDateTime[5] << 5) | (sRtcDateTime[6] >> 1);
+}
 #define GET_FATTIME()	get_fattime()
 #endif
 
@@ -5083,7 +5121,8 @@ FRESULT f_rename (
 
 
 
-#if FF_USE_CHMOD && !FF_FS_READONLY
+#if !FF_FS_READONLY
+#if FF_USE_CHMOD
 /*-----------------------------------------------------------------------*/
 /* Change Attribute                                                      */
 /*-----------------------------------------------------------------------*/
@@ -5128,6 +5167,7 @@ FRESULT f_chmod (
 	LEAVE_FF(fs, res);
 }
 
+#endif	/* FF_USE_CHMOD */
 
 
 
@@ -5173,7 +5213,48 @@ FRESULT f_utime (
 	LEAVE_FF(fs, res);
 }
 
-#endif	/* FF_USE_CHMOD && !FF_FS_READONLY */
+/*-----------------------------------------------------------------------*/
+/* Touch file                                                            */
+/*-----------------------------------------------------------------------*/
+
+FRESULT f_touch (
+	const TCHAR* path	/* Pointer to the file/directory name */
+)
+{
+	FRESULT res;
+	DIR dj;
+	FATFS *fs;
+	DEF_NAMBUF
+
+
+	res = find_volume(&path, &fs, FA_WRITE);	/* Get logical drive */
+	if (res == FR_OK) {
+		dj.obj.fs = fs;
+		INIT_NAMBUF(fs);
+		res = follow_path(&dj, path);	/* Follow the file path */
+		if (res == FR_OK && (dj.fn[NSFLAG] & (NS_DOT | NS_NONAME))) res = FR_INVALID_NAME;	/* Check object validity */
+		if (res == FR_OK) {
+#if FF_FS_EXFAT
+			if (fs->fs_type == FS_EXFAT) {
+				st_dword(fs->dirbuf + XDIR_ModTime, GET_FATTIME());
+				res = store_xdir(&dj);
+			} else
+#endif
+			{
+				st_dword(dj.dir + DIR_ModTime, GET_FATTIME());
+				fs->wflag = 1;
+			}
+			if (res == FR_OK) {
+				res = sync_fs(fs);
+			}
+		}
+		FREE_NAMBUF();
+	}
+
+	LEAVE_FF(fs, res);
+}
+
+#endif  /* !FF_FS_READONLY */
 
 
 

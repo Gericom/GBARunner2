@@ -2,6 +2,7 @@
 
 extern u32 gEmuSettingUseBottomScreen;
 //extern u32 gEmuSettingAutoSave;
+extern u32 gEmuSettingUseSavesDir;
 extern u32 gEmuSettingCenterMask;
 extern u32 gEmuSettingFrame;
 extern u32 gEmuSettingMainMemICache;
