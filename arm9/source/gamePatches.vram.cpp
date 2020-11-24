@@ -175,6 +175,25 @@ void gptc_patchRom()
 		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B90) == 0x7071)
 			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8B90) = 0;
 	}
+	else if(gameCode == 0x45465542)
+	{
+		//2 Games in 1 - Dragon Ball Z - Buu's Fury & Dragon Ball GT - Transformation (USA)
+		//DBZ BF: Fix "game will not run on this hardware" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B66) == 0x7032)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B66) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B6A) == 0x7072)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B6A) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B86) == 0x7008)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B86) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B8C) == 0x7031)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B8C) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B90) == 0x7071)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x38B90) = 0;
+	}
 	else if(gameCode == 0x504A4142 || gameCode == 0x454A4142)
 	{
 		//Banjo-Pilot (Europe) (En,Fr,De,Es,It) and Banjo-Pilot (USA)
@@ -256,6 +275,71 @@ void gptc_patchRom()
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x140) = (u32)&gptc_americanBassFix + 1;
 	}
 #if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+	else if(gameCode == 0x45464C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku II (USA)
+		//Fix "game will not run on the hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8E9E) == 0x1102)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8E9E) = 0x1001;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8EAE) == 0x0003)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8EAE) = 0;
+	}
+	else if(gameCode == 0x4A464C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku II International (Japan)
+		//Fix "game will not run on the hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC8F6) == 0x1102)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC8F6) = 0x1001;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC906) == 0x0003)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC906) = 0;
+	}
+	else if(gameCode == 0x50464C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku II (Europe)
+		//Fix "game will not run on the hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42B2) == 0x1102)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42B2) = 0x1001;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42C2) == 0x0003)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42C2) = 0;
+	}
+	else if(gameCode == 0x45464C42)
+	{
+		//2 Games in 1 - Dragon Ball Z - The Legacy of Goku I & II (USA)
+		//LoG1: Fix "game cannot be played on hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x40356) == 0x7002)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x40356) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4035E) == 0x7043)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4035E) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4037E) == 0x7001)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4037E) = 0;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x40382) == 0x7041)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x40382) = 0;
+
+		//Do we need this?
+		/*if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4E316) == 0xB0A2)
+		{
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4E316) = 0x400;
+
+			for(int i = 0; i < sizeof(sDbzLoGUPatch1); i += 4)
+				*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x4E318 + i) = *(u32*)&sDbzLoGUPatch1[i];
+
+			for(int i = 0; i < sizeof(sDbzLoGUPatch2); i += 4)
+				*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x????? + i) = *(u32*)&sDbzLoGUPatch2[i];
+		}*/
+
+		//LoG2: Fix "game will not run on the hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xBB9016) == 0x1102)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xBB9016) = 0x1001;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xBB9026) == 0x0003)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xBB9026) = 0;
+	}
 	//These games all have the same problem (same code)
 	//They uses abort mode for some things, idk why, but make it use undefined mode instead because abt mode is sacred in gbarunner2
 	//Yet to do:
