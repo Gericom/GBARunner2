@@ -256,6 +256,36 @@ void gptc_patchRom()
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x140) = (u32)&gptc_americanBassFix + 1;
 	}
 #if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+	else if(gameCode == 0x45464C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku II (USA)
+		//Fix "game will not run on the hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8E9E) == 0x1102)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8E9E) = 0x1001;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8EAE) == 0x0003)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3B8EAE) = 0;
+	}
+	else if(gameCode == 0x4A464C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku II International (Japan)
+		//Fix "game will not run on the hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC8F6) == 0x1102)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC8F6) = 0x1001;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC906) == 0x0003)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3FC906) = 0;
+	}
+	else if(gameCode == 0x50464C41)
+	{
+		//Dragon Ball Z - The Legacy of Goku II (Europe)
+		//Fix "game will not run on the hardware found" error
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42B2) == 0x1102)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42B2) = 0x1001;
+
+		if (*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42C2) == 0x0003)
+			*(u16*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x6F42C2) = 0;
+	}
 	//These games all have the same problem (same code)
 	//They uses abort mode for some things, idk why, but make it use undefined mode instead because abt mode is sacred in gbarunner2
 	//Yet to do:
