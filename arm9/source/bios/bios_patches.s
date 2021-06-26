@@ -102,3 +102,13 @@ bios_softResetPatch:
 	mov r0, #0
 	mov r1, #0
 	bx lr
+
+.global bios_swiPatch
+bios_swiPatch:
+	ldr r11,= gBiosOp
+	ldr r12,= 0xE3A02004
+	str r12, [r11]
+	pop {r11, r12, lr}
+	movs pc, lr
+
+.pool

@@ -10,13 +10,18 @@
 #include "Toolbar.h"
 #include "UIContext.h"
 
+class SettingsScreen;
+
 struct settings_item_t
 {
     SettingsItemMode mode;
     const char* title;
     const char* subTitle;
+	const char** enumValueNames;
 	u32* pValue;
 };
+
+typedef void (*item_activate_callback_t)(SettingsScreen* settingsScreen);
 
 struct settings_category_t
 {
@@ -24,6 +29,7 @@ struct settings_category_t
 	SettingsCategoryListAdapter::CategoryIcon icon;
 	int itemCount;
 	settings_item_t* items;
+	item_activate_callback_t activateCallback;
 };
 
 class SettingsScreen
@@ -42,7 +48,13 @@ class SettingsScreen
 	const settings_category_t* _selectedCategory;
 
 	void GotoCategory(const settings_category_t* category);
+	void ButtonMapCallback();
 public:
+	static void ButtonMapCallback(SettingsScreen* settingsScreen)
+	{
+		settingsScreen->ButtonMapCallback();
+	}
+
 	SettingsScreen(UIContext* uiContext)
         : _uiContext(uiContext), _listRecycler(NULL), _adapter(NULL), _inputRepeater(0x3F3, 20, 8), _selectedEntry(0)
 	{

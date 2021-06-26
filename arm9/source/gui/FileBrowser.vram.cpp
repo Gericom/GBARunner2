@@ -216,8 +216,8 @@ int FileBrowser::Run()
 	LoadFolder(".");
 	while (1)
 	{		
-		_inputRepeater.Update(~*((vu16*)0x04000130));
-		if (_inputRepeater.GetTriggeredKeys() & (1 << 6))
+		_inputRepeater.Update(~keys_read());
+		if (_inputRepeater.GetTriggeredKeys() & KEY_UP)
 		{
 			if (_selectedEntry > 0)
 			{
@@ -225,7 +225,7 @@ int FileBrowser::Run()
 				InvalidateCover();
 			}
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & (1 << 7))
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_DOWN)
 		{
 			if (_selectedEntry < _entryCount - 1)
 			{
@@ -233,7 +233,7 @@ int FileBrowser::Run()
 				InvalidateCover();
 			}
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & 1)
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_A)
 		{
 			if (_sortedEntries[_selectedEntry]->fattrib & AM_DIR)
 			{
@@ -246,12 +246,12 @@ int FileBrowser::Run()
 				break;
 			}
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & 2)
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_B)
 		{
 			f_chdir("..");
 			LoadFolder(".");
 		}
-		else if (_inputRepeater.GetTriggeredKeys() & (1 << 8))
+		else if (_inputRepeater.GetTriggeredKeys() & KEY_R)
 		{
 			next = 1;
 			break;

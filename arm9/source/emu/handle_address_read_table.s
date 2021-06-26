@@ -75,7 +75,7 @@ address_read_table_32bit:
 .word read_address_undefined_memory_32
 .endr
 //0x04000130
-.word read_address_nomod_32
+.word inp_readGbaKeyinput32
 //0x04000134-0x040001FC
 .rept 51
 .word read_address_ignore
@@ -254,7 +254,7 @@ address_read_table_16bit:
 .word read_address_ignore
 .endr
 //0x04000130
-.word read_address_nomod_16
+.word inp_readGbaKeyinput16
 //0x04000132
 .word read_address_nomod_16
 //0x04000134-0x040001FE
@@ -339,9 +339,9 @@ address_read_table_8bit:
 .word read_address_ignore
 .endr
 //0x04000130
-.word read_address_nomod_8
+.word inp_readGbaKeyinput8lo
 //0x04000131
-.word read_address_nomod_8
+.word inp_readGbaKeyinput8hi
 //0x04000132
 .word read_address_nomod_8
 //0x04000133

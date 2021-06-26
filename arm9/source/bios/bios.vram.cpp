@@ -7,6 +7,7 @@
 extern "C" void bios_cpuset_cache_patch();
 extern "C" void bios_cpufastset_cache_patch();
 extern "C" void bios_softResetPatch();
+extern "C" void bios_swiPatch();
 
 /**
  * \brief Relocates the gba bios so it can be executed from vram
@@ -84,6 +85,7 @@ static void applyRelocation()
 	//*(vu32*)0x01000000 = 0x00000000;// 0xEAFFFFFE; //b .
 	//*(vu32*)0x01000008 = 0xEAFFFFFE;
 	*(vu32*)0x01000008 = 0xE3A0F51A; //mov pc, #bios_swiVeneer
+	*(vu32*)0x06800000 = pcu_makeArmBranch(0x06800000, (u32)&gGbaBios[0x140 >> 2]);
 }
 
 /**
@@ -93,6 +95,9 @@ static void applyPatches()
 {
 	//patch for having the right protected op at boot
 	gGbaBios[0xDC >> 2] = pcu_makeArmBranch((u32)&gGbaBios[0xDC >> 2], (u32)&bios_softResetPatch);
+
+	//patch for having the right protected op after swi
+	gGbaBios[0x184 >> 2] = pcu_makeArmBranch((u32)&gGbaBios[0x184 >> 2], (u32)&bios_swiPatch);
 
 	//fix post boot redirect
 	//todo: maybe I should correctly implement that register instead
@@ -125,8 +130,13 @@ BiosLoadResult bios_load()
 		result = f_open(&vram_cd->fil, "0:/gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
 	if (result != FR_OK)
 		result = f_open(&vram_cd->fil, "0:/_gba/bios.bin", FA_OPEN_EXISTING | FA_READ);
+	// if (result != FR_OK)
+	// 	return BIOS_LOAD_RESULT_NOT_FOUND;
 	if (result != FR_OK)
-		return BIOS_LOAD_RESULT_NOT_FOUND;
+	{
+		*(vu32*)0x01000008 = 0xE3A0F51A; //mov pc, #bios_swiVeneer
+		return BIOS_LOAD_RESULT_OK;
+	}
 	if (vram_cd->fil.obj.objsize != BIOS_SIZE)
 	{
 		f_close(&vram_cd->fil);
