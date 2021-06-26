@@ -42,6 +42,7 @@ void gptc_patchRom()
 	}
 
 	u32 gameCode = *(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xAC);
+	u32 gameVersion = *(u8*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xBC);
 	if(gameCode == 0x45474C41)
 	{
 		//Dragon Ball Z - The Legacy of Goku (USA)
@@ -258,10 +259,6 @@ void gptc_patchRom()
 #if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
 	//These games all have the same problem (same code)
 	//They uses abort mode for some things, idk why, but make it use undefined mode instead because abt mode is sacred in gbarunner2
-	//Yet to do:
-	//	- 2 Games in 1 - Bionicle + Knights' Kingdom
-	//	- Lego Bionicle - Maze of Shadows
-	//	- Medal of Honor - Infiltrator [UE]
 	//Maybe there are more?
 	else if(gameCode == 0x504E4B42 || gameCode == 0x454E4B42)
 	{
@@ -269,6 +266,13 @@ void gptc_patchRom()
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xD0) = 0xE3A0001B;
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3ECB48) = 0xE3A0001B;
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3ECB84) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x50354C42)
+	{
+		//2 Games in 1 - Bionicle + Knights' Kingdom
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x8000D0) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xBECB48) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xBECB84) = 0xE3A0009B;
 	}
 	else if(gameCode == 0x58574142)
 	{
@@ -283,6 +287,41 @@ void gptc_patchRom()
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x11C) = 0xE3A0001B;
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3D73C0) = 0xE3A0001B;
 		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x3D73FC) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x454C4942)
+	{
+		//Bionicle - Maze of Shadows (USA)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x11C) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7E4B78) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7E4BB4) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x504C4942 && gameVersion == 0x00)
+	{
+		//Bionicle - Maze of Shadows (Europe)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x11C) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7E43F8) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7E4434) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x504C4942 && gameVersion == 0x01)
+	{
+		//Bionicle - Maze of Shadows (Europe) (Rev 1)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x11C) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7E4938) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0x7E4974) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x45484D42)
+	{
+		//Medal of Honor - Infiltrator (USA, Europe)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xD4) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xF01D58) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xF01D94) = 0xE3A0009B;
+	}
+	else if(gameCode == 0x4A484D42)
+	{
+		//Medal of Honor Advance (Japan)
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xD4) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xF18B54) = 0xE3A0001B;
+		*(u32*)(MAIN_MEMORY_ADDRESS_ROM_DATA + 0xF18B90) = 0xE3A0009B;
 	}
 #endif
 	/*else if(gameCode == 0x45573241 || gameCode == 0x50573241)
