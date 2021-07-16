@@ -168,28 +168,28 @@ $(ARM9ELF)	:	$(OFILES)
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+	arm-none-eabi-objcopy --rename-section .rodata=.vram $(@)
 
 #---------------------------------------------------------------------------------
 %.nbfc.o	:	%.nbfc
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+	arm-none-eabi-objcopy --rename-section .rodata=.vram $(@)
 
 #---------------------------------------------------------------------------------
 %.nbfs.o	:	%.nbfs
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+	arm-none-eabi-objcopy --rename-section .rodata=.vram $(@)
 
 #---------------------------------------------------------------------------------
 %.nbfp.o	:	%.nbfp
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+	arm-none-eabi-objcopy --rename-section .rodata=.vram $(@)
 
 -include $(DEPSDIR)/*.d
  
