@@ -15,9 +15,10 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/emu source/gui source/gui/core source/fat source/save source/bios
+SOURCES		:=	source source/emu source/gui source/gui/core source/fat source/save source/bios source/dsp
 INCLUDES	:=	include source
 DATA		:=	data
+DSPBINS		:= ../dsp
 
 
 #---------------------------------------------------------------------------------
@@ -108,12 +109,14 @@ export ARM9ELF	:=	$(CURDIR)/$(TARGET).elf
 export DEPSDIR := $(CURDIR)/$(BUILD)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-					$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+					$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
+					$(foreach dir,$(DSPBINS),$(CURDIR)/$(dir))
  
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+CDCFILES	:=	$(foreach dir,$(DSPBINS),$(notdir $(wildcard $(dir)/*.cdc)))
  
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -129,7 +132,7 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
+export OFILES	:=	$(addsuffix .o,$(BINFILES)) $(addsuffix .o,$(CDCFILES)) \
 					$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
  
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
@@ -164,32 +167,35 @@ $(ARM9ELF)	:	$(OFILES)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data 
 #---------------------------------------------------------------------------------
+
+%.cdc.o : %.cdc
+	@echo $(notdir $<)
+	@$(bin2o)
+	arm-none-eabi-objcopy --rename-section .rodata=.text $(@)
+
 %.ntft.o	:	%.ntft
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
 
 #---------------------------------------------------------------------------------
 %.nbfc.o	:	%.nbfc
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
 
 #---------------------------------------------------------------------------------
 %.nbfs.o	:	%.nbfs
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
 
 #---------------------------------------------------------------------------------
 %.nbfp.o	:	%.nbfp
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-	arm-none-eabi-objcopy.exe --rename-section .rodata=.vram $(@)
+
 
 -include $(DEPSDIR)/*.d
  

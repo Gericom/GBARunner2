@@ -81,6 +81,13 @@ typedef struct
 	save_work_t save_work;
 	vu32 openMenuIrqFlag;
 	vu16 extKeys;
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+	volatile u8 gbaDsndChanIrqFlags[2];
+	gba_dsnd_channel_t gbaDsndChans[2] __attribute__((aligned(32)));
+#endif
+#ifdef USE_MP2000_PATCH
+	u8 mp2000SoundArea[8192] __attribute__((aligned(32)));
+#endif
 	u8 tmpSector[512] __attribute__((aligned(32)));
 	FATFS fatFs;
 	FIL fil;

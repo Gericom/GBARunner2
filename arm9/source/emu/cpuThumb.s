@@ -1,9 +1,10 @@
+#ifdef SELF_MODIFYING_MIX
 .section .itcm
 .altmacro
 
 #include "consts.s"
 
-.macro finish_handler_skip_op_self_modifying
+.macro thumb_return
 	msr cpsr_c, #(CPSR_IRQ_FIQ_BITS | 0x17)
 
 	ldr lr, [r13, #4] //pu_data_permissions
@@ -28,7 +29,7 @@ thumb6_address_calc:
 	bl read_address_from_handler_32bit
 1:
 	mov r0, r10
-	finish_handler_skip_op_self_modifying
+	thumb_return
 
 .macro create_thumb7_variant l, bw
 .global thumb7_address_calc_\l\bw
@@ -41,12 +42,16 @@ thumb7_address_calc_\l\bw:
 	str r8, 1f
 	and r8, r10, #7
 .ifeq \l //write
-	strb r8, 2f
+	.if \bw
+		strb r8, write_address_from_handler_8bit_selfmodify
+	.else		
+		strb r8, write_address_from_handler_32bit_selfmodify
+	.endif
+	nop //to ensure the pipeline is not too far ahead for the 1f write
 .else
 	mov r8, r8, lsl #4
 	strb r8, (2f + 1)
 .endif
-	b 1f
 1:
 	.word 0
 //align if 32 bit write
@@ -54,13 +59,10 @@ thumb7_address_calc_\l\bw:
 	//bic r9, r9, #3
 .endif
 .ifeq \l //write
-2:
-	mov r11, r0
 	.ifeq \bw
-		bl write_address_from_handler_32bit
+		bl write_address_from_handler_32bit_selfmodify
 	.else
-		and r11, r11, #0xFF
-		bl write_address_from_handler_8bit
+		bl write_address_from_handler_8bit_selfmodify
 	.endif
 .else
 	.ifeq \bw
@@ -71,7 +73,7 @@ thumb7_address_calc_\l\bw:
 2:
 	mov r0, r10
 .endif
-	finish_handler_skip_op_self_modifying
+	thumb_return
 .endm
 
 create_thumb7_variant 0,0
@@ -91,19 +93,17 @@ thumb8_address_calc_\x\y:
 	str r8, 1f
 	and r8, r10, #7
 .if !\x && !\y //strh
-	strb r8, 2f
+	strb r8, write_address_from_handler_16bit_selfmodify
+	nop //to ensure the pipeline is not too far ahead for the 1f write
 .else
 	mov r8, r8, lsl #4
 	strb r8, (2f + 1)
 .endif
-	b 1f
 1:
 	.word 0
 .if !\x && !\y //strh
 2:
-	mov r11, r0, lsl #16
-	mov r11, r11, lsr #16
-	bl write_address_from_handler_16bit
+	bl write_address_from_handler_16bit_selfmodify
 .else
 	.if !\x && \y //ldrsb
 		bl read_address_from_handler_8bit
@@ -122,7 +122,7 @@ thumb8_address_calc_\x\y:
 2:
 	mov r0, r10
 .endif
-	finish_handler_skip_op_self_modifying
+	thumb_return
 .endm
 
 create_thumb8_variant 0,0
@@ -138,12 +138,16 @@ thumb9_address_calc_\bw\l:
 	strb r8, 1f
 	and r8, r10, #7
 .ifeq \l //write
-	strb r8, 2f
+	.if \bw
+		strb r8, write_address_from_handler_8bit_selfmodify
+	.else		
+		strb r8, write_address_from_handler_32bit_selfmodify
+	.endif
+	nop //to ensure the pipeline is not too far ahead for the 1f write
 .else
 	mov r8, r8, lsl #4
 	strb r8, (2f + 1)
 .endif
-	b 1f
 1:
 	mov lr, r0
 	and r12, r10, #(31 << 6)
@@ -157,13 +161,10 @@ thumb9_address_calc_\bw\l:
 	bic r9, r9, #3
 .endif
 .ifeq \l //write
-2:
-	mov r11, r0
 	.ifeq \bw
-		bl write_address_from_handler_32bit
+		bl write_address_from_handler_32bit_selfmodify
 	.else
-		and r11, r11, #0xFF
-		bl write_address_from_handler_8bit
+		bl write_address_from_handler_8bit_selfmodify
 	.endif
 .else
 	.ifeq \bw
@@ -174,7 +175,7 @@ thumb9_address_calc_\bw\l:
 2:
 	mov r0, r10
 .endif
-	finish_handler_skip_op_self_modifying
+	thumb_return
 .endm
 
 create_thumb9_variant 0,0
@@ -190,27 +191,23 @@ thumb10_address_calc_\l:
 	strb r8, 1f
 	and r8, r10, #7
 .ifeq \l //write
-	strb r8, 2f
+	strb r8, write_address_from_handler_16bit_selfmodify
 .else //read
 	mov r8, r8, lsl #4
 	strb r8, (2f + 1)
 .endif
 	and r12, r10, #(31 << 6)
-	b 1f
 1:
 	mov lr, r0
 	add r9, lr, r12, lsr #5
 .ifeq \l //write
-2:
-	mov r11, r0, lsl #16
-	mov r11, r11, lsr #16
-	bl write_address_from_handler_16bit
+	bl write_address_from_handler_16bit_selfmodify
 .else //read
 	bl read_address_from_handler_16bit
 2:
 	mov r0, r10
 .endif
-	finish_handler_skip_op_self_modifying
+	thumb_return
 .endm
 
 create_thumb10_variant 0
@@ -305,7 +302,7 @@ thumb15_address_calc_0:
 	mov r0, r9
 
 12:
-	finish_handler_skip_op_self_modifying
+	thumb_return
 
 .global thumb15_address_calc_1
 thumb15_address_calc_1:
@@ -374,7 +371,9 @@ thumb15_address_calc_1:
 	bl read_address_from_handler_32bit
 	mov r7, r10
 10:
-	finish_handler_skip_op_self_modifying
+	thumb_return
 
 address_calc_ignore_thumb:
-	finish_handler_skip_op_self_modifying
+	thumb_return
+
+#endif

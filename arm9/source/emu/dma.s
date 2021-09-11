@@ -193,18 +193,72 @@ write_dma_control_\offs:
 	str r13, [r9, #(-8 - \offs)] //store in actual src register
 
 4:
+#ifndef USE_DSP_AUDIO
 	mov r12, r11, lsr #11
 	and r12, #3
 	cmp r12, #3
 	beq dma_special_mode_\offs
+#endif
 6:
+#ifdef USE_DSP_AUDIO
+	add r12, r9, #(2 - \offs)
+	and r12, #0xFF
+	cmp r12, #0xC6
+	cmpne r12, #0xD2
+	beq dma12_send_dsp_\offs
+#endif
 	//carry out the transfer
 	strh r11, [r9, #(2 - \offs)]
 	bx lr
 
-dma_special_mode_\offs:
-	bic r11, r11, #0x8000
+#ifdef USE_DSP_AUDIO
+dma12_send_dsp_\offs:
+	mov r12, r11, lsr #11
+	and r12, #3
+	cmp r12, #3
+	biceq r11, #0x8000
+
+	ldr sp,= address_dtcm + (16 * 1024)
+	push {r0-r3,lr}
+7:
+	ldr r1, [r9, #(-8 - \offs)] //src
+	add r0, r9, #(-8 - \offs)
+	and r0, #0xFF
+	orr r0, #(4 << 16)
+	ldr r12,= dsp_sendIpcCommand
+	blx r12
+	cmp r0, #0
+	beq 7b //loop if it failed
+
+8:
+	ldr r1, [r10, #-6] //dst
+	add r0, r9, #(-4 - \offs)
+	and r0, #0xFF
+	orr r0, #(4 << 16)
+	ldr r12,= dsp_sendIpcCommand
+	blx r12
+	cmp r0, #0
+	beq 8b //loop if it failed
+
+9:
+	ldrh r1, [r10]
+	add r0, r9, #(2 - \offs)
+	and r0, #0xFF
+	orr r0, #(2 << 16)
+	//mov r1, r11
+	ldr r12,= dsp_sendIpcCommand
+	blx r12
+	cmp r0, #0
+	beq 9b //loop if it failed
+	pop {r0-r3,lr}
+	
 	strh r11, [r9, #(2 - \offs)]
+	bx lr
+#endif
+
+dma_special_mode_\offs:
+	bic r12, r11, #0x8000
+	strh r12, [r9, #(2 - \offs)]
 
 	ldr r13,= (0x40000C4 + \offs)
 	cmp r9, r13
@@ -212,16 +266,20 @@ dma_special_mode_\offs:
 
 	ldr r13, [r9, #(-8 - \offs)] //src
 
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+	ldr r11,= (gbaDsndChans0_uncached + 32 + 4)
+	str r13, [r11]
+#else
 	ldr r11,= 0x04000188
+	ldr r12,= 0xAA5500F8
 7:
 	ldr r10, [r11, #-4]
 	tst r10, #1
 	beq 7b
 
-	ldr r10,= 0x04000188
-	ldr r12,= 0xAA5500F8
-	str r12, [r10]
-	str r13, [r10]
+	str r12, [r11]
+	str r13, [r11]
+#endif
 
 	bx lr
 

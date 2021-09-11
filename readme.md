@@ -19,8 +19,16 @@ A valid bios should have the following checksums:
 - SHA256: `fd2547724b505f487e6dcb29ec2ecff3af35a841a77ab2e85fd87350abd36570`
 
 ## Compatibility List
+A compatibility list can be found here:
 - For DS/DSLite or with flashcards on other consoles: https://wiki.gbatemp.net/wiki/GBARunner2
 - For DSi/3DS when ran in DSi mode: https://wiki.gbatemp.net/wiki/GBARunner2/DSi_3DS_Compatibility_List
+
+Many thanks to Dodain47, Zense, Dartz and all other testers for investing so much time in testing games!
+
+## DSP Audio
+GBARunner2 now has support for DSP audio on DSi and 3DS through a custom DSP binary. The compiler is a fork of llvm with a teak backend I made. It can be found here: https://github.com/Gericom/teak-llvm
+
+I want to thank wwylele, Normmatt and nocash (please let me know if there was anyone involved I missed) for all the DSP research they did. Without them it would not have been possible!
 
 ## Libraries Used
 - [FatFS](http://elm-chan.org/fsw/ff/00index_e.html)

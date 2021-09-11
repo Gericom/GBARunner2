@@ -1,10 +1,17 @@
 #include <nds.h>
 #include <string.h>
 #include "timer.h"
+#include "../../common/common_defs.s"
 #include "../../common/fifo.h"
 #include "../../common/sd_vram.h"
 #include "lock.h"
+#include "system.h"
 #include "sound.h"
+
+#ifndef USE_GBA_ADJUSTED_SYNC
+#define USE_ACTUAL_RATE
+#endif
+//#define ACCESS_MAIN_MEM_DIRECT
 
 #define SOUND_BUFFER_SIZE	8192
 
@@ -12,27 +19,18 @@
 
 s8 soundBuffer[SOUND_BUFFER_SIZE];
 
+static s8 sSoundFifoA[32];
+static int sSoundFifoACount;
+
 uint32_t soundBufferWriteOffset;
 
 volatile uint32_t soundBufferVirtualWriteOffset;
 volatile uint32_t soundBufferVirtualReadOffset;
 
-uint32_t samplesPerBlock;
-
-int sampleFreq;
-
-volatile int soundStarted;
-
-uint32_t srcAddress = 0;
-
-u8 sChannelATimer = 0;
-u8 sChannelAVolume = 1;
-u8 sChannelAEnables = 0;
-
 u16 sTimerReloadVals[4];
 u16 sTimerControlVals[4];
 
-static int sampcnter = 0;
+static dsound_channel_t sDSoundChannels[2];
 
 /*static void gba_sound_timer2_handler()
 {
@@ -41,7 +39,7 @@ static int sampcnter = 0;
 	{
 		irqDisable(IRQ_TIMER2);
 		REG_TM[2].CNT_H = 0;
-		soundStarted = 0;//resync
+		sDSoundChannels[0].started = 0;//resync
 	}
 }*/
 
@@ -53,13 +51,13 @@ static void calcChannelVolume(int channel, int& volumeL, int& volumeR)
 		volumeR = 0;
 		return;
 	}
-	if(sampleFreq <= 0 || sampleFreq >= 1000000)
+	if(sDSoundChannels[channel].frequency <= 0 || sDSoundChannels[channel].frequency >= 1000000)
 	{
 		volumeL = 0;
 		volumeR = 0;	
 	}
-	int vol = sChannelAVolume == 1 ? 0x7F : 0x40;
-	if((sChannelAEnables & 1) || (sChannelAEnables & 2))
+	int vol = sDSoundChannels[channel].volume == 1 ? 0x7F : 0x40;
+	if((sDSoundChannels[channel].enables & 1) || (sDSoundChannels[channel].enables & 2))
 	{
 		volumeL = vol;
 		volumeR = vol;
@@ -70,21 +68,30 @@ static void calcChannelVolume(int channel, int& volumeL, int& volumeR)
 		volumeR = 0;
 	}
 	//todo: enable this when both channels are implemented
-	//volumeL = (sChannelAEnables & 1) ? vol : 0;
-	//volumeR = (sChannelAEnables & 2) ? vol : 0;
+	//volumeL = (sDSoundChannels[0].enables & 1) ? vol : 0;
+	//volumeR = (sDSoundChannels[0].enables & 2) ? vol : 0;
 }
 
 void gba_sound_init()
 {
 	REG_SOUNDCNT = REG_SOUNDCNT_E | 0x7F;
 	REG_SOUNDBIAS = 0x200;
-	soundStarted = 0;
+#if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
+	REG_SOUNDEXCNT = 0;
+#ifdef USE_DSP_AUDIO
+	REG_SOUNDEXCNT = SOUNDEXCNT_ENABLE_SOMETHING | SOUNDEXCNT_FREQ_32 | SOUNDEXCNT_NTR_DSP_RATIO_0_8;
+#else
+	REG_SOUNDEXCNT = SOUNDEXCNT_ENABLE_SOMETHING | SOUNDEXCNT_FREQ_47 | SOUNDEXCNT_NTR_DSP_RATIO_8_0;
+#endif
+#endif
 	soundBufferWriteOffset = 0;
-	sampleFreq = 0;
 	vram_cd->sound_emu_work.req_read_ptr = 0;
 	vram_cd->sound_emu_work.req_write_ptr = 0;
 	vram_cd->sound_emu_work.resp_read_ptr = 0;
 	vram_cd->sound_emu_work.resp_write_ptr = 0;
+	memset(sDSoundChannels, 0, sizeof(sDSoundChannels));
+	sDSoundChannels[0].volume = 1;
+	sDSoundChannels[1].volume = 1;
 	//soundBufferVirtualWriteOffset = 0;
 	//soundBufferVirtualReadOffset = 0;
 	//REG_TM[2].CNT_H = 0;
@@ -96,11 +103,12 @@ void gba_sound_resync()
 {
 	int oldIrq = enterCriticalSection();
 	{
-		soundStarted = 0;
+		sDSoundChannels[0].started = false;
 		soundBufferWriteOffset = 0;
-		srcAddress = 0;
+		//sDSoundChannels[0].curAddress = 0;
 		vram_cd->sound_emu_work.req_write_ptr = vram_cd->sound_emu_work.req_read_ptr;
 		vram_cd->sound_emu_work.resp_read_ptr = vram_cd->sound_emu_work.resp_write_ptr;
+		//REG_TM[3].CNT_H = 0;
 		REG_SOUND[0].CNT = 0;
 		REG_SOUND[1].CNT = 0;
 	}
@@ -109,19 +117,18 @@ void gba_sound_resync()
 
 static void gba_sound_update_ds_channels()
 {
-	if (!soundStarted && soundBufferWriteOffset >= (SOUND_BUFFER_SIZE / 8))
+	if (!sDSoundChannels[0].started && /*((sDSoundChannels[0].curAddress >> 24) == 2 ||*/ soundBufferWriteOffset >= (SOUND_BUFFER_SIZE / 8))//)
 	{
 		//REG_TM[2].CNT_H = 0;
 		//soundBufferVirtualReadOffset = 0;
 		//soundBufferVirtualWriteOffset = soundBufferWriteOffset;
 
-
 		REG_SOUND[0].CNT = 0;
 		REG_SOUND[1].CNT = 0;
 		REG_SOUND[0].SAD = (u32)&soundBuffer[0];
 		REG_SOUND[1].SAD = (u32)&soundBuffer[0];
-		REG_SOUND[0].TMR = sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
-		REG_SOUND[1].TMR = sTimerReloadVals[sChannelATimer]; //(u16)-1253;//-1594; //-1253
+		REG_SOUND[0].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer]; //(u16)-1253;//-1594; //-1253
+		REG_SOUND[1].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer]; //(u16)-1253;//-1594; //-1253
 		REG_SOUND[0].PNT = 0;
 		REG_SOUND[1].PNT = 0;
 		REG_SOUND[0].LEN = SOUND_BUFFER_SIZE >> 2; //396 * 10;
@@ -136,7 +143,7 @@ static void gba_sound_update_ds_channels()
 		REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
 			REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(volumeR);
 		//SOUND_CHANNEL_0_SETTINGS;
-		soundStarted = 1;
+		sDSoundChannels[0].started = true;
 		//REG_TM[2].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I | REG_TMXCNT_H_PS_256;
 		//irqEnable(IRQ_TIMER2);
 	}
@@ -163,52 +170,117 @@ void gba_sound_fifo_update()
 
 extern "C" void timer3_overflow_irq()
 {
-	if (srcAddress == 0)
+#ifndef USE_LOW_LATENCY_IRQ_AUDIO
+	if (sDSoundChannels[0].curAddress == 0)
 		return;
-	if (sampcnter == 0) //(FIFO_BLOCK_SIZE - 1))
+#endif
+	if(sDSoundChannels[0].rateDiffLo != 0)
 	{
-		gba_sound_fifo_update();
-		int writeLength = vram_cd->sound_emu_work.req_read_ptr - vram_cd->sound_emu_work.req_write_ptr - 1;
-		if (writeLength < 0)
-			writeLength += SOUND_EMU_QUEUE_LEN;
-		if (writeLength != 0)
+		if(sDSoundChannels[0].rateCounter + sDSoundChannels[0].rateDiffHi >= 0)
 		{
-			vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
-			vram_cd->sound_emu_work.req_write_ptr = (vram_cd->sound_emu_work.req_write_ptr + 1) & (SOUND_EMU_QUEUE_LEN - 1);
+			sDSoundChannels[0].curTimer = sDSoundChannels[0].rateTmrLo + 1;
+			REG_TM[3].CNT_L = -sDSoundChannels[0].curTimer << 1;
+			REG_SOUND[0].TMR = -sDSoundChannels[0].curTimer;
+			REG_SOUND[1].TMR = -sDSoundChannels[0].curTimer;
+			sDSoundChannels[0].rateCounter += sDSoundChannels[0].rateDiffHi;
 		}
 		else
 		{
-			for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
-				soundBuffer[(soundBufferWriteOffset + i) & (SOUND_BUFFER_SIZE - 1)] = soundBuffer[(soundBufferWriteOffset - FIFO_BLOCK_SIZE + i) & (SOUND_BUFFER_SIZE - 1)];
-			soundBufferWriteOffset = (soundBufferWriteOffset + FIFO_BLOCK_SIZE) & (SOUND_BUFFER_SIZE - 1);
-			gba_sound_update_ds_channels();
-			/*vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = srcAddress;
-			vram_cd->sound_emu_work.req_read_ptr++;
-			if (vram_cd->sound_emu_work.req_read_ptr >= SOUND_EMU_QUEUE_LEN)
-				vram_cd->sound_emu_work.req_read_ptr -= SOUND_EMU_QUEUE_LEN;
-			vram_cd->sound_emu_work.req_write_ptr++;
-			if (vram_cd->sound_emu_work.req_write_ptr >= SOUND_EMU_QUEUE_LEN)
-				vram_cd->sound_emu_work.req_write_ptr -= SOUND_EMU_QUEUE_LEN;
-
-			for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
-				soundBuffer[(soundBufferWriteOffset + i) % SOUND_BUFFER_SIZE] = soundBuffer[(soundBufferWriteOffset -
-					FIFO_BLOCK_SIZE + i) % SOUND_BUFFER_SIZE];
-			soundBufferWriteOffset += FIFO_BLOCK_SIZE;
-			if (soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
-				soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
-			gba_sound_update_ds_channels();*/
+			sDSoundChannels[0].curTimer = sDSoundChannels[0].rateTmrLo;
+			REG_TM[3].CNT_L = -sDSoundChannels[0].curTimer << 1;
+			REG_SOUND[0].TMR = -sDSoundChannels[0].curTimer;
+			REG_SOUND[1].TMR = -sDSoundChannels[0].curTimer;
+			sDSoundChannels[0].rateCounter += sDSoundChannels[0].rateDiffLo;
 		}
-		//invoke an irq on arm9
-		*((vu32*)0x04000180) |= (1 << 13);
-		srcAddress += FIFO_BLOCK_SIZE; //16;
 	}
-	sampcnter++;
-	if (sampcnter == FIFO_BLOCK_SIZE)
-		sampcnter = 0;
+	if (sDSoundChannels[0].sampCounter == 0) //(FIFO_BLOCK_SIZE - 1))
+	{
+#ifdef ACCESS_MAIN_MEM_DIRECT
+		if((sDSoundChannels[0].curAddress >> 24) == 2)
+		{
+			//data is in main memory, directly access it
+			//gba_sound_fifo_write16((u8*)sDSoundChannels[0].curAddress);
+			REG_SOUND[0].SAD = sDSoundChannels[0].curAddress;
+			REG_SOUND[1].SAD = sDSoundChannels[0].curAddress;
+			//todo: still invoke an arm9 irq if games use dma irq
+		}
+		else
+#endif
+		{		
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+			//invoke an irq on arm9
+			vram_cd->gbaDsndChanIrqFlags[0] = 1;
+			REG_IPC_SYNC |= IPC_SYNC_IRQ_REQUEST;
+			if(!sDSoundChannels[0].started)
+			{
+				REG_SOUND[0].CNT = 0;
+				REG_SOUND[1].CNT = 0;
+				REG_SOUND[0].SAD = (u32)&vram_cd->gbaDsndChans[0].fifoBuffer;
+				REG_SOUND[1].SAD = (u32)&vram_cd->gbaDsndChans[0].fifoBuffer;
+				REG_SOUND[0].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer]; //(u16)-1253;//-1594; //-1253
+				REG_SOUND[1].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer]; //(u16)-1253;//-1594; //-1253
+				REG_SOUND[0].PNT = 0;
+				REG_SOUND[1].PNT = 0;
+				REG_SOUND[0].LEN = 32 >> 2; //396 * 10;
+				REG_SOUND[1].LEN = 32 >> 2; //396 * 10;
+
+				//REG_TM[2].CNT_L = TIMER_FREQ(13378);
+				int volumeL, volumeR;
+				calcChannelVolume(0, volumeL, volumeR);
+				REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(volumeL);
+				//SOUND_CHANNEL_0_SETTINGS;
+				REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(volumeR);
+				//SOUND_CHANNEL_0_SETTINGS;
+				sDSoundChannels[0].started = true;
+			}
+#else
+			gba_sound_fifo_update();
+			int writeLength = vram_cd->sound_emu_work.req_read_ptr - vram_cd->sound_emu_work.req_write_ptr - 1;
+			if (writeLength < 0)
+				writeLength += SOUND_EMU_QUEUE_LEN;
+			if (writeLength != 0)
+			{
+				vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = sDSoundChannels[0].curAddress;
+				vram_cd->sound_emu_work.req_write_ptr = (vram_cd->sound_emu_work.req_write_ptr + 1) & (SOUND_EMU_QUEUE_LEN - 1);
+			}
+			else
+			{
+				for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
+					soundBuffer[(soundBufferWriteOffset + i) & (SOUND_BUFFER_SIZE - 1)] = soundBuffer[(soundBufferWriteOffset - FIFO_BLOCK_SIZE + i) & (SOUND_BUFFER_SIZE - 1)];
+				soundBufferWriteOffset = (soundBufferWriteOffset + FIFO_BLOCK_SIZE) & (SOUND_BUFFER_SIZE - 1);
+				gba_sound_update_ds_channels();
+				/*vram_cd->sound_emu_work.req_queue[vram_cd->sound_emu_work.req_write_ptr] = sDSoundChannels[0].curAddress;
+				vram_cd->sound_emu_work.req_read_ptr++;
+				if (vram_cd->sound_emu_work.req_read_ptr >= SOUND_EMU_QUEUE_LEN)
+					vram_cd->sound_emu_work.req_read_ptr -= SOUND_EMU_QUEUE_LEN;
+				vram_cd->sound_emu_work.req_write_ptr++;
+				if (vram_cd->sound_emu_work.req_write_ptr >= SOUND_EMU_QUEUE_LEN)
+					vram_cd->sound_emu_work.req_write_ptr -= SOUND_EMU_QUEUE_LEN;
+				for (int i = 0; i < FIFO_BLOCK_SIZE; i++)
+					soundBuffer[(soundBufferWriteOffset + i) % SOUND_BUFFER_SIZE] = soundBuffer[(soundBufferWriteOffset -
+						FIFO_BLOCK_SIZE + i) % SOUND_BUFFER_SIZE];
+				soundBufferWriteOffset += FIFO_BLOCK_SIZE;
+				if (soundBufferWriteOffset >= SOUND_BUFFER_SIZE)
+					soundBufferWriteOffset -= SOUND_BUFFER_SIZE;
+				gba_sound_update_ds_channels();*/
+			}
+			//invoke an irq on arm9
+			REG_IPC_SYNC |= IPC_SYNC_IRQ_REQUEST;
+#endif
+		}
+		sDSoundChannels[0].curAddress += FIFO_BLOCK_SIZE; //16;		
+	}
+	sDSoundChannels[0].sampCounter++;
+	if (sDSoundChannels[0].sampCounter == FIFO_BLOCK_SIZE)
+		sDSoundChannels[0].sampCounter = 0;
 }
 
 static void updateChannelVolume(int channel)
 {
+	if(!sDSoundChannels[channel].started)
+		return;
 	if(channel == 0)
 	{
 		int volumeL, volumeR;
@@ -221,19 +293,39 @@ static void updateChannelVolume(int channel)
 void gbas_updateChannelATimer()
 {
 	int freq = 0;
-	if (sTimerControlVals[sChannelATimer] & 0x80)
-		freq = (-16 * 1024 * 1024) / ((int16_t)sTimerReloadVals[sChannelATimer]);
-	if (sampleFreq != freq)
+	if (sTimerControlVals[sDSoundChannels[0].timer] & 0x80)
+		freq = (-16 * 1024 * 1024) / ((s16)sTimerReloadVals[sDSoundChannels[0].timer]);
+	if (sDSoundChannels[0].frequency != freq)
 	{
-		sampleFreq = freq;
 		REG_TM[3].CNT_H = 0;
-		if (sampleFreq > 0 && sampleFreq < 1000000)
+		REG_IF = IRQ_TIMER(3);
+
+		s64 exactFreq = ((s64)(-16 * 1024 * 1024) << 16) / ((s16)sTimerReloadVals[sDSoundChannels[0].timer]);
+
+		sDSoundChannels[0].frequency = freq;
+#ifdef USE_ACTUAL_RATE
+		u32 tmrLo = (((s64)(SYS_CLOCK_FREQ >> 1) << 16) / exactFreq) << 16;
+		u32 tmrHi = tmrLo + (1 << 16);
+		u32 tmrTgt = ((s64)(SYS_CLOCK_FREQ >> 1) << 32) / exactFreq;
+#else
+		u32 tmrLo = (-(s16)sTimerReloadVals[sDSoundChannels[0].timer]) << 16;
+		u32 tmrHi = (-(s16)sTimerReloadVals[sDSoundChannels[0].timer]) << 16;
+		u32 tmrTgt = (-(s16)sTimerReloadVals[sDSoundChannels[0].timer]) << 16;
+#endif
+		sDSoundChannels[0].rateDiffLo = tmrTgt - tmrLo;
+		sDSoundChannels[0].rateDiffHi = tmrTgt - tmrHi;
+
+		sDSoundChannels[0].rateTmrLo = tmrLo >> 16;
+		sDSoundChannels[0].curTimer = tmrLo >> 16;//(((SYS_CLOCK_FREQ + ((sDSoundChannels[0].frequency + 1) >> 1)) / sDSoundChannels[0].frequency) + 1) >> 1;
+
+		if (sDSoundChannels[0].frequency > 0 && sDSoundChannels[0].frequency < 1000000)
 		{
-			REG_TM[3].CNT_L = ((s16)sTimerReloadVals[sChannelATimer]) << 1;
+			sDSoundChannels[0].rateCounter = 0;
+			REG_TM[3].CNT_L = -sDSoundChannels[0].curTimer << 1;//((s16)sTimerReloadVals[sDSoundChannels[0].timer]) << 1;
 			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
-			REG_IE |= (1 << 6);
-			REG_SOUND[0].TMR = sTimerReloadVals[sChannelATimer];
-			REG_SOUND[1].TMR = sTimerReloadVals[sChannelATimer];
+			REG_IE |= IRQ_TIMER(3);
+			REG_SOUND[0].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer];
+			REG_SOUND[1].TMR = -sDSoundChannels[0].curTimer;//sTimerReloadVals[sDSoundChannels[0].timer];
 			int volumeL, volumeR;
 			calcChannelVolume(0, volumeL, volumeR);
 			REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
@@ -257,14 +349,14 @@ void gbas_soundTimerUpdated(int timer, u16 controlVal, u16 reloadVal)
 {
 	sTimerControlVals[timer] = controlVal;
 	sTimerReloadVals[timer] = reloadVal;
-	if (sChannelATimer == timer)
+	if (sDSoundChannels[0].timer == timer)
 		gbas_updateChannelATimer();
 }
 
 void gbas_soundTimerControlUpdated(int timer, u16 controlVal)
 {
 	sTimerControlVals[timer] = controlVal;
-	if (sChannelATimer == timer)
+	if (sDSoundChannels[0].timer == timer)
 		gbas_updateChannelATimer();
 }
 
@@ -282,18 +374,69 @@ void gba_sound_fifo_write(uint32_t samps)
 
 void gba_sound_set_src(uint32_t address)
 {
-	if(srcAddress == address - 16 || srcAddress == address || srcAddress == address + 16)
+	if(sDSoundChannels[0].started && (sDSoundChannels[0].curAddress == address - 16 || sDSoundChannels[0].curAddress == address || sDSoundChannels[0].curAddress == address + 16))
 		return;
-	srcAddress = address;
-	REG_TM[3].CNT_H = 0;
-	sampcnter = 0;
-	//timer3_overflow_irq();
-	if (sampleFreq != 0)
+	int oldIrq = enterCriticalSection();
+#ifdef ACCESS_MAIN_MEM_DIRECT
+	if(((sDSoundChannels[0].curAddress >> 24) != 2 && (address >> 24) == 2) || ((sDSoundChannels[0].curAddress >> 24) == 2 && (address >> 24) != 2))
+		gba_sound_resync();
+#endif
+	sDSoundChannels[0].curAddress = address;
+#ifdef ACCESS_MAIN_MEM_DIRECT
+	if((address >> 24) != 2)
+#endif
 	{
-		REG_TM[3].CNT_L = ((s16)sTimerReloadVals[sChannelATimer]) << 1; // * FIFO_BLOCK_SIZE;//* 64 / FIFO_BLOCK_SIZE);//16);
-		REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I; // | REG_TMXCNT_H_PS_64;
-		REG_IE |= (1 << 6);
+		REG_TM[3].CNT_H = 0;
+		REG_IF = IRQ_TIMER(3);
+		sDSoundChannels[0].sampCounter = 0;
 	}
+	//timer3_overflow_irq();
+	if (sDSoundChannels[0].frequency != 0)
+	{
+#ifdef ACCESS_MAIN_MEM_DIRECT
+		if((address >> 24) == 2)
+		{
+			if(!sDSoundChannels[0].started)
+			{
+				REG_TM[3].CNT_H = 0;
+				REG_IF = IRQ_TIMER(3);
+				REG_SOUND[0].CNT = 0;
+				REG_SOUND[1].CNT = 0;
+				REG_SOUND[0].SAD = address;
+				REG_SOUND[1].SAD = address;
+				REG_SOUND[0].TMR = -sDSoundChannels[0].curTimer;
+				REG_SOUND[1].TMR = -sDSoundChannels[0].curTimer;
+				REG_SOUND[0].PNT = 0;
+				REG_SOUND[1].PNT = 0;
+				REG_SOUND[0].LEN = 16 >> 2;
+				REG_SOUND[1].LEN = 16 >> 2;
+
+				int volumeL, volumeR;
+				calcChannelVolume(0, volumeL, volumeR);
+				REG_SOUND[0].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(0) | REG_SOUNDXCNT_VOLUME(volumeL);
+				REG_SOUND[1].CNT = REG_SOUNDXCNT_E | REG_SOUNDXCNT_FORMAT(REG_SOUNDXCNT_FORMAT_PCM8) |
+					REG_SOUNDXCNT_REPEAT(REG_SOUNDXCNT_REPEAT_LOOP) | REG_SOUNDXCNT_PAN(127) | REG_SOUNDXCNT_VOLUME(volumeR);
+				sDSoundChannels[0].started = true;
+				sDSoundChannels[0].curAddress = address + 16;
+				sDSoundChannels[0].rateCounter = 0;
+				sDSoundChannels[0].sampCounter = 0;
+
+				REG_TM[3].CNT_L = -sDSoundChannels[0].curTimer << 1;
+				REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
+				REG_IE |= IRQ_TIMER(3);
+			}
+		}
+		else
+#endif
+		{
+			sDSoundChannels[0].rateCounter = 0;
+			REG_TM[3].CNT_L = -sDSoundChannels[0].curTimer << 1;
+			REG_TM[3].CNT_H = REG_TMXCNT_H_E | REG_TMXCNT_H_I;
+			REG_IE |= IRQ_TIMER(3);
+		}
+	}
+	leaveCriticalSection(oldIrq);
 }
 
 void gba_sound_fifo_write16(uint8_t* samps)
@@ -308,23 +451,28 @@ void gba_sound_fifo_write16(uint8_t* samps)
 
 void gbas_updateVolume(u8 vol)
 {
-	sChannelAVolume = (vol >> 2) & 1;
-	if(soundStarted)
-	{
-		updateChannelVolume(0);
-		updateChannelVolume(1);
-	}
+	sDSoundChannels[0].volume = (vol >> 2) & 1;
+	sDSoundChannels[1].volume = (vol >> 3) & 1;
+	updateChannelVolume(0);
+	updateChannelVolume(1);
 }
 
 void gbas_updateMixConfig(u8 mixConfig)
 {
 	int newATimer = (mixConfig >> 2) & 1;
-	if (sChannelATimer != newATimer)
+	if (sDSoundChannels[0].timer != newATimer)
 	{
-		sChannelATimer = newATimer;
+		sDSoundChannels[0].timer = newATimer;
 		gbas_updateChannelATimer();
 	}
-	sChannelAEnables = mixConfig & 3;
+	int newBTimer = (mixConfig >> 6) & 1;
+	if (sDSoundChannels[1].timer != newBTimer)
+	{
+		sDSoundChannels[1].timer = newBTimer;
+		//gbas_updateChannelBTimer();
+	}
+	sDSoundChannels[0].enables = mixConfig & 3;
+	sDSoundChannels[1].enables = (mixConfig >> 4) & 3;
 	updateChannelVolume(0);
 	updateChannelVolume(1);
 }

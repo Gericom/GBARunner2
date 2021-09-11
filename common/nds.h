@@ -1,0 +1,16 @@
+#pragma once
+
+#define NDS_SYS_CLOCK           33513982
+
+#define NDS_CYCLES_PER_PIXEL    6
+
+#define NDS_LCD_WIDTH           256
+#define NDS_LCD_HBLANK          99
+#define NDS_LCD_COLUMNS         (NDS_LCD_WIDTH + NDS_LCD_HBLANK)
+
+#define NDS_LCD_HEIGHT          192
+#define NDS_LCD_VBLANK          71
+#define NDS_LCD_LINES           (NDS_LCD_HEIGHT + NDS_LCD_VBLANK)
+
+#define NDS_CYCLES_PER_LINE     (NDS_LCD_COLUMNS * NDS_CYCLES_PER_PIXEL)
+#define NDS_CYCLES_PER_FRAME    (NDS_LCD_COLUMNS * NDS_LCD_LINES * NDS_CYCLES_PER_PIXEL)

@@ -6,60 +6,51 @@
 variables:
   DEVKITPRO: $(Agent.TempDirectory)\bar\devkitPro
   DEVKITARM: $(Agent.TempDirectory)\bar\devkitPro\devkitARM
+  TEAK_LLVM: $(Agent.TempDirectory)\bar\teak
   CURRENT_DATE: $[format('{0:yyyyMMdd\-HHmmss}', pipeline.startTime)]
+  ${{ if eq(variables['Build.SourceBranchName'], 'master') }}:
+    GITHUB_RELEASE_ISPRERELEASE: false
+  ${{ if ne(variables['Build.SourceBranchName'], 'master') }}:
+    GITHUB_RELEASE_ISPRERELEASE: true
 
 pool:
   vmImage: 'windows-latest'
 
 steps:
-- task: DownloadSecureFile@1
-  inputs:
-    secureFile: 'devkitPro.zip.001'
-
-- task: DownloadSecureFile@1
-  inputs:
-    secureFile: 'devkitPro.zip.002'
-
-- task: DownloadSecureFile@1
-  inputs:
-    secureFile: 'devkitPro.zip.003'
-
-- task: DownloadSecureFile@1
-  inputs:
-    secureFile: 'devkitPro.zip.004'
-
 - script: |
     cd $(Agent.TempDirectory)
-    copy /b *.zip.00* newzip.zip
-    powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('newzip.zip', 'bar'); }"
+    powershell.exe -nologo -noprofile -command "& { $client = new-object System.Net.WebClient; $client.DownloadFile('https://github.com/Gericom/GBARunner2BuildTools/raw/master/devkitPro.zip','devkitPro.zip'); }"
+    powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('devkitPro.zip', 'bar'); }"
+    powershell.exe -nologo -noprofile -command "& { $client = new-object System.Net.WebClient; $client.DownloadFile('https://github.com/Gericom/GBARunner2BuildTools/raw/master/teak.zip','teak.zip'); }"
+    powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('teak.zip', 'bar\\teak'); }"
     md $(Build.Repository.LocalPath)\build
   displayName: 'Prepare environment'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make
-    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm9dldi_ds.nds
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm9dldi_ds.nds
     make clean
   displayName: 'Build arm9dldi_ds'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make all ARM7_DLDI=1
-    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_ds.nds    
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_ds.nds    
     make clean
   displayName: 'Build arm7dldi_ds'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make all ARM7_DLDI=1 USE_DSI_16MB=1
-    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_dsi.nds    
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_dsi.nds    
     make clean
   displayName: 'Build arm7dldi_dsi'
 
 - script: |
     cd $(Build.Repository.LocalPath)
     make all ARM7_DLDI=1 USE_3DS_32MB=1
-    move s.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_3ds.nds    
+    move GBARunner2.nds $(Build.Repository.LocalPath)\build\GBARunner2_arm7dldi_3ds.nds    
     make clean
   displayName: 'Build arm7dldi_3ds'
 
@@ -78,6 +69,7 @@ steps:
     action: 'create'
     target: '$(Build.SourceVersion)'
     tagSource: 'manual'
-    tag: 'v$(CURRENT_DATE)_$(ShortVersionHash)'
+    tag: 'v$(CURRENT_DATE)_$(ShortVersionHash)_$(Build.SourceBranchName)'
     assets: '$(Build.Repository.LocalPath)/build/*'
     addChangeLog: false
+    isPreRelease: $(GITHUB_RELEASE_ISPRERELEASE)

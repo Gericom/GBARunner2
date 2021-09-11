@@ -177,6 +177,8 @@ write_address_dispcontrol_top8:
 
 .global write_address_dispstat
 write_address_dispstat:
+	mov r11, r11, lsl #16
+	mov r11, r11, lsr #16
 	ldr r10,= shadow_dispstat
 	strh r11, [r10]
 	mov r12, r11, lsr #8 //vcount

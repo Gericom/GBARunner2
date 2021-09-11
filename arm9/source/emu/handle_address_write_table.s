@@ -1,6 +1,7 @@
 //this will be copied to the dtcm at runtime (and converted to 16 bit, because the 
 //FUCKING COMPILER OBVIOUSLY DOES NOT HAVE A FEATURE TO EMIT ONLY THE BOTTOM 16 BITS OF AN ADDRESS)
 .section .text
+#include "consts.s"
 
 //32 bit writes means 32 bit alignment
 //this means only address / 4
@@ -9,8 +10,10 @@
 address_write_table_32bit:
 //0x04000000
 .word write_address_dispcontrol
-//0x04000004-0x0400001C
-.rept 7
+//0x04000004
+.word write_address_dispstat
+//0x04000008-0x0400001C
+.rept 6
 .word write_address_nomod_32
 .endr
 //0x04000020
@@ -35,12 +38,24 @@ address_write_table_32bit:
 .word write_address_ignore
 //0x04000090-0x0400009C
 .rept 4
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_32
+#else
 .word write_address_snd_waveram_32
+#endif
 .endr
 //0x040000A0
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_32
+#else
 .word write_address_snd_fifo_A
+#endif
 //0x040000A4
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_32
+#else
 .word write_address_ignore
+#endif
 //0x040000A8
 .word write_address_ignore
 //0x040000AC
@@ -151,12 +166,27 @@ address_write_table_16bit:
 .endr
 //0x04000090-0x0400009E
 .rept 8
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_16
+#else
 .word write_address_snd_waveram_16
+#endif
 .endr
 //0x040000A0-0x040000AE
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_16
+.word write_address_snd_16
+.word write_address_snd_16
+.word write_address_snd_16
+.word write_address_ignore
+.word write_address_ignore
+.word write_address_ignore
+.word write_address_ignore
+#else
 .rept 8
 .word write_address_ignore
 .endr
+#endif
 //0x040000B0
 .word write_dma_shadow_16 //write_address_nomod_16
 //0x040000B2
@@ -261,8 +291,16 @@ address_write_table_8bit:
 .word write_address_ignore
 //0x04000003
 .word write_address_ignore
+//0x04000004
+.word write_address_nomod_8
+//0x04000005
+.word write_address_nomod_8
+//0x04000006
+.word write_address_ignore
+//0x04000007
+.word write_address_ignore
 //0x04000004-0x0400005F
-.rept 92
+.rept 88
 .word write_address_nomod_8
 .endr
 //0x04000060-0x04000084
@@ -275,12 +313,25 @@ address_write_table_8bit:
 .endr
 //0x04000090-0x0400009F
 .rept 16
+#ifdef USE_DSP_AUDIO
+.word write_address_snd_8
+#else
 .word write_address_snd_waveram_8
+#endif
 .endr
 //0x040000A0-0x040000AF
+#ifdef USE_DSP_AUDIO
+.rept 8
+.word write_address_snd_8
+.endr
+.rept 8
+.word write_address_ignore
+.endr
+#else
 .rept 16
 .word write_address_ignore
 .endr
+#endif
 //0x040000B0-0x040000DF
 .word write_dma_shadow_8
 .word write_dma_shadow_8
