@@ -77,4 +77,8 @@ mpu_setICacheRegions:
 ic_invalidateAll:
     mov r0, #0
 	mcr p15, 0, r0, c7, c5, 0
+#ifdef ENABLE_HICODE
+    //unmap code
+    mcr p15, 0, r0, c6, c3, 0
+#endif
     bx lr

@@ -8,12 +8,18 @@ my_irq_handler:
 
 	mov r0, #0x04000000
 	ldr r1, [r0, #0x214]
+	ldr r2, [r0, #0x210]
+	and r1, r2
 
 	//ands r2, r1, #(1 << 1)
 	//bne my_irq_handler_hblank
 
 	//ands r2, r1, #(1 << 2)
 	//bne my_irq_handler_vcount
+
+	//vcount
+	ands r2, r1, #(1 << 2)
+	bne vcount
 
 	//timer used for sound
 	ands r2, r1, #(1 << 6)
@@ -37,6 +43,12 @@ my_irq_handler:
 vblank:
 	str r2, [r0, #0x214]
 	bl irq_vblank
+	pop {lr}
+	bx lr
+
+vcount:
+	str r2, [r0, #0x214]
+	bl irq_vcount
 	pop {lr}
 	bx lr
 

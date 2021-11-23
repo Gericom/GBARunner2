@@ -1,5 +1,4 @@
-#ifndef __SOUND_EMU_H__
-#define __SOUND_EMU_H__
+#pragma once
 
 #include "common_defs.s"
 
@@ -37,4 +36,11 @@ typedef struct
 	u32 reg_gb_nr52;
 } sound_emu_work_t;
 
+#ifdef USE_LOW_LATENCY_IRQ_AUDIO
+typedef struct
+{
+	s8 fifoBuffer[32];
+	u32 writeOffset;
+	u32 dmaSrc;
+} __attribute__((aligned(32))) gba_dsnd_channel_t;
 #endif

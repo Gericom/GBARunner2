@@ -82,10 +82,12 @@ write_address_dispcontrol_cont:
 	movge r12, #0x91 //#0x89
 	strb r12, [r11]
 
+#ifndef ENABLE_HICODE
 	//and change the pu settings accordingly
 	ldrlt r11,= (1 | (14 << 1) | 0x06010000)
 	ldrge r11,= (1 | (13 << 1) | 0x06014000)
 	mcr p15, 0, r11, c6, c3, 0
+#endif
 
 	ldr r11,= 0x04000000
 
@@ -175,6 +177,8 @@ write_address_dispcontrol_top8:
 
 .global write_address_dispstat
 write_address_dispstat:
+	mov r11, r11, lsl #16
+	mov r11, r11, lsr #16
 	ldr r10,= shadow_dispstat
 	strh r11, [r10]
 	mov r12, r11, lsr #8 //vcount

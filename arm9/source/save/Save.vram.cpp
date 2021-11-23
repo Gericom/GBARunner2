@@ -5,7 +5,7 @@
 #include "SramSave.h"
 #include "Save.h"
 
-#define SAVE_TYPE_COUNT		25
+#define SAVE_TYPE_COUNT		26
 
 static const save_type_t sSaveTypes[SAVE_TYPE_COUNT] =
 {
@@ -14,6 +14,10 @@ static const save_type_t sSaveTypes[SAVE_TYPE_COUNT] =
 	{"EEPROM_V121", 12, SAVE_TYPE_EEPROM_V121, 8 * 1024, eeprom_patchV120},
 	{"EEPROM_V122", 12, SAVE_TYPE_EEPROM_V122, 8 * 1024, eeprom_patchV120},
 	{"EEPROM_V124", 12, SAVE_TYPE_EEPROM_V124, 8 * 1024, eeprom_patchV124},
+	{"EEPROM_V124", 12, SAVE_TYPE_EEPROM_V124, 16 * 1024, eeprom_patchV124},
+	{"EEPROM_V124", 12, SAVE_TYPE_EEPROM_V124, 64 * 1024, eeprom_patchV124},
+	{"EEPROM_V124", 12, SAVE_TYPE_EEPROM_V124, 128 * 1024, eeprom_patchV124},
+	{"EEPROM_V124", 12, SAVE_TYPE_EEPROM_V124, 512 * 1024, eeprom_patchV124},
 	{"EEPROM_V125", 12, SAVE_TYPE_EEPROM_V125, 8 * 1024, eeprom_patchV124},
 	{"EEPROM_V126", 12, SAVE_TYPE_EEPROM_V126, 8 * 1024, eeprom_patchV126},
 
@@ -33,6 +37,7 @@ static const save_type_t sSaveTypes[SAVE_TYPE_COUNT] =
 	{"SRAM_F_V100", 12, SAVE_TYPE_SRAM_F_V100, 32 * 1024, NULL},
 	{"SRAM_F_V102", 12, SAVE_TYPE_SRAM_F_V102, 32 * 1024, NULL},
 	{"SRAM_F_V103", 12, SAVE_TYPE_SRAM_F_V103, 32 * 1024, NULL},
+    {"SRAM_F_64MB", 12, SAVE_TYPE_SRAM_F_V103, 64 * 1024, NULL}, //ugly hack for sram-patched 64kb saves
 
 	{"SRAM_V110", 10, SAVE_TYPE_SRAM_V110, 32 * 1024, sram_patchV110},
 	{"SRAM_V111", 10, SAVE_TYPE_SRAM_V111, 32 * 1024, sram_patchV111},

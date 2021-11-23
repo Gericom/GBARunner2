@@ -210,7 +210,11 @@ vram_setup_copyloop:
 	mcr p15, 0, r0, c6, c2, 0
 
 	//region 3	oam vram region	0x06010000-0x06017FFF	2 << 14		-/-/-
+#ifdef ENABLE_HICODE
+	mov r0, #0
+#else
 	ldr r0,= (1 | (14 << 1) | 0x06010000)
+#endif
 	mcr p15, 0, r0, c6, c3, 0
 
 	//bios protection + itcm
@@ -253,7 +257,11 @@ vram_setup_copyloop:
 
 	ldr r0,= pu_data_permissions
 	mcr p15, 0, r0, c5, c0, 2
+#ifdef ENABLE_HICODE
+	ldr r0,= 0x33663303
+#else
 	ldr r0,= 0x33660303
+#endif
 	mcr p15, 0, r0, c5, c0, 3
 
 	//only instruction and data cache for (fake) cartridge
@@ -264,7 +272,9 @@ vram_setup_copyloop:
 	//orr r1, #(1 << 6)
 	//orr r1, #(1 << 7)
 	mov r0, #((1 << 5) | (1 << 6))
-
+#ifdef ENABLE_HICODE
+	orr r0, #(1 << 3)
+#endif
 
 #if defined(ENABLE_WRAM_ICACHE) && !defined(POSTPONED_ICACHE)
 	orr r0, #(1 << 0)
@@ -455,6 +465,45 @@ instruction_abort_handler:
 #ifdef ABT_NO_FIQ
 	msr cpsr_c, #0xD7	//immediately disable fiqs
 #endif
+#ifdef ENABLE_HICODE
+	sub lr, #4
+	cmp lr, #0x08000000
+		blo instruction_abort_handler_error_2
+	cmp lr, #0x0C000000
+		blo instruction_abort_handler_gba_rom_abs
+	cmp lr, #0x0F000000
+		blo instruction_abort_handler_gba_rom_rel
+	b instruction_abort_handler_error_2
+
+instruction_abort_handler_gba_rom_abs:
+	cmp lr, #ROM_ADDRESS_MAX
+		blo instruction_abort_handler_gba_rom_mainmem
+	
+	mcr p15, 0, r13, c5, c0, 0
+	add r13, #1
+	add r13, #(16 * 1024)
+	push {r0-r3,r12,lr}
+	mov r0, lr
+	bl hic_mapCode
+	ldr lr,= pu_data_permissions
+	mcr p15, 0, lr, c5, c0, 2
+	pop {r0-r3,r12,lr}
+	sub r13, #(16 * 1024)
+	sub r13, #1
+	movs pc, lr
+
+instruction_abort_handler_gba_rom_mainmem:
+	bic lr, #0x06000000
+	add lr, #GBA_ADDR_TO_DS_HIGH
+	add lr, #GBA_ADDR_TO_DS_LOW
+	movs pc, lr
+
+instruction_abort_handler_gba_rom_rel:
+	sub lr, #GBA_ADDR_TO_DS_HIGH
+	sub lr, #GBA_ADDR_TO_DS_LOW
+	b instruction_abort_handler_gba_rom_abs
+
+#else
 	cmp lr, #0x08000000
 	blt instruction_abort_handler_error
 	cmp lr, #0x0E000000
@@ -486,6 +535,7 @@ instruction_abort_handler_error_cont:
 	movlt lr, r12
 	ldrlt r12, [r13, #1]
 	blt instruction_abort_handler_cont
+#endif
 instruction_abort_handler_error_2:
 #ifdef ABT_NO_FIQ
 	msr cpsr_c, #0x97	//enable fiqs

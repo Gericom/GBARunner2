@@ -240,6 +240,8 @@ ldr_str_address_calc_\i\p\u\bw\w\l:
 		bl read_address_from_handler_8bit
 	.else
 		bl read_address_from_handler_32bit
+		cmp r1, #0xF000
+			addeq r10, #4
 	.endif
 	str r10, [r8]
 	b data_abort_handler_cont_finish

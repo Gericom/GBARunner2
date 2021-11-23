@@ -1,6 +1,7 @@
 #include <nds/arm9/sprite.h>
 #include <nds/arm9/background.h>
 #include "vram.h"
+#include "scfg.h"
 #include "../../common/fifo.h"
 #include "vector.h"
 #include "string.h"
@@ -16,6 +17,11 @@
 #include "crc16.h"
 #include "emu/romGpio.h"
 #include "gbaBoot.h"
+#include "dsp/dsp.h"
+#include "dsp/DspProcess.h"
+#include "dsp/twlwram.h"
+#include "dsp/dsp_ipc.h"
+#include "GBARunner2_cdc.h"
 #include "sd_access.h"
 
 //#define DONT_CREATE_SAVE_FILES
@@ -136,6 +142,13 @@ extern "C" PUT_IN_VRAM void initialize_cache()
 
 extern "C" PUT_IN_VRAM void sd_write_save()
 {
+	//mute sound
+    REG_SEND_FIFO = 0xAA5500FF;
+    REG_SEND_FIFO = 0;
+#ifdef USE_DSP_AUDIO
+	//pause dsp audioto prevent ear ouchy
+	dsp_sendIpcCommand(0x01000000, 1);
+#endif
 	vram_cd_t* vramcd_uncached = (vram_cd_t*)(((u32)vram_cd) + UNCACHED_OFFSET);
 	if (!vramcd_uncached->save_work.save_enabled || vramcd_uncached->save_work.save_state != SAVE_WORK_STATE_SDSAVE)
 		return;
@@ -157,7 +170,34 @@ extern "C" PUT_IN_VRAM void sd_write_save()
 		cur_cluster = *cluster_table++;
 	}
 	vramcd_uncached->save_work.save_state = SAVE_WORK_STATE_CLEAN;
+	//unmute sound and resync
+    REG_SEND_FIFO = 0xAA5500FF;
+    REG_SEND_FIFO = 0x7F | 0x80000000;
+#ifdef USE_DSP_AUDIO
+	//continue dsp audio
+	dsp_sendIpcCommand(0x01000000, 0);
+#endif
 }
+
+#ifdef USE_DSP_AUDIO
+static bool initDsp()
+{
+	REG_SCFG_EXT |= SCFG_EXT_ENABLE_DSP | SCFG_EXT_EXT_IRQ;
+	twr_setBlockMapping(TWR_WRAM_BLOCK_A, TWR_WRAM_BASE, 0, TWR_WRAM_BLOCK_IMAGE_SIZE_32K);
+	//map nwram
+	twr_setBlockMapping(TWR_WRAM_BLOCK_B, 0x03800000, 256 * 1024, TWR_WRAM_BLOCK_IMAGE_SIZE_256K);
+	twr_setBlockMapping(TWR_WRAM_BLOCK_C, 0x03C00000, 256 * 1024, TWR_WRAM_BLOCK_IMAGE_SIZE_256K);
+	DspProcess dspProc = DspProcess();
+	if(!dspProc.ExecuteDsp1((const dsp_dsp1_t*)GBARunner2_cdc))
+		return false;
+	//remove nwram from the memory map
+	twr_setBlockMapping(TWR_WRAM_BLOCK_B, TWR_WRAM_BASE, 0, TWR_WRAM_BLOCK_IMAGE_SIZE_32K);
+	twr_setBlockMapping(TWR_WRAM_BLOCK_C, TWR_WRAM_BASE, 0, TWR_WRAM_BLOCK_IMAGE_SIZE_32K);
+	//enable dsp irqs
+	*(vu32*)0x04000210 |= 1 << 24;
+	return true;
+}
+#endif
 
 //to be called after dldi has been initialized (with the appropriate init function)
 extern "C" PUT_IN_VRAM void sd_init()
@@ -172,8 +212,12 @@ extern "C" PUT_IN_VRAM void sd_init()
 	while (!(*((vu16*)0x04000004) & 1));
 	uiContext->GetUIManager().VBlank();
 #if defined(USE_DSI_16MB) || defined(USE_3DS_32MB)
-	if(!*((vu32*)0x04004008))
+	if(!REG_SCFG_EXT)
 		uiContext->FatalError("SCFG Locked!");
+#ifdef USE_DSP_AUDIO
+	if(!initDsp())
+		uiContext->FatalError("DSP init failed!");
+#endif
 #endif
 	if (f_mount(&vram_cd->fatFs, "", 1) != FR_OK)
 		uiContext->FatalError("Couldn't mount sd card!");
@@ -242,6 +286,10 @@ extern "C" PUT_IN_VRAM void sd_init()
 	initialize_cache();
 	rio_init(RIO_NONE);
 	gbab_setupGfx();
+#ifdef USE_DSP_AUDIO
+	//continue dsp audio
+	dsp_sendIpcCommand(0x01000000, 0);
+#endif
 }
 
 //gets an empty one or wipes the oldest

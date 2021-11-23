@@ -303,11 +303,22 @@ dma_shadow_regs_dtcm:
 	.short 0 //control
 .endr
 
+//dummy reload of fake timer before 0
+.short 0
+
 .global timer_shadow_regs_dtcm
 timer_shadow_regs_dtcm:
 .rept 4
 	.short 0 //reload value
 .endr
+
+.global timer_shadow_regs_count_dtcm
+timer_shadow_regs_count_dtcm:
+.rept 4
+	.short 0 //counter value
+.endr
+
+.align 2
 
 //the current bios opcode that is returned if you do a protected read
 //[00DCh+8] = 0xE129F000, after startup and softreset //before this address 0x27C is read
