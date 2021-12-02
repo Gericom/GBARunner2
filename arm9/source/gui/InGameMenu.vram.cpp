@@ -312,11 +312,11 @@ int InGameMenu::Run()
 	for (int i = 0; i < IconRestart_nbfc_size / 2; i++)
 		SPRITE_GFX_SUB[(sIconObjAddrs[1] >> 1) + i] = ((u16*)IconRestart_nbfc)[i];
         
-	sIconObjAddrs[0] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconCamera_nbfc_size);
+	sIconObjAddrs[2] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconCamera_nbfc_size);
 	for (int i = 0; i < IconCamera_nbfc_size / 2; i++)
 		SPRITE_GFX_SUB[(sIconObjAddrs[2] >> 1) + i] = ((u16*)IconCamera_nbfc)[i];
 
-    sIconObjAddrs[2] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconPower_nbfc_size);
+    sIconObjAddrs[3] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconPower_nbfc_size);
 	for (int i = 0; i < IconPower_nbfc_size / 2; i++)
 		SPRITE_GFX_SUB[(sIconObjAddrs[3] >> 1) + i] = ((u16*)IconPower_nbfc)[i];
 
