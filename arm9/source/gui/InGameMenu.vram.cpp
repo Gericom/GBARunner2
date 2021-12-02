@@ -13,6 +13,7 @@
 #include "dsp/dsp_ipc.h"
 #include "IconPlay_nbfc.h"
 #include "IconRestart_nbfc.h"
+#include "IconCamera_nbfc.h"
 #include "IconPower_nbfc.h"
 #include "../cp15.h"
 #include "InGameMenu.h"
@@ -26,6 +27,7 @@ static const igm_action_t sActions[] =
 {
     { "Resume" },
     { "Reset" },
+    { "Screenshot" },
     { "Quit to rom browser" }
 };
 
@@ -230,6 +232,93 @@ extern "C" bool igm_execute()
             reboot = true;
             break;
         }
+		else if(next == 4)
+		{
+			// Get last screenshot name
+			f_mkdir("/_gba/screenshots");
+			char screenshotName[256];
+			arm9_memcpy16((u16 *)screenshotName, (u16 *)"screenshot-0000.bmp", 10);
+			if(f_opendir(&vram_cd->dir, "/_gba/screenshots") == FR_OK) {
+				while(f_readdir(&vram_cd->dir, &vram_cd->fno) == FR_OK && vram_cd->fno.fname[0] != 0) {
+					if(strcmp(vram_cd->fno.fname, screenshotName) > 0) {
+						char *src = vram_cd->fno.fname;
+						char *dst = screenshotName;
+						while(*src)
+							*(dst++) = *(src++);
+						*dst = 0;
+					}
+				}
+				f_closedir(&vram_cd->dir);
+			}
+
+			// Increment screenshot name
+			screenshotName[14]++;
+			for(int i = 0; i < 4; i++) {
+				if(screenshotName[14 - i] > '9') {
+					screenshotName[14 - i] -= 10;
+					screenshotName[14 - i - 1]++;
+				}
+			}
+			char screenshotPath[256];
+			arm9_memcpy16((u16 *)screenshotPath, (u16 *)"/_gba/screenshots/\0", 10);
+			char *src = screenshotName;
+			char *dst = screenshotPath + 18;
+			while(*src)
+				*(dst++) = *(src++);
+			*dst = 0;
+
+			// Screenshot
+			if(f_open(&vram_cd->fil, screenshotPath, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK) {
+				UINT bw;
+
+				// Write the header
+				UINT value = gEmuSettingCenterMask ? 0x2C464D42 : 0x80464D42;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00000001;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00460000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00380000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = gEmuSettingCenterMask ? 0x00F00000 : 0x01000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = gEmuSettingCenterMask ? 0x00A00000 : 0x00C00000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00010000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00030010;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x80000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0xB130001;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0xB130000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 00000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0xF8000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x07E00000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x001F0000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				f_write(&vram_cd->fil, &value, 2, &bw);
+
+				// Write the image
+				for(int y = (gEmuSettingCenterMask ? (159 + 16) : 191); y >= (gEmuSettingCenterMask ? 16 : 0); y--) {
+					for(int x = (gEmuSettingCenterMask ? 8 : 0); x < (gEmuSettingCenterMask ? (240 + 8) : 256); x++) {
+						u16 val = VRAM_C[y * 256 + x];
+						val = ((val >> 10) & 31) | ((val & (31 << 5)) << 1) | ((val & 31) << 11); // convert to RGB565
+						f_write(&vram_cd->fil, &val, 2, &bw);
+					}
+				}
+				f_close(&vram_cd->fil);
+			}
+			break;
+		}
 	}
 	delete uiContext;
 
@@ -272,9 +361,13 @@ int InGameMenu::Run()
 	for (int i = 0; i < IconRestart_nbfc_size / 2; i++)
 		SPRITE_GFX_SUB[(sIconObjAddrs[1] >> 1) + i] = ((u16*)IconRestart_nbfc)[i];
         
-    sIconObjAddrs[2] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconPower_nbfc_size);
+	sIconObjAddrs[2] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconCamera_nbfc_size);
+	for (int i = 0; i < IconCamera_nbfc_size / 2; i++)
+		SPRITE_GFX_SUB[(sIconObjAddrs[2] >> 1) + i] = ((u16*)IconCamera_nbfc)[i];
+
+    sIconObjAddrs[3] = _uiContext->GetUIManager().GetSubObjManager().Alloc(IconPower_nbfc_size);
 	for (int i = 0; i < IconPower_nbfc_size / 2; i++)
-		SPRITE_GFX_SUB[(sIconObjAddrs[2] >> 1) + i] = ((u16*)IconPower_nbfc)[i];
+		SPRITE_GFX_SUB[(sIconObjAddrs[3] >> 1) + i] = ((u16*)IconPower_nbfc)[i];
 
     _vramState = _uiContext->GetUIManager().GetSubObjManager().GetState();
 
@@ -308,6 +401,8 @@ int InGameMenu::Run()
             else if(_selectedEntry == 1)
                 next = 3;
             else if(_selectedEntry == 2)
+                next = 4;
+            else if(_selectedEntry == 3)
                 next = 0;
 
             while(!(*((vu16*)0x04000130) & 1));

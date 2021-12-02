@@ -91,6 +91,7 @@ typedef struct
 	u8 tmpSector[512] __attribute__((aligned(32)));
 	FATFS fatFs;
 	FIL fil;
+	FILINFO fno;
 	DIR dir;
 } vram_cd_t;
 
