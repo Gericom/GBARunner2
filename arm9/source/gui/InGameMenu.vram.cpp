@@ -257,16 +257,17 @@ extern "C" bool igm_execute()
 			}
 
 			// Screenshot
-			FIL fp;
-			if (f_open(&fp, "/_gba/screenshot.bmp", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK) {
+			if (f_open(&vram_cd->fil, "/_gba/screenshot.bmp", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK) {
 				UINT bw;
-				f_write(&fp, bmpHeader, sizeof(bmpHeader), &bw);
-				for(int i = 0; i < (gEmuSettingCenterMask ? 240 * 160 : 256 * 192); i++) {
-					u16 val = VRAM_C[i];
-					val = ((val >> 10) & 31) | ((val & (31 << 5)) << 1) | ((val & 31) << 11); // convert to RGB565
-					f_write(&fp, &val, 2, &bw);
+				f_write(&vram_cd->fil, bmpHeader, sizeof(bmpHeader), &bw);
+				for(int y = (gEmuSettingCenterMask ? (239 + 16) : 191); y >= (gEmuSettingCenterMask ? 16 : 0); y--) {
+					for(int x = (gEmuSettingCenterMask ? 8 : 0); x < (gEmuSettingCenterMask ? (240 + 8) : 256); x++) {
+						u16 val = VRAM_C[y * 256 + x];
+						val = ((val >> 10) & 31) | ((val & (31 << 5)) << 1) | ((val & 31) << 11); // convert to RGB565
+						f_write(&vram_cd->fil, &val, 2, &bw);
+					}
 				}
-				f_close(&fp);
+				f_close(&vram_cd->fil);
 			}
 			break;
 		}
