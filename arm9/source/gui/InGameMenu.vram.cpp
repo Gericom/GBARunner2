@@ -31,16 +31,6 @@ static const igm_action_t sActions[] =
     { "Quit to rom browser" }
 };
 
-// Header for a 240x160 RGB565 BMP
-u8 bmpHeader[] = {
-	0x42, 0x4D, 0x46, 0x80, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46, 0x00,
-	0x00, 0x00, 0x38, 0x00, 0x00, 0x00, 0xF0, 0x00, 0x00, 0x00, 0x8C, 0x00,
-	0x00, 0x00, 0x01, 0x00, 0x10, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x80,
-	0x01, 0x00, 0x13, 0x0B, 0x00, 0x00, 0x13, 0x0B, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x00, 0x00, 0xE0, 0x07,
-	0x00, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
 static u16 sIconObjAddrs[sizeof(sActions) / sizeof(igm_action_t)];
 
 class IgmActionListAdapter : public ListAdapter
@@ -244,23 +234,82 @@ extern "C" bool igm_execute()
         }
 		else if(next == 4)
 		{
-			if(gEmuSettingCenterMask) {
-				// 240x160
-				bmpHeader[18] = 0xF0;
-				bmpHeader[19] = 0x00;
-				bmpHeader[22] = 0x8C;
-			} else {
-				// 256x192
-				bmpHeader[18] = 0x00;
-				bmpHeader[19] = 0x01;
-				bmpHeader[22] = 0xC0;
+			// Get last screenshot name
+			f_mkdir("/_gba/screenshots");
+			static FILINFO fno;
+			char screenshotName[256];
+			arm9_memcpy16((u16 *)screenshotName, (u16 *)"screenshot-0000.bmp", 10);
+			if(f_opendir(&vram_cd->dir, "/_gba/screenshots") == FR_OK) {
+				while(f_readdir(&vram_cd->dir, &fno) == FR_OK && fno.fname[0] != 0) {
+					if(strcmp(fno.fname, screenshotName) > 0) {
+						char *src = fno.fname;
+						char *dst = screenshotName;
+						while(*src)
+							*(dst++) = *(src++);
+						*dst = 0;
+					}
+				}
+				f_closedir(&vram_cd->dir);
 			}
 
+			// Increment screenshot name
+			screenshotName[11]++;
+			for(int i = 0; i < 4; i++) {
+				if(screenshotName[11 + i] > '9') {
+					screenshotName[11 + i] -= 10;
+					screenshotName[11 + i + 1]++;
+				}
+			}
+			char screenshotPath[256];
+			arm9_memcpy16((u16 *)screenshotPath, (u16 *)"/_gba/screenshots/\0", 10);
+			char *src = screenshotName;
+			char *dst = screenshotPath + 18;
+			while(*src)
+				*(dst++) = *(src++);
+			*dst = 0;
+
 			// Screenshot
-			if (f_open(&vram_cd->fil, "/_gba/screenshot.bmp", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK) {
+			if(f_open(&vram_cd->fil, screenshotPath, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK) {
 				UINT bw;
-				f_write(&vram_cd->fil, bmpHeader, sizeof(bmpHeader), &bw);
-				for(int y = (gEmuSettingCenterMask ? (239 + 16) : 191); y >= (gEmuSettingCenterMask ? 16 : 0); y--) {
+
+				// Write the header
+				UINT value = gEmuSettingCenterMask ? 0x2C464D42 : 0x80464D42;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00000001;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00460000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00380000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = gEmuSettingCenterMask ? 0x00F00000 : 0x01000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = gEmuSettingCenterMask ? 0x00A00000 : 0x00C00000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00010000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00030010;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x80000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0xB130001;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0xB130000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 00000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0xF8000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x07E00000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x001F0000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				value = 0x00000000;
+				f_write(&vram_cd->fil, &value, 4, &bw);
+				f_write(&vram_cd->fil, &value, 2, &bw);
+
+				// Write the image
+				for(int y = (gEmuSettingCenterMask ? (159 + 16) : 191); y >= (gEmuSettingCenterMask ? 16 : 0); y--) {
 					for(int x = (gEmuSettingCenterMask ? 8 : 0); x < (gEmuSettingCenterMask ? (240 + 8) : 256); x++) {
 						u16 val = VRAM_C[y * 256 + x];
 						val = ((val >> 10) & 31) | ((val & (31 << 5)) << 1) | ((val & 31) << 11); // convert to RGB565
