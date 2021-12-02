@@ -236,13 +236,12 @@ extern "C" bool igm_execute()
 		{
 			// Get last screenshot name
 			f_mkdir("/_gba/screenshots");
-			static FILINFO fno;
 			char screenshotName[256];
 			arm9_memcpy16((u16 *)screenshotName, (u16 *)"screenshot-0000.bmp", 10);
 			if(f_opendir(&vram_cd->dir, "/_gba/screenshots") == FR_OK) {
-				while(f_readdir(&vram_cd->dir, &fno) == FR_OK && fno.fname[0] != 0) {
-					if(strcmp(fno.fname, screenshotName) > 0) {
-						char *src = fno.fname;
+				while(f_readdir(&vram_cd->dir, &vram_cd->fno) == FR_OK && vram_cd->fno.fname[0] != 0) {
+					if(strcmp(vram_cd->fno.fname, screenshotName) > 0) {
+						char *src = vram_cd->fno.fname;
 						char *dst = screenshotName;
 						while(*src)
 							*(dst++) = *(src++);
@@ -253,11 +252,11 @@ extern "C" bool igm_execute()
 			}
 
 			// Increment screenshot name
-			screenshotName[11]++;
+			screenshotName[14]++;
 			for(int i = 0; i < 4; i++) {
-				if(screenshotName[11 + i] > '9') {
-					screenshotName[11 + i] -= 10;
-					screenshotName[11 + i + 1]++;
+				if(screenshotName[14 - i] > '9') {
+					screenshotName[14 - i] -= 10;
+					screenshotName[14 - i - 1]++;
 				}
 			}
 			char screenshotPath[256];
